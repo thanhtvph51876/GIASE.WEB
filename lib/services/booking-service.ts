@@ -1,0 +1,121 @@
+import type { BookingStatus, TrialBooking, TrialBookingFormData } from "@/types"
+import { bookingApi } from "@/lib/api/booking-api"
+
+class BookingService {
+  async createTrialBooking(
+    tutorId: string,
+    data: TrialBookingFormData,
+    _userId?: string,
+    options: { learningRequestId?: string; skipSideEffects?: boolean } = {}
+  ) {
+    try {
+      const booking = await bookingApi.create(tutorId, data, options.learningRequestId)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể tạo booking" }
+    }
+  }
+
+  async getBookingsByTutor(_tutorId: string): Promise<TrialBooking[]> {
+    return bookingApi.tutorList()
+  }
+
+  async getBookingsByUser(_userId: string): Promise<TrialBooking[]> {
+    return bookingApi.list()
+  }
+
+  async getPendingBookingsByTutor(tutorId: string): Promise<TrialBooking[]> {
+    const bookings = await this.getBookingsByTutor(tutorId)
+    return bookings.filter((booking) => booking.status === "pending" || booking.status === "assigned")
+  }
+
+  async getBookingById(id: string): Promise<TrialBooking | null> {
+    try {
+      return await bookingApi.get(id)
+    } catch {
+      return null
+    }
+  }
+
+  async updateBookingStatus(id: string, status: BookingStatus, rejectReason?: string) {
+    if (status === "accepted") return this.acceptBooking(id)
+    if (status === "rejected") return this.rejectBooking(id, rejectReason || "")
+    if (status === "completed") return this.completeBooking(id)
+    try {
+      const booking = await bookingApi.update(id, { status, rejectReason })
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật booking" }
+    }
+  }
+
+  async updateBooking(id: string, payload: Partial<TrialBooking>) {
+    try {
+      const booking = await bookingApi.update(id, payload)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật booking" }
+    }
+  }
+
+  async acceptBooking(id: string, schedule?: unknown) {
+    try {
+      const booking = await bookingApi.accept(id, schedule)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể chấp nhận booking" }
+    }
+  }
+
+  async rejectBooking(id: string, reason: string) {
+    try {
+      const booking = await bookingApi.reject(id, reason)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể từ chối booking" }
+    }
+  }
+
+  async completeBooking(id: string, resultNote?: string) {
+    try {
+      const booking = await bookingApi.complete(id, resultNote)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể hoàn tất booking" }
+    }
+  }
+
+  async scheduleTrial(id: string, schedule: NonNullable<TrialBooking["schedule"]>) {
+    try {
+      const booking = await bookingApi.schedule(id, { schedule })
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể xếp lịch học thử" }
+    }
+  }
+
+  async completeTrial(id: string, resultNote?: string) {
+    return this.completeBooking(id, resultNote)
+  }
+
+  async convertToClass(id: string) {
+    try {
+      const createdClass = await bookingApi.convertToClass(id)
+      const booking = await bookingApi.get(id)
+      return { success: true, booking: { ...booking, classId: (createdClass as any).id } }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể chuyển thành lớp" }
+    }
+  }
+
+  async getAllBookings(): Promise<TrialBooking[]> {
+    return bookingApi.adminList()
+  }
+
+  async getPendingCount(tutorId: string): Promise<number> {
+    const bookings = await this.getPendingBookingsByTutor(tutorId)
+    return bookings.length
+  }
+}
+
+export const bookingService = new BookingService()

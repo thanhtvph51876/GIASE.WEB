@@ -1,0 +1,76 @@
+import type { Tutor, TutorDocument, TutorFilters, TutorRegistrationFormData, TutorSortBy } from "@/types"
+import { apiRequest, uploadFile } from "./client"
+import { mapList, mapTutor, mapTutorDocument } from "./mappers"
+
+export const tutorApi = {
+  async getTutors(filters?: TutorFilters, sortBy: TutorSortBy = "best_match") {
+    const data = await apiRequest<Tutor[]>("/tutors", {
+      auth: false,
+      params: {
+        q: filters?.keyword,
+        subject: filters?.subject,
+        gradeLevelId: filters?.grade,
+        province: filters?.location,
+        learningMode: filters?.teachingMode,
+        minRate: filters?.minPrice,
+        maxRate: filters?.maxPrice,
+        minRating: filters?.minRating,
+        verified: filters?.verified,
+        gender: filters?.gender,
+        sort: sortBy,
+        pageSize: 100,
+      },
+    })
+    return mapList(data, mapTutor)
+  },
+  async getAllTutors() {
+    const data = await apiRequest<Tutor[]>("/admin/tutors")
+    return mapList(data, mapTutor)
+  },
+  async getTutorById(id: string) {
+    return mapTutor(await apiRequest<Tutor>(`/tutors/${id}`, { auth: false }))
+  },
+  async getTutorByUserId(userId: string) {
+    const data = await apiRequest<Tutor>("/tutor/profile")
+    return data?.userId === userId ? mapTutor(data) : null
+  },
+  async getMyProfile() {
+    return mapTutor(await apiRequest<Tutor>("/tutor/profile"))
+  },
+  async createTutorProfile(data: TutorRegistrationFormData) {
+    return mapTutor(await apiRequest<Tutor>("/tutor/profile", { method: "PATCH", body: data }))
+  },
+  async updateTutorProfile(_id: string, data: Partial<Tutor>) {
+    return mapTutor(await apiRequest<Tutor>("/tutor/profile", { method: "PATCH", body: data }))
+  },
+  async submitForReview() {
+    return mapTutor(await apiRequest<Tutor>("/tutor/profile/submit", { method: "POST" }))
+  },
+  async documents() {
+    return mapList(await apiRequest<TutorDocument[]>("/tutor/documents"), mapTutorDocument)
+  },
+  async uploadDocument(file: File, type: TutorDocument["type"] = "other") {
+    const uploaded = await uploadFile(file)
+    return mapTutorDocument(
+      await apiRequest<TutorDocument>("/tutor/documents", {
+        method: "POST",
+        body: { ...uploaded, type },
+      })
+    )
+  },
+  async approveTutor(id: string) {
+    return mapTutor(await apiRequest<Tutor>(`/admin/tutors/${id}/approve`, { method: "POST" }))
+  },
+  async rejectTutor(id: string, reason: string) {
+    return mapTutor(await apiRequest<Tutor>(`/admin/tutors/${id}/reject`, { method: "POST", body: { reason } }))
+  },
+  async requestTutorUpdate(id: string, note: string) {
+    return mapTutor(await apiRequest<Tutor>(`/admin/tutors/${id}/request-update`, { method: "POST", body: { note } }))
+  },
+  async suspendTutor(id: string, reason: string) {
+    return mapTutor(await apiRequest<Tutor>(`/admin/tutors/${id}/suspend`, { method: "POST", body: { reason } }))
+  },
+  async reactivateTutor(id: string) {
+    return mapTutor(await apiRequest<Tutor>(`/admin/tutors/${id}/reactivate`, { method: "POST" }))
+  },
+}

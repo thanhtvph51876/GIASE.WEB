@@ -1,0 +1,94 @@
+import type { LearningRequest, LearningRequestStatus, StudentRegistrationFormData } from "@/types"
+import { learningRequestApi } from "@/lib/api/learning-request-api"
+
+class LearningRequestService {
+  async createLearningRequest(data: StudentRegistrationFormData, _userId?: string) {
+    try {
+      const request = await learningRequestApi.create(data)
+      return { success: true, request }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể tạo yêu cầu học" }
+    }
+  }
+
+  async getRequestsByUser(_userId: string): Promise<LearningRequest[]> {
+    return learningRequestApi.list()
+  }
+
+  async getAllRequests(): Promise<LearningRequest[]> {
+    return learningRequestApi.adminList()
+  }
+
+  async getRequestsByStatus(status: LearningRequestStatus): Promise<LearningRequest[]> {
+    const requests = await this.getAllRequests()
+    return requests.filter((request) => request.status === status)
+  }
+
+  async getRequestById(id: string): Promise<LearningRequest | null> {
+    try {
+      return await learningRequestApi.get(id)
+    } catch {
+      return null
+    }
+  }
+
+  async updateRequestStatus(id: string, status: LearningRequestStatus) {
+    try {
+      const request = await learningRequestApi.updateStatus(id, status)
+      return { success: true, request }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật trạng thái" }
+    }
+  }
+
+  async changeStatus(id: string, status: LearningRequestStatus) {
+    return this.updateRequestStatus(id, status)
+  }
+
+  async updateRequest(id: string, payload: Partial<LearningRequest>) {
+    try {
+      const request = await learningRequestApi.update(id, payload)
+      return { success: true, request }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật yêu cầu" }
+    }
+  }
+
+  async assignTutor(requestId: string, tutorId: string) {
+    try {
+      const request = await learningRequestApi.assignTutor(requestId, tutorId)
+      return { success: true, request }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể gán gia sư" }
+    }
+  }
+
+  async assignTutorWithBooking(requestId: string, tutorId: string) {
+    try {
+      const result = await learningRequestApi.assignTutorWithBooking(requestId, tutorId)
+      return { success: true, request: result.learningRequest, booking: result.booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể gán gia sư" }
+    }
+  }
+
+  async getRequestsByTutor(_tutorId: string): Promise<LearningRequest[]> {
+    return learningRequestApi.list()
+  }
+
+  async getNewRequestsCount(): Promise<number> {
+    const requests = await this.getAllRequests()
+    return requests.filter((request) => request.status === "new").length
+  }
+
+  async cancelRequest(id: string) {
+    try {
+      await learningRequestApi.cancel(id)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể hủy yêu cầu" }
+    }
+  }
+}
+
+export const learningRequestService = new LearningRequestService()
