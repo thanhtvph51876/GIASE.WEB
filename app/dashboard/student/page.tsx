@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, BookOpen, Calendar, Heart, Star, Users } from "lucide-react"
+import { ArrowRight, BookOpen, Calendar, Heart, ShieldCheck, Star, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -13,6 +13,7 @@ import { useLearningRequests } from "@/lib/hooks/use-learning-requests"
 import { useNotifications } from "@/lib/hooks/use-notifications"
 import { useSchedule } from "@/lib/hooks/use-schedule"
 import { useFavorites, useTutors } from "@/lib/hooks/use-tutors"
+import { useStudentVerifications } from "@/lib/hooks/use-verifications"
 import { formatDateTime } from "@/lib/helpers"
 
 export default function StudentDashboardPage() {
@@ -22,6 +23,7 @@ export default function StudentDashboardPage() {
   const { favoriteTutors: favorites } = useFavorites(user?.id)
   const { notifications } = useNotifications(user?.id)
   const { classes } = useClasses({ userId: user?.id, role: "student" })
+  const { latest: verification } = useStudentVerifications(Boolean(user))
   const { tutors: recommendedTutors } = useTutors({
     initialFilters: { verified: true },
     initialSortBy: "rating_desc",
@@ -58,6 +60,32 @@ export default function StudentDashboardPage() {
         <Stat title="Buổi học sắp tới" value={upcomingSessions.length} icon={Calendar} />
         <Stat title="Gia sư đã lưu" value={favorites.length} icon={Heart} />
       </div>
+
+      <Card className="border-slate-200">
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold">Xác thực học sinh</p>
+                <StatusBadge kind="verification" status={verification?.status || "draft"} />
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {verification?.status === "approved"
+                  ? "Tài khoản đã được duyệt xác thực."
+                  : verification?.status === "pending_review"
+                    ? "Hồ sơ đang chờ admin duyệt."
+                    : verification?.rejectReason || "Hoàn tất thẻ sinh viên để mở các thao tác nhạy cảm."}
+              </p>
+            </div>
+          </div>
+          <Button asChild variant={verification?.status === "approved" ? "outline" : "default"}>
+            <Link href="/dashboard/student/verification">{verification?.status === "approved" ? "Xem hồ sơ" : "Xác thực ngay"}</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <Card>

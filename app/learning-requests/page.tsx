@@ -38,9 +38,9 @@ export default function LearningRequestsPage() {
       const query = keyword.trim().toLowerCase()
       if (query) {
         const match =
-          request.studentName.toLowerCase().includes(query) ||
           request.subject.toLowerCase().includes(query) ||
-          request.note?.toLowerCase().includes(query)
+          request.grade.toLowerCase().includes(query) ||
+          request.location?.toLowerCase().includes(query)
         if (!match) return false
       }
       if (subject !== "all" && request.subject !== subject) return false
@@ -72,7 +72,7 @@ export default function LearningRequestsPage() {
                 <Input
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
-                  placeholder="Tìm theo môn, học sinh, ghi chú..."
+                  placeholder="Tìm theo môn, lớp, khu vực..."
                   className="pl-9"
                 />
               </div>
@@ -153,7 +153,7 @@ export default function LearningRequestsPage() {
                       <BookOpen className="h-4 w-4" />
                       {request.expectedFee ? `${formatCurrency(request.expectedFee)}/giờ` : "Trao đổi sau tư vấn"}
                     </div>
-                    <p className="line-clamp-3 text-muted-foreground">{request.note || request.goal}</p>
+                    <p className="line-clamp-3 text-muted-foreground">Thông tin liên hệ và địa chỉ cụ thể được ẩn cho đến khi admin xử lý.</p>
                     <Button className="w-full" asChild>
                       <Link href="/login">Đăng nhập để nhận lớp</Link>
                     </Button>

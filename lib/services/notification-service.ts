@@ -63,12 +63,22 @@ class NotificationService {
     return { success: true }
   }
 
-  async deleteNotification(_id: string) {
-    return { success: true }
+  async deleteNotification(id: string) {
+    try {
+      await notificationApi.delete(id)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể xóa thông báo" }
+    }
   }
 
   async clearAllNotifications(_userId: string) {
-    return { success: true }
+    try {
+      await notificationApi.clear()
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể xóa thông báo" }
+    }
   }
 
   async notifyNewTrialBooking(tutorId: string, studentName: string): Promise<void> {

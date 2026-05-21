@@ -9,8 +9,10 @@ const ignored = new Set([
   ".next-build-check",
   ".next-api-build",
   ".next-api-build-2",
+  ".next-build-codex",
   ".next-payment-build",
   ".next-prod",
+  ".next-build-webpack",
   "node_modules",
 ])
 const extensions = new Set([".ts", ".tsx", ".js", ".jsx"])
@@ -18,7 +20,7 @@ const violations = []
 
 function walk(dir) {
   for (const entry of readdirSync(dir)) {
-    if (ignored.has(entry)) continue
+    if (ignored.has(entry) || entry.startsWith(".next")) continue
     const path = join(dir, entry)
     const stat = statSync(path)
     if (stat.isDirectory()) {

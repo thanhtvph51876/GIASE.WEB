@@ -14,6 +14,7 @@ import type {
   TutorEarning,
   TrialBooking,
   User,
+  UserVerification,
 } from "@/types"
 
 type Raw = Record<string, unknown>
@@ -138,13 +139,52 @@ export function mapLearningRequest(value: unknown): LearningRequest {
     goal: text(raw, "goal", "improve_grades") as LearningRequest["goal"],
     teachingMode: text(raw, "teachingMode", text(raw, "learningMode", "both")) as LearningRequest["teachingMode"],
     location: optionalText(raw, "location") || optionalText(raw, "province"),
+    province: optionalText(raw, "province"),
+    district: optionalText(raw, "district"),
     expectedFee: numberValue(raw, "expectedFee", numberValue(raw, "budgetMax")) || undefined,
+    budgetMin: numberValue(raw, "budgetMin") || undefined,
+    budgetMax: numberValue(raw, "budgetMax") || undefined,
     preferredSchedule: optionalText(raw, "preferredSchedule"),
     note: optionalText(raw, "note"),
     status: text(raw, "status", "new") as LearningRequest["status"],
     assignedTutorId: optionalText(raw, "assignedTutorId") || null,
     userId: optionalText(raw, "userId") || optionalText(raw, "requesterId"),
     createdAt: text(raw, "createdAt"),
+    updatedAt: optionalText(raw, "updatedAt"),
+  }
+}
+
+export function mapVerification(value: unknown): UserVerification {
+  const raw = toRaw(value)
+  return {
+    id: text(raw, "id"),
+    userId: text(raw, "userId"),
+    userEmail: optionalText(raw, "userEmail"),
+    userFullName: optionalText(raw, "userFullName"),
+    verificationType: text(raw, "verificationType", "student_card") as UserVerification["verificationType"],
+    schoolName: optionalText(raw, "schoolName"),
+    studentCode: optionalText(raw, "studentCode"),
+    fullNameInput: optionalText(raw, "fullNameInput"),
+    schoolEmail: optionalText(raw, "schoolEmail"),
+    cardFileId: optionalText(raw, "cardFileId"),
+    selfieFileId: optionalText(raw, "selfieFileId"),
+    documentFileId: optionalText(raw, "documentFileId"),
+    cardFileUrl: optionalText(raw, "cardFileUrl"),
+    selfieFileUrl: optionalText(raw, "selfieFileUrl"),
+    documentFileUrl: optionalText(raw, "documentFileUrl"),
+    ocrFullName: optionalText(raw, "ocrFullName"),
+    ocrStudentCode: optionalText(raw, "ocrStudentCode"),
+    ocrSchool: optionalText(raw, "ocrSchool"),
+    ocrConfidence: numberValue(raw, "ocrConfidence") || undefined,
+    emailVerified: booleanValue(raw, "emailVerified"),
+    duplicateFile: booleanValue(raw, "duplicateFile"),
+    riskScore: numberValue(raw, "riskScore"),
+    status: text(raw, "status", "draft") as UserVerification["status"],
+    rejectReason: optionalText(raw, "rejectReason"),
+    reviewedBy: optionalText(raw, "reviewedBy"),
+    reviewedAt: optionalText(raw, "reviewedAt"),
+    agreementSigned: booleanValue(raw, "agreementSigned"),
+    createdAt: text(raw, "createdAt", new Date().toISOString()),
     updatedAt: optionalText(raw, "updatedAt"),
   }
 }

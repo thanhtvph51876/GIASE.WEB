@@ -39,21 +39,21 @@ npm run build
 
 ```bash
 cd backend
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 
 Trên Windows:
 
 ```powershell
 cd backend
-.\mvnw.cmd spring-boot:run
+mvn spring-boot:run
 ```
 
 Kiểm tra backend:
 
 ```bash
-./mvnw clean test
-./mvnw clean package
+mvn test
+mvn -DskipTests package
 ```
 
 Xem thêm [backend/README.md](backend/README.md) và [backend/API_CONTRACT.md](backend/API_CONTRACT.md). Private uploads đi qua `/api/v1/files/{fileId}`, không publish `/uploads/**`.
@@ -67,6 +67,6 @@ Xem thêm [backend/README.md](backend/README.md) và [backend/API_CONTRACT.md](b
 
 ## API Integration Notes
 
-- Frontend chỉ lưu `accessToken`/`refreshToken` và UI preference trong localStorage.
+- Frontend chỉ dùng browser storage cho token ở development. Production giữ token trong memory và cần chuyển refresh token sang HttpOnly Secure SameSite cookie trước khi public launch.
 - Dữ liệu nghiệp vụ chính đi qua `lib/api/*` và backend `/api/v1`.
 - Backend là nguồn sự thật cho role, ownership, trạng thái, payment, payout, notification và audit.

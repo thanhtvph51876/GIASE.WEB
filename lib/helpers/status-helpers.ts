@@ -9,6 +9,7 @@ import type {
   TeachingMode,
   TutorEarningStatus,
   UserStatus,
+  VerificationStatus,
 } from "@/types"
 
 export type StatusKind =
@@ -22,6 +23,7 @@ export type StatusKind =
   | "session"
   | "teachingMode"
   | "user"
+  | "verification"
 
 type StatusValue =
   | ApprovalStatus
@@ -34,6 +36,7 @@ type StatusValue =
   | SessionStatus
   | TeachingMode
   | UserStatus
+  | VerificationStatus
   | string
 
 const labels: Record<StatusKind, Record<string, string>> = {
@@ -92,8 +95,17 @@ const labels: Record<StatusKind, Record<string, string>> = {
     available: "Khả dụng",
     pending: "Chờ duyệt",
     processing: "Đang xử lý",
+    approved: "Đã duyệt",
+    paid: "Đã chi trả",
     completed: "Đã rút",
     rejected: "Bị từ chối",
+  },
+  verification: {
+    draft: "Chưa xác thực",
+    pending_review: "Đang chờ duyệt",
+    approved: "Đã duyệt",
+    rejected: "Bị từ chối",
+    need_more_info: "Cần bổ sung",
   },
   earning: {
     pending: "Đang chờ",
@@ -141,11 +153,13 @@ const tones: Record<string, string> = {
   scheduled: "info",
   upcoming: "info",
   pending: "warning",
+  pending_review: "warning",
   processing: "info",
   payout_pending: "warning",
   draft: "neutral",
   new: "warning",
   need_update: "warning",
+  need_more_info: "warning",
   paused: "warning",
   offline: "neutral",
   inactive: "danger",

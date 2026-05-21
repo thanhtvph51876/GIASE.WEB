@@ -115,7 +115,7 @@ class PaymentService {
   async updatePayoutStatus(payoutId: string, status: Payout["status"], _actor?: User | null, reason?: string) {
     try {
       const payout =
-        status === "completed"
+        status === "completed" || status === "paid"
           ? await paymentApi.approvePayout(payoutId)
           : await paymentApi.rejectPayout(payoutId, reason || "")
       return { success: true, payout }
@@ -125,7 +125,7 @@ class PaymentService {
   }
 
   async approvePayout(payoutId: string, actor?: User | null) {
-    return this.updatePayoutStatus(payoutId, "completed", actor)
+    return this.updatePayoutStatus(payoutId, "paid", actor)
   }
 
   async rejectPayout(payoutId: string, reason: string, actor?: User | null) {

@@ -29,23 +29,38 @@ interface RequestOptions {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api/v1"
+const PERSIST_BROWSER_TOKENS = process.env.NODE_ENV !== "production"
+let memoryAccessToken: string | null = null
+let memoryRefreshToken: string | null = null
 
 export const tokenStore = {
   get accessToken() {
     if (typeof window === "undefined") return null
+    if (!PERSIST_BROWSER_TOKENS) return memoryAccessToken
     return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
   },
   set accessToken(token: string | null) {
     if (typeof window === "undefined") return
+    memoryAccessToken = token
+    if (!PERSIST_BROWSER_TOKENS) {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+      return
+    }
     if (token) localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
     else localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
   },
   get refreshToken() {
     if (typeof window === "undefined") return null
+    if (!PERSIST_BROWSER_TOKENS) return memoryRefreshToken
     return localStorage.getItem("giasusp_refresh_token")
   },
   set refreshToken(token: string | null) {
     if (typeof window === "undefined") return
+    memoryRefreshToken = token
+    if (!PERSIST_BROWSER_TOKENS) {
+      localStorage.removeItem("giasusp_refresh_token")
+      return
+    }
     if (token) localStorage.setItem("giasusp_refresh_token", token)
     else localStorage.removeItem("giasusp_refresh_token")
   },
@@ -147,9 +162,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   return envelope.data as T
 }
 
-export async function uploadFile(file: File) {
+export async function uploadFile(file: File, options?: { visibility?: "public" | "private"; purpose?: string }) {
   const form = new FormData()
   form.append("file", file)
+  if (options?.visibility) form.append("visibility", options.visibility)
+  if (options?.purpose) form.append("purpose", options.purpose)
   return apiRequest<{
     id: string
     fileId: string
@@ -159,6 +176,10 @@ export async function uploadFile(file: File) {
     fileSize: number
     mimeType: string
     visibility: "public" | "private"
+    purpose?: string
+    sha256Hash?: string
+    duplicateFile?: boolean
+    riskScore?: number
   }>("/uploads", { method: "POST", body: form })
 }
 

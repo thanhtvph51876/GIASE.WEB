@@ -173,7 +173,11 @@ export interface LearningRequest {
   goal: LearningGoal
   teachingMode: TeachingMode
   location?: string
+  province?: string
+  district?: string
   expectedFee?: number
+  budgetMin?: number
+  budgetMax?: number
   preferredSchedule?: string
   note?: string
   status: LearningRequestStatus
@@ -380,7 +384,7 @@ export interface TutorEarning {
   updatedAt?: string
 }
 
-export type PayoutStatus = "available" | "pending" | "processing" | "completed" | "rejected"
+export type PayoutStatus = "available" | "pending" | "processing" | "approved" | "paid" | "completed" | "rejected"
 
 export interface Payout {
   id: string
@@ -394,6 +398,45 @@ export interface Payout {
   requestedAt: string
   processedAt?: string
   createdAt: string
+}
+
+// ============================================
+// VERIFICATION TYPES
+// ============================================
+
+export type VerificationType = "student_card" | "tutor_identity" | "tutor_certificate"
+export type VerificationStatus = "draft" | "pending_review" | "approved" | "rejected" | "need_more_info"
+
+export interface UserVerification {
+  id: string
+  userId: string
+  userEmail?: string
+  userFullName?: string
+  verificationType: VerificationType
+  schoolName?: string
+  studentCode?: string
+  fullNameInput?: string
+  schoolEmail?: string
+  cardFileId?: string
+  selfieFileId?: string
+  documentFileId?: string
+  cardFileUrl?: string
+  selfieFileUrl?: string
+  documentFileUrl?: string
+  ocrFullName?: string
+  ocrStudentCode?: string
+  ocrSchool?: string
+  ocrConfidence?: number
+  emailVerified: boolean
+  duplicateFile: boolean
+  riskScore: number
+  status: VerificationStatus
+  rejectReason?: string
+  reviewedBy?: string
+  reviewedAt?: string
+  agreementSigned?: boolean
+  createdAt: string
+  updatedAt?: string
 }
 
 // ============================================

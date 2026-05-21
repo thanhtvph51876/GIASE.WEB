@@ -17,8 +17,8 @@ export default function AdminPayoutsPage() {
   const load = async () => setPayouts(await payoutService.getAllPayouts())
   useEffect(() => { load() }, [])
 
-  const update = async (id: string, status: "completed" | "rejected") => {
-    const result = status === "completed" ? await payoutService.approvePayout(id, user) : await payoutService.rejectPayout(id, "Admin từ chối yêu cầu rút tiền", user)
+  const update = async (id: string, status: "paid" | "rejected") => {
+    const result = status === "paid" ? await payoutService.approvePayout(id, user) : await payoutService.rejectPayout(id, "Admin từ chối yêu cầu rút tiền", user)
     if (result.success) {
       toast.success("Đã cập nhật payout")
       load()
@@ -35,13 +35,13 @@ export default function AdminPayoutsPage() {
         stats={[
           { label: "Tổng payout", value: payouts.length },
           { label: "Chờ duyệt", value: payouts.filter((item) => item.status === "pending").length },
-          { label: "Đã hoàn tất", value: payouts.filter((item) => item.status === "completed").length },
+          { label: "Đã chi trả", value: payouts.filter((item) => item.status === "paid" || item.status === "completed").length },
         ]}
       />
       <div className="grid gap-4 md:grid-cols-3">
         <DashboardMetricCard label="Tổng payout" value={payouts.length} icon={Wallet} tone="blue" />
         <DashboardMetricCard label="Chờ duyệt" value={payouts.filter((item) => item.status === "pending").length} icon={Clock3} tone="amber" />
-        <DashboardMetricCard label="Đã hoàn tất" value={payouts.filter((item) => item.status === "completed").length} icon={CheckCircle2} tone="emerald" />
+        <DashboardMetricCard label="Đã chi trả" value={payouts.filter((item) => item.status === "paid" || item.status === "completed").length} icon={CheckCircle2} tone="emerald" />
       </div>
       {payouts.length ? (
         <div className="space-y-3">
@@ -52,11 +52,11 @@ export default function AdminPayoutsPage() {
               subtitle={`${payout.bankName || "Ngân hàng"} · ${payout.bankAccount || "Chưa có STK"}`}
               meta={formatDate(payout.requestedAt)}
               icon={payout.status === "rejected" ? XCircle : Wallet}
-              tone={payout.status === "rejected" ? "rose" : payout.status === "pending" ? "amber" : payout.status === "completed" ? "emerald" : "blue"}
-              badge={<StatusBadge kind="payment" status={payout.status} />}
+              tone={payout.status === "rejected" ? "rose" : payout.status === "pending" ? "amber" : payout.status === "paid" || payout.status === "completed" ? "emerald" : "blue"}
+              badge={<StatusBadge kind="payout" status={payout.status} />}
               actions={payout.status === "pending" && (
                 <>
-                  <Button size="sm" onClick={() => update(payout.id, "completed")}>Duyệt</Button>
+                  <Button size="sm" onClick={() => update(payout.id, "paid")}>Duyệt</Button>
                   <Button size="sm" variant="outline" onClick={() => update(payout.id, "rejected")}>Từ chối</Button>
                 </>
               )}

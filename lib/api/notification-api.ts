@@ -11,10 +11,16 @@ export const notificationApi = {
     return data.count
   },
   read(id: string) {
-    return apiRequest(`/notifications/${id}/read`, { method: "POST" })
+    return apiRequest(`/notifications/${id}/read`, { method: "PATCH" })
   },
   readAll() {
-    return apiRequest("/notifications/read-all", { method: "POST" })
+    return apiRequest("/notifications/read-all", { method: "PATCH" })
+  },
+  delete(id: string) {
+    return apiRequest(`/notifications/${id}`, { method: "DELETE" })
+  },
+  clear() {
+    return apiRequest("/notifications", { method: "DELETE" })
   },
   send(data: Partial<Notification>) {
     return apiRequest("/admin/notifications/send", { method: "POST", body: data })

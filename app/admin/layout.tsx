@@ -14,6 +14,7 @@ const items = [
   { href: "/admin", label: "Tổng quan", icon: Home },
   { href: "/admin/tutors", label: "Quản lý gia sư", icon: GraduationCap },
   { href: "/admin/tutor-approvals", label: "Duyệt hồ sơ", icon: UserRoundCheck },
+  { href: "/admin/verifications", label: "Xác thực giấy tờ", icon: ShieldCheck },
   { href: "/admin/students", label: "Quản lý học sinh", icon: Users },
   { href: "/admin/requests", label: "Yêu cầu tìm gia sư", icon: BookOpen },
   { href: "/admin/bookings", label: "Booking học thử", icon: CalendarDays },

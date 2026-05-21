@@ -2,9 +2,9 @@ import type { LearningRequest, LearningRequestStatus, StudentRegistrationFormDat
 import { learningRequestApi } from "@/lib/api/learning-request-api"
 
 class LearningRequestService {
-  async createLearningRequest(data: StudentRegistrationFormData, _userId?: string) {
+  async createLearningRequest(data: StudentRegistrationFormData, userId?: string) {
     try {
-      const request = await learningRequestApi.create(data)
+      const request = userId ? await learningRequestApi.createStudent(data) : await learningRequestApi.createPublic(data)
       return { success: true, request }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể tạo yêu cầu học" }
@@ -12,7 +12,11 @@ class LearningRequestService {
   }
 
   async getRequestsByUser(_userId: string): Promise<LearningRequest[]> {
-    return learningRequestApi.list()
+    return learningRequestApi.studentList()
+  }
+
+  async getPublicRequests(): Promise<LearningRequest[]> {
+    return learningRequestApi.publicList()
   }
 
   async getAllRequests(): Promise<LearningRequest[]> {

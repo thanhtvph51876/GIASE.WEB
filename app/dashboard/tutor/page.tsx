@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { BookOpen, Calendar, Star, Users, Wallet } from "lucide-react"
+import { BookOpen, Calendar, ShieldCheck, Star, Users, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -13,6 +13,7 @@ import { useReviews } from "@/lib/hooks/use-reviews"
 import { useSchedule } from "@/lib/hooks/use-schedule"
 import { useTutorEarnings } from "@/lib/hooks/use-tutor-earnings"
 import { useTutorProfileByUser } from "@/lib/hooks/use-tutors"
+import { useTutorVerifications } from "@/lib/hooks/use-verifications"
 import { formatCurrency, formatDateTime, getStatusLabel } from "@/lib/helpers"
 
 export default function TutorDashboardPage() {
@@ -24,6 +25,7 @@ export default function TutorDashboardPage() {
   const { reviews } = useReviews(tutor?.id)
   const { totalEarnings } = useTutorEarnings(Boolean(tutor?.id))
   const { classes } = useClasses({ tutorId: tutor?.id, role: "tutor" })
+  const { latest: verification } = useTutorVerifications(Boolean(user))
 
   const income = totalEarnings
   const pending = bookings.filter((booking) => booking.status === "pending" || booking.status === "assigned").length + requests.filter((request) => request.status === "matched").length
@@ -43,6 +45,32 @@ export default function TutorDashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold">Xác thực giấy tờ</p>
+                <StatusBadge kind="verification" status={verification?.status || "draft"} />
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {verification?.status === "approved"
+                  ? "Hồ sơ giấy tờ đã được duyệt."
+                  : verification?.status === "pending_review"
+                    ? "Hồ sơ đang chờ admin duyệt."
+                    : verification?.rejectReason || "Hoàn tất xác thực để mở payout và các thao tác nhạy cảm."}
+              </p>
+            </div>
+          </div>
+          <Button asChild variant={verification?.status === "approved" ? "outline" : "default"}>
+            <Link href="/dashboard/tutor/verification">{verification?.status === "approved" ? "Xem hồ sơ" : "Xác thực ngay"}</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Stat title="Lớp đang dạy" value={classes.filter((item) => item.status === "active" || item.status === "trial").length} icon={Users} />

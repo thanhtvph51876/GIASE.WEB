@@ -110,7 +110,7 @@ export function useOpenLearningRequests() {
     error,
     isLoading,
     mutate,
-  } = useSWR("open-learning-requests", () => learningRequestService.getAllRequests(), {
+  } = useSWR("open-learning-requests", () => learningRequestService.getPublicRequests(), {
     revalidateOnFocus: false,
   })
 

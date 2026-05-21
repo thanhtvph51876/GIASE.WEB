@@ -11,6 +11,12 @@ export const learningRequestApi = {
   async list() {
     return mapList(await apiRequest<LearningRequest[]>("/learning-requests"), mapLearningRequest)
   },
+  async studentList() {
+    return mapList(await apiRequest<LearningRequest[]>("/student/learning-requests/me"), mapLearningRequest)
+  },
+  async publicList() {
+    return mapList(await apiRequest<LearningRequest[]>("/public/learning-requests", { auth: false }), mapLearningRequest)
+  },
   async adminList() {
     return mapList(await apiRequest<LearningRequest[]>("/admin/learning-requests"), mapLearningRequest)
   },
@@ -19,6 +25,12 @@ export const learningRequestApi = {
   },
   async create(data: StudentRegistrationFormData) {
     return mapLearningRequest(await apiRequest<LearningRequest>("/learning-requests", { method: "POST", body: data }))
+  },
+  async createStudent(data: StudentRegistrationFormData) {
+    return mapLearningRequest(await apiRequest<LearningRequest>("/student/learning-requests", { method: "POST", body: data }))
+  },
+  async createPublic(data: StudentRegistrationFormData) {
+    return mapLearningRequest(await apiRequest<LearningRequest>("/public/learning-requests", { method: "POST", body: data, auth: false }))
   },
   async update(id: string, data: Partial<LearningRequest>) {
     return mapLearningRequest(await apiRequest<LearningRequest>(`/learning-requests/${id}`, { method: "PATCH", body: data }))
@@ -32,7 +44,7 @@ export const learningRequestApi = {
     return mapLearningRequest(payload.learningRequest || result)
   },
   async assignTutorWithBooking(id: string, tutorId: string) {
-    const result = await apiRequest<AssignTutorResponse>(`/admin/learning-requests/${id}/assign-tutor`, { method: "POST", body: { tutorId } })
+    const result = await apiRequest<AssignTutorResponse>(`/admin/learning-requests/${id}/assign-tutor-with-booking`, { method: "POST", body: { tutorId } })
     return {
       learningRequest: mapLearningRequest(result.learningRequest),
       booking: result.booking ? mapBooking(result.booking) : undefined,
