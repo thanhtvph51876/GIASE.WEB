@@ -39,7 +39,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Toán",
     icon: "calculator",
     description: "Toán học từ lớp 1 đến 12, luyện thi THPT",
-    tutorCount: 45,
+    tutorCount: 0,
     category: "Khoa học tự nhiên",
   },
   {
@@ -47,7 +47,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Văn",
     icon: "book-open",
     description: "Ngữ văn, làm văn, nghị luận",
-    tutorCount: 32,
+    tutorCount: 0,
     category: "Khoa học xã hội",
   },
   {
@@ -55,7 +55,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Tiếng Anh",
     icon: "languages",
     description: "Tiếng Anh giao tiếp, học thuật, IELTS",
-    tutorCount: 58,
+    tutorCount: 0,
     category: "Ngoại ngữ",
   },
   {
@@ -63,7 +63,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Vật Lý",
     icon: "atom",
     description: "Vật lý cơ bản và nâng cao",
-    tutorCount: 28,
+    tutorCount: 0,
     category: "Khoa học tự nhiên",
   },
   {
@@ -71,7 +71,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Hóa Học",
     icon: "flask-conical",
     description: "Hóa học vô cơ, hữu cơ",
-    tutorCount: 25,
+    tutorCount: 0,
     category: "Khoa học tự nhiên",
   },
   {
@@ -79,7 +79,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Sinh Học",
     icon: "leaf",
     description: "Sinh học cơ bản và nâng cao",
-    tutorCount: 18,
+    tutorCount: 0,
     category: "Khoa học tự nhiên",
   },
   {
@@ -87,7 +87,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Tin Học",
     icon: "laptop",
     description: "Lập trình, tin học văn phòng",
-    tutorCount: 22,
+    tutorCount: 0,
     category: "Công nghệ",
   },
   {
@@ -95,7 +95,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "IELTS",
     icon: "graduation-cap",
     description: "Luyện thi IELTS từ 5.0 - 8.0+",
-    tutorCount: 35,
+    tutorCount: 0,
     category: "Ngoại ngữ",
   },
   {
@@ -103,7 +103,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Lịch Sử",
     icon: "landmark",
     description: "Lịch sử Việt Nam và thế giới",
-    tutorCount: 15,
+    tutorCount: 0,
     category: "Khoa học xã hội",
   },
   {
@@ -111,7 +111,7 @@ export const SUBJECT_OPTIONS: Subject[] = [
     name: "Địa Lý",
     icon: "globe",
     description: "Địa lý tự nhiên và kinh tế",
-    tutorCount: 12,
+    tutorCount: 0,
     category: "Khoa học xã hội",
   },
 ]
@@ -195,12 +195,3 @@ export const UNIVERSITIES = [
   "Đại học Quốc gia TP.HCM",
   "Trường khác",
 ]
-
-export const SITE_STATS = {
-  totalTutors: 500,
-  totalStudents: 2500,
-  completedSessions: 15000,
-  satisfactionRate: 98,
-  verifiedTutors: 450,
-  averageRating: 4.8,
-}

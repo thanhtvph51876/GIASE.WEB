@@ -14,7 +14,6 @@ export interface User {
   avatar?: string
   status: UserStatus
   createdAt: string
-  password?: string // Only for mock auth
 }
 
 export interface StudentProfile {

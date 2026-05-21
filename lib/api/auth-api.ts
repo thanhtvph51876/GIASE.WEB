@@ -6,7 +6,9 @@ interface AuthPayload {
   accessToken: string
   refreshToken?: string
   user: User
+  emailVerificationRequired?: boolean
   emailVerificationToken?: string
+  emailVerificationLink?: string
 }
 
 function persistAuth(payload: AuthPayload) {
@@ -37,7 +39,13 @@ export const authApi = {
     }
   },
   forgotPassword(email: string) {
-    return apiRequest<{ accepted: boolean; resetToken?: string }>("/auth/forgot-password", {
+    return apiRequest<{
+      accepted: boolean
+      resetToken?: string
+      resetLink?: string
+      passwordResetToken?: string
+      passwordResetLink?: string
+    }>("/auth/forgot-password", {
       method: "POST",
       body: { email },
       auth: false,

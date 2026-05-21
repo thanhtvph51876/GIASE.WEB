@@ -3,7 +3,7 @@ import { apiRequest } from "./client"
 import { mapList, mapPayment, mapPayout } from "./mappers"
 
 export interface PaymentSettings {
-  paymentMode: "mock" | "sandbox" | "production"
+  paymentMode: "sandbox" | "production"
   enabledGateways: string[]
   defaultGateway: string
   paymentTimeoutMinutes: number
@@ -70,14 +70,14 @@ export const paymentApi = {
   async adminList() {
     return mapList(await apiRequest<Payment[]>("/admin/payments"), mapPayment)
   },
+  async tutorList() {
+    return mapList(await apiRequest<Payment[]>("/tutor/payments"), mapPayment)
+  },
   async tutorPayouts() {
     return mapList(await apiRequest<Payout[]>("/tutor/payouts"), mapPayout)
   },
   async adminPayouts() {
     return mapList(await apiRequest<Payout[]>("/admin/payouts"), mapPayout)
-  },
-  mockPay(id: string) {
-    return apiRequest<Payment>(`/payments/${id}/mock-pay`, { method: "POST" }).then(mapPayment)
   },
   createCheckout(id: string, data: { gateway?: string; returnUrl?: string; cancelUrl?: string }) {
     return apiRequest<PaymentCheckout>(`/payments/${id}/create-checkout`, { method: "POST", body: data }).then((checkout) => ({

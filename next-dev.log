@@ -1,119 +1,12 @@
 
 > my-project@0.1.0 dev
-> next dev --webpack -p 3000
+> next dev --hostname 127.0.0.1 --port 3000
 
-▲ Next.js 16.2.6 (webpack)
-- Local:         http://localhost:3000
-- Network:       http://192.168.10.9:3000
-✓ Ready in 475ms
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env.local
+✓ Ready in 1848ms
+Creating turbopack project { dir: 'H:\\website-clone', testMode: true }
 
-○ Compiling /admin/audit-logs ...
- GET /admin/audit-logs 200 in 11.1s (next.js: 10.7s, application-code: 373ms)
- GET / 200 in 2.9s (next.js: 2.3s, application-code: 547ms)
- GET /tutors 200 in 2.9s (next.js: 2.3s, application-code: 559ms)
- GET /login 200 in 2.8s (next.js: 2.2s, application-code: 563ms)
- GET /admin/audit-logs 200 in 2.8s (next.js: 2.2s, application-code: 567ms)
- GET /admin/audit-logs 200 in 75ms (next.js: 9ms, application-code: 66ms)
- GET /admin/audit-logs 200 in 73ms (next.js: 8ms, application-code: 66ms)
- GET / 200 in 112ms (next.js: 5ms, application-code: 107ms)
- GET /tutors 200 in 83ms (next.js: 3ms, application-code: 79ms)
-○ Compiling /admin/reports ...
- GET /admin/reports 200 in 4.3s (next.js: 4.2s, application-code: 51ms)
- GET /admin 200 in 2.3s (next.js: 2.1s, application-code: 115ms)
- GET /admin/classes 200 in 1591ms (next.js: 1519ms, application-code: 72ms)
- GET /admin/classes 200 in 490ms (next.js: 13ms, application-code: 478ms)
-○ Compiling /admin/operations ...
- GET /admin/operations 200 in 3.9s (next.js: 3.7s, application-code: 138ms)
- GET /admin/operations 200 in 59ms (next.js: 12ms, application-code: 47ms)
- GET /admin/operations 200 in 144ms (next.js: 4ms, application-code: 140ms)
- GET /admin/operations 200 in 82ms (next.js: 7ms, application-code: 75ms)
- GET /admin/learning-requests 200 in 3.3s (next.js: 3.2s, application-code: 108ms)
- GET /admin/learning-requests 200 in 83ms (next.js: 6ms, application-code: 77ms)
- GET /admin/tutor-approvals 200 in 2.5s (next.js: 2.4s, application-code: 114ms)
- GET /admin/tutor-approvals 200 in 1824ms (next.js: 1543ms, application-code: 281ms)
- GET /admin/tutor-approvals 200 in 1110ms (next.js: 799ms, application-code: 311ms)
-○ Compiling /admin/students ...
- GET /admin/students 200 in 4.9s (next.js: 4.4s, application-code: 519ms)
- GET /admin/tutor-approvals 200 in 7.2s (next.js: 6.7s, application-code: 531ms)
- GET /admin/tutor-approvals 200 in 312ms (next.js: 8ms, application-code: 303ms)
- GET /admin/students 200 in 226ms (next.js: 5ms, application-code: 221ms)
- GET /admin/tutor-approvals 200 in 127ms (next.js: 6ms, application-code: 121ms)
- GET /admin/tutor-approvals 200 in 348ms (next.js: 6ms, application-code: 342ms)
- GET /admin/tutor-approvals 200 in 256ms (next.js: 6ms, application-code: 250ms)
- GET /admin/tutor-approvals 200 in 187ms (next.js: 6ms, application-code: 181ms)
- GET /admin/tutor-approvals 200 in 102ms (next.js: 7ms, application-code: 95ms)
- GET /admin/tutor-approvals 200 in 225ms (next.js: 6ms, application-code: 218ms)
- GET /admin/tutor-approvals 200 in 164ms (next.js: 6ms, application-code: 157ms)
- GET /admin/tutor-approvals 200 in 99ms (next.js: 6ms, application-code: 92ms)
-○ Compiling /admin/tutors ...
- GET /admin/tutors 200 in 10.8s (next.js: 9.4s, application-code: 1328ms)
- GET /admin/classes 200 in 10.8s (next.js: 9.4s, application-code: 1336ms)
- GET /dashboard/student/schedule 200 in 10.8s (next.js: 9.5s, application-code: 1353ms)
- GET /dashboard/tutor/requests 200 in 10.8s (next.js: 9.4s, application-code: 1355ms)
-○ Compiling / ...
- GET / 200 in 5.5s (next.js: 4.6s, application-code: 891ms)
-○ Compiling /tutors ...
- GET /tutors 200 in 8.2s (next.js: 4.3s, application-code: 3.9s)
-○ Compiling /learning-requests ...
- GET /learning-requests 200 in 5.9s (next.js: 5.1s, application-code: 809ms)
-○ Compiling /register-student ...
- GET /register-student 200 in 4.4s (next.js: 3.6s, application-code: 783ms)
- GET /register-tutor 200 in 3.2s (next.js: 2.4s, application-code: 798ms)
- GET /admin 200 in 1130ms (next.js: 66ms, application-code: 1063ms)
- GET /admin/operations 200 in 2.0s (next.js: 1608ms, application-code: 411ms)
- GET /admin/reports 200 in 1876ms (next.js: 1137ms, application-code: 739ms)
- GET /admin/settings 200 in 1494ms (next.js: 1205ms, application-code: 289ms)
- GET /dashboard/student 200 in 1970ms (next.js: 1603ms, application-code: 367ms)
- GET /dashboard/student/favorites 200 in 3.0s (next.js: 2.5s, application-code: 493ms)
-○ Compiling /dashboard/student/profile ...
- GET /dashboard/student/profile 200 in 4.7s (next.js: 4.1s, application-code: 646ms)
-○ Compiling /dashboard/tutor ...
- GET /dashboard/tutor 200 in 5.7s (next.js: 4.9s, application-code: 787ms)
-○ Compiling /dashboard/tutor/earnings ...
- GET /dashboard/tutor/earnings 200 in 6.4s (next.js: 5.1s, application-code: 1317ms)
-○ Compiling /dashboard/tutor/profile ...
- GET /dashboard/tutor/profile 200 in 18.0s (next.js: 16.1s, application-code: 1935ms)
-○ Compiling /dashboard/tutor/reviews ...
- GET /dashboard/tutor/reviews 200 in 9.8s (next.js: 8.6s, application-code: 1176ms)
-○ Compiling /dashboard/tutor/students ...
- GET /dashboard/tutor/students 200 in 5.7s (next.js: 4.8s, application-code: 850ms)
-○ Compiling /admin/students ...
- GET /admin/students 200 in 17.1s (next.js: 14.3s, application-code: 2.8s)
- GET /admin 200 in 125ms (next.js: 29ms, application-code: 96ms)
- GET /admin/settings 200 in 2.2s (next.js: 2.1s, application-code: 158ms)
- GET /admin/reports 200 in 2.3s (next.js: 2.2s, application-code: 110ms)
- GET /admin/audit-logs 200 in 148ms (next.js: 40ms, application-code: 108ms)
 ○ Compiling /login ...
- GET / 200 in 28.6s (next.js: 27.8s, application-code: 812ms)
- GET /login 200 in 28.6s (next.js: 27.7s, application-code: 833ms)
-○ Compiling /dashboard/student ...
- GET /dashboard/student 200 in 15.1s (next.js: 14.8s, application-code: 292ms)
-○ Compiling /dashboard/student/requests ...
- GET /dashboard/student/favorites 200 in 13.6s (next.js: 12.8s, application-code: 778ms)
- GET /dashboard/student/requests 200 in 17.9s (next.js: 17.1s, application-code: 796ms)
-○ Compiling /tutors/[id] ...
- GET /tutors/tutor-008 200 in 30.6s (next.js: 30.1s, application-code: 517ms)
- GET /tutors/tutor-008 200 in 14.3s (next.js: 1032ms, application-code: 13.3s)
-○ Compiling / ...
- GET / 200 in 54s (next.js: 53s, application-code: 692ms)
-○ Compiling /tutors ...
- GET / 200 in 205ms (next.js: 90ms, application-code: 115ms)
- GET /tutors?subject=To%C3%A1n&grade=Luy%E1%BB%87n+thi+THPT&mode=offline&location=C%E1%BA%A7u+Gi%E1%BA%A5y 200 in 9.6min (next.js: 9.6min, application-code: 1559ms)
- GET /tutors?subject=To%C3%A1n&grade=Luy%E1%BB%87n+thi+THPT&mode=offline&location=C%E1%BA%A7u+Gi%E1%BA%A5y 200 in 121ms (next.js: 10ms, application-code: 111ms)
-○ Compiling /dashboard/tutor/profile ...
- GET / 200 in 19.3s (next.js: 17.0s, application-code: 2.4s)
- GET /admin 200 in 19.3s (next.js: 17.0s, application-code: 2.4s)
- GET /admin/audit-logs 200 in 19.4s (next.js: 17.0s, application-code: 2.4s)
- GET /admin/reports 200 in 19.3s (next.js: 16.9s, application-code: 2.4s)
- GET /dashboard/student/messages 200 in 19.4s (next.js: 16.9s, application-code: 2.4s)
- GET /dashboard/tutor/profile 200 in 19.1s (next.js: 16.7s, application-code: 2.4s)
-○ Compiling /dashboard/tutor/students ...
- GET /dashboard/tutor/students 200 in 9.8s (next.js: 8.8s, application-code: 985ms)
- GET /dashboard/student/profile 200 in 9.8s (next.js: 8.8s, application-code: 992ms)
-○ Compiling /admin/operations ...
- GET /register-student 200 in 15.1s (next.js: 13.0s, application-code: 2.1s)
- GET /register-tutor 200 in 14.8s (next.js: 12.7s, application-code: 2.1s)
- GET /tutors 200 in 15.1s (next.js: 13.0s, application-code: 2.1s)
- GET /admin/classes 200 in 14.9s (next.js: 12.7s, application-code: 2.1s)
- GET /admin/operations 200 in 14.9s (next.js: 12.7s, application-code: 2.1s)
- GET /dashboard/tutor/requests 200 in 14.9s (next.js: 12.7s, application-code: 2.1s)

@@ -10,13 +10,6 @@ import { cn } from "@/lib/utils"
 
 export const paymentGatewayOptions = [
   {
-    id: "mock",
-    label: "Demo",
-    description: "Thanh toán thử trong môi trường mock.",
-    badge: "Mock mode",
-    icon: WalletCards,
-  },
-  {
     id: "vnpay",
     label: "VNPay",
     description: "Redirect sang cổng thanh toán VNPay.",
@@ -58,7 +51,7 @@ export function SecurePaymentBanner({ mode }: { mode?: string }) {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-bold text-slate-950">Thanh toán bảo mật</h2>
               <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
-                {mode === "production" ? "Production" : mode === "sandbox" ? "Sandbox" : "Mock demo"}
+                {mode === "production" ? "Production" : "Sandbox"}
               </Badge>
             </div>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
@@ -182,6 +175,8 @@ export function PaymentQRCodeModal({
   open: boolean
   qrCodeUrl?: string
 }) {
+  const canRenderQrImage = Boolean(qrCodeUrl && /^(https?:|data:image\/)/.test(qrCodeUrl))
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -193,14 +188,12 @@ export function PaymentQRCodeModal({
         </DialogHeader>
         <div className="space-y-4">
           <div className="mx-auto flex aspect-square w-56 items-center justify-center rounded-lg border border-slate-200 bg-[linear-gradient(135deg,#f8fafc,#eef7ff)] p-4 shadow-inner">
-            {qrCodeUrl && !qrCodeUrl.startsWith("mock://") ? (
+            {canRenderQrImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={qrCodeUrl} alt="QR thanh toán" className="h-full w-full rounded-lg object-contain" />
             ) : (
-              <div className="grid h-full w-full grid-cols-5 gap-1 rounded-lg bg-white p-3">
-                {Array.from({ length: 25 }).map((_, index) => (
-                  <span key={index} className={cn("rounded-sm", index % 3 === 0 || index % 7 === 0 ? "bg-slate-950" : "bg-slate-200")} />
-                ))}
+              <div className="flex h-full w-full items-center justify-center rounded-lg bg-white p-5 text-center text-sm leading-6 text-muted-foreground">
+                Cổng thanh toán chưa trả về mã QR có thể hiển thị.
               </div>
             )}
           </div>

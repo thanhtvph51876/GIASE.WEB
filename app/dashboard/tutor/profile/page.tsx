@@ -43,7 +43,7 @@ export default function TutorProfilePage() {
 
   const uploadDocument = async () => {
     if (!tutor || !selectedFile) return
-    const result = await tutorService.uploadMockDocument(tutor.id, selectedFile, "certificate")
+    const result = await tutorService.uploadDocument(tutor.id, selectedFile, "certificate")
     if (result.success) {
       const next = await tutorService.getTutorById(tutor.id)
       setTutor(next)

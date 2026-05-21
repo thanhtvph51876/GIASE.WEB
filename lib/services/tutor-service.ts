@@ -2,6 +2,8 @@ import type { Tutor, TutorDocument, TutorFilters, TutorRegistrationFormData, Tut
 import { tutorApi } from "@/lib/api/tutor-api"
 
 class TutorService {
+  private favoriteIdsByUser = new Map<string, string[]>()
+
   async getTutors(filters?: TutorFilters, sortBy: TutorSortBy = "best_match"): Promise<Tutor[]> {
     return tutorApi.getTutors(filters, sortBy)
   }
@@ -112,7 +114,7 @@ class TutorService {
     return this.wrapTutor(() => tutorApi.submitForReview())
   }
 
-  async uploadMockDocument(
+  async uploadDocument(
     _tutorId: string,
     file: { name: string; size: number; type: string },
     type: TutorDocument["type"] = "other"
@@ -147,16 +149,23 @@ class TutorService {
     }
   }
 
-  getFavoriteTutorIds(_userId: string): string[] {
-    return []
+  getFavoriteTutorIds(userId: string): string[] {
+    return this.favoriteIdsByUser.get(userId) || []
   }
 
-  async toggleFavorite(_userId: string, _tutorId: string): Promise<{ isFavorite: boolean }> {
-    return { isFavorite: false }
+  async toggleFavorite(userId: string, tutorId: string): Promise<{ isFavorite: boolean }> {
+    const currentIds = this.favoriteIdsByUser.get(userId) || (await tutorApi.favoriteTutorIds())
+    const result = currentIds.includes(tutorId)
+      ? await tutorApi.removeFavoriteTutor(tutorId)
+      : await tutorApi.addFavoriteTutor(tutorId)
+    this.favoriteIdsByUser.set(userId, result.ids || [])
+    return { isFavorite: result.isFavorite }
   }
 
-  async getFavoriteTutors(_userId: string): Promise<Tutor[]> {
-    return []
+  async getFavoriteTutors(userId: string): Promise<Tutor[]> {
+    const tutors = await tutorApi.favoriteTutors()
+    this.favoriteIdsByUser.set(userId, tutors.map((tutor) => tutor.id))
+    return tutors
   }
 
   private async wrapTutor(action: () => Promise<Tutor>) {

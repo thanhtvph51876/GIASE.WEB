@@ -58,13 +58,12 @@ Kiểm tra backend:
 
 Xem thêm [backend/README.md](backend/README.md) và [backend/API_CONTRACT.md](backend/API_CONTRACT.md). Private uploads đi qua `/api/v1/files/{fileId}`, không publish `/uploads/**`.
 
-## Demo Accounts
+## Real Data Mode
 
-- `admin@example.com` / `Admin123!`
-- `student@example.com` / `Student123!`
-- `parent@example.com` / `Parent123!`
-- `tutor@example.com` / `Tutor123!`
-- `tutor_pending@example.com` / `Tutor123!`
+- Business preloaded records have been removed from the backend source.
+- Create real users through the registration flow or admin APIs.
+- Auth reset and email verification tokens are persisted in DB and queued in `auth_email_outbox` for an email sender.
+- Payment defaults to sandbox gateway mode with `bank_qr` as the default gateway; connect real gateway adapters before switching to `PAYMENT_MODE=production`.
 
 ## API Integration Notes
 

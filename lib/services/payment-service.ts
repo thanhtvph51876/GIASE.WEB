@@ -8,7 +8,7 @@ class PaymentService {
   }
 
   async getPaymentsByTutor(_tutorId: string): Promise<Payment[]> {
-    return []
+    return paymentApi.tutorList()
   }
 
   async getPaymentsByStudent(_studentId: string): Promise<Payment[]> {
@@ -37,12 +37,15 @@ class PaymentService {
         status === "paid" || status === "completed"
           ? _actor?.role === "admin"
             ? await paymentApi.markPaid(paymentId)
-            : await paymentApi.mockPay(paymentId)
+            : null
           : status === "failed"
             ? await paymentApi.markFailed(paymentId)
             : status === "refunded"
               ? await paymentApi.refund(paymentId)
-              : await paymentApi.mockPay(paymentId)
+              : null
+      if (!payment) {
+        return { success: false, error: "Trạng thái thanh toán chỉ được cập nhật qua gateway hoặc admin." }
+      }
       return { success: true, payment }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật thanh toán" }

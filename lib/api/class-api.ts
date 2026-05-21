@@ -32,7 +32,7 @@ export const classApi = {
   async allSessions(role?: "tutor" | "admin") {
     if (role === "tutor") return mapList(await apiRequest<ClassSession[]>("/tutor/sessions"), mapSession)
     if (role === "admin") return mapList(await apiRequest<ClassSession[]>("/admin/sessions"), mapSession)
-    throw new Error("allSessions is not implemented. Use sessions(classId).")
+    return mapList(await apiRequest<ClassSession[]>("/sessions"), mapSession)
   },
   async getSession(id: string) {
     return mapSession(await apiRequest<ClassSession>(`/sessions/${id}`))

@@ -18,10 +18,6 @@ interface AuthContextType {
   register: (data: RegisterFormData) => Promise<boolean>
   logout: () => void
   updateProfile: (data: Partial<User>) => Promise<boolean>
-  loginAsAdmin: () => Promise<boolean>
-  loginAsTutor: () => Promise<boolean>
-  loginAsStudent: () => Promise<boolean>
-  loginAsParent: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -144,55 +140,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user]
   )
 
-  // Demo login helpers
-  const loginAsAdmin = useCallback(async () => {
-    const result = await authService.loginAsAdmin()
-    if (result.success && result.user) {
-      setUser(result.user)
-      toast.success("Đăng nhập Admin Demo", {
-        description: `Chào mừng ${result.user.fullName}!`,
-      })
-      return true
-    }
-    return false
-  }, [])
-
-  const loginAsTutor = useCallback(async () => {
-    const result = await authService.loginAsTutor()
-    if (result.success && result.user) {
-      setUser(result.user)
-      toast.success("Đăng nhập Gia sư Demo", {
-        description: `Chào mừng ${result.user.fullName}!`,
-      })
-      return true
-    }
-    return false
-  }, [])
-
-  const loginAsStudent = useCallback(async () => {
-    const result = await authService.loginAsStudent()
-    if (result.success && result.user) {
-      setUser(result.user)
-      toast.success("Đăng nhập Học sinh Demo", {
-        description: `Chào mừng ${result.user.fullName}!`,
-      })
-      return true
-    }
-    return false
-  }, [])
-
-  const loginAsParent = useCallback(async () => {
-    const result = await authService.loginAsParent()
-    if (result.success && result.user) {
-      setUser(result.user)
-      toast.success("Đăng nhập Phụ huynh Demo", {
-        description: `Chào mừng ${result.user.fullName}!`,
-      })
-      return true
-    }
-    return false
-  }, [])
-
   return (
     <AuthContext.Provider
       value={{
@@ -203,10 +150,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         updateProfile,
-        loginAsAdmin,
-        loginAsTutor,
-        loginAsStudent,
-        loginAsParent,
       }}
     >
       {children}

@@ -61,22 +61,6 @@ class AuthService {
       return { success: false, error: error instanceof Error ? error.message : "Cập nhật thất bại" }
     }
   }
-
-  async loginAsAdmin() {
-    return this.login({ email: "admin@example.com", password: "Admin123!" })
-  }
-
-  async loginAsTutor() {
-    return this.login({ email: "tutor@example.com", password: "Tutor123!" })
-  }
-
-  async loginAsStudent() {
-    return this.login({ email: "student@example.com", password: "Student123!" })
-  }
-
-  async loginAsParent() {
-    return this.login({ email: "parent@example.com", password: "Parent123!" })
-  }
 }
 
 export const authService = new AuthService()

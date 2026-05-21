@@ -36,7 +36,7 @@ export default function StudentPaymentsPage() {
   const { user } = useAuthContext()
   const [payments, setPayments] = useState<Payment[]>([])
   const [settings, setSettings] = useState<PaymentSettings | null>(null)
-  const [selectedGateway, setSelectedGateway] = useState("mock")
+  const [selectedGateway, setSelectedGateway] = useState("bank_qr")
   const [filter, setFilter] = useState<PaymentFilter>("all")
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -52,7 +52,7 @@ export default function StudentPaymentsPage() {
       ])
       setPayments(paymentRows)
       setSettings(paymentSettings)
-      setSelectedGateway(paymentSettings.defaultGateway || paymentSettings.enabledGateways[0] || "mock")
+      setSelectedGateway(paymentSettings.defaultGateway || paymentSettings.enabledGateways[0] || "bank_qr")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không tải được dữ liệu thanh toán")
     } finally {
@@ -64,7 +64,7 @@ export default function StudentPaymentsPage() {
     load()
   }, [user])
 
-  const enabledGateways = settings?.enabledGateways?.length ? settings.enabledGateways : ["mock"]
+  const enabledGateways = settings?.enabledGateways?.length ? settings.enabledGateways : ["bank_qr"]
   const gateways = paymentGatewayOptions.filter((gateway) => enabledGateways.includes(gateway.id))
 
   const filteredPayments = useMemo(() => {
@@ -90,18 +90,6 @@ export default function StudentPaymentsPage() {
       }
     } else {
       toast.error(result.error || "Không thể tạo phiên thanh toán")
-    }
-  }
-
-  const mockPay = async (paymentId: string) => {
-    setBusyId(paymentId)
-    const result = await paymentService.markAsPaid(paymentId, user)
-    setBusyId(null)
-    if (result.success) {
-      toast.success("Thanh toán demo đã được ghi nhận")
-      load()
-    } else {
-      toast.error(result.error || "Không thể ghi nhận thanh toán demo")
     }
   }
 
@@ -164,7 +152,6 @@ export default function StudentPaymentsPage() {
                 <PaymentMethodCard
                   key={gateway.id}
                   active={selectedGateway === gateway.id}
-                  disabled={settings?.paymentMode !== "mock" && gateway.id === "mock"}
                   gateway={gateway}
                   onClick={() => setSelectedGateway(gateway.id)}
                 />
@@ -200,11 +187,6 @@ export default function StudentPaymentsPage() {
                         {canPay && (
                           <Button size="sm" disabled={busyId === payment.id} onClick={() => createCheckout(payment.id)}>
                             {busyId === payment.id ? "Đang tạo..." : "Thanh toán ngay"}
-                          </Button>
-                        )}
-                        {settings?.paymentMode === "mock" && canPay && (
-                          <Button size="sm" variant="outline" disabled={busyId === payment.id} onClick={() => mockPay(payment.id)}>
-                            Ghi nhận demo
                           </Button>
                         )}
                         {(payment.status === "processing" || payment.status === "pending") && (

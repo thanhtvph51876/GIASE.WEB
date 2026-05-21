@@ -35,9 +35,7 @@ class ScheduleService {
   }
 
   async getSessionsByStudent(_studentId: string): Promise<ClassSession[]> {
-    const classes = await classApi.list("student")
-    const nested = await Promise.all(classes.map((item) => classApi.sessions(item.id)))
-    return nested.flat().sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+    return classApi.allSessions()
   }
 
   async getSessionsByTutor(_tutorId: string): Promise<ClassSession[]> {

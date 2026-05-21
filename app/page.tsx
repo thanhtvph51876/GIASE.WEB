@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import useSWR from "swr"
 import {
   GraduationCap,
   Search,
@@ -19,9 +20,9 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Header, Footer } from "@/components/layout"
 import { TutorCard } from "@/components/tutor"
-import { SITE_STATS, SUBJECT_OPTIONS } from "@/lib/constants"
 import { SubjectIcon } from "@/lib/helpers"
 import { useTutors } from "@/lib/hooks/use-tutors"
+import { emptySiteStats, publicApi } from "@/lib/api/public-api"
 
 const features = [
   {
@@ -74,12 +75,18 @@ const steps = [
 ]
 
 export default function HomePage() {
+  const { data: stats = emptySiteStats } = useSWR("public-stats", () => publicApi.stats(), {
+    revalidateOnFocus: false,
+  })
+  const { data: subjects = [] } = useSWR("catalog-subjects", () => publicApi.subjects(), {
+    revalidateOnFocus: false,
+  })
   const { tutors } = useTutors({
     initialFilters: { verified: true },
     initialSortBy: "rating_desc",
   })
   const featuredTutors = tutors.slice(0, 3)
-  const popularSubjects = SUBJECT_OPTIONS.slice(0, 8)
+  const popularSubjects = subjects.slice(0, 8)
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -99,9 +106,7 @@ export default function HomePage() {
                   Tìm gia sư chất lượng cho con bạn
                 </h1>
                 <p className="mb-8 max-w-2xl text-pretty text-lg text-muted-foreground md:text-xl">
-                  Kết nối với hơn{" "}
-                  <span className="font-semibold text-foreground">{SITE_STATS.totalTutors}+</span> gia
-                  sư đã xác minh, có lịch học thử rõ ràng và quy trình vận hành minh bạch.
+                  Kết nối với gia sư đã xác minh, có lịch học thử rõ ràng và quy trình vận hành minh bạch.
                 </p>
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Button size="lg" className="gap-2" asChild>
@@ -123,7 +128,7 @@ export default function HomePage() {
                       <p className="font-semibold text-slate-950">Gia sư nổi bật hôm nay</p>
                       <p className="text-sm text-muted-foreground">Dựa trên rating, phản hồi và lịch rảnh.</p>
                     </div>
-                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Live demo</Badge>
+                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Đang hoạt động</Badge>
                   </div>
                 </div>
                 <div className="space-y-3 p-4">
@@ -155,7 +160,7 @@ export default function HomePage() {
             >
               <select name="subject" className="h-11 rounded-lg border bg-white px-3 text-sm">
                 <option value="">Chọn môn học</option>
-                {SUBJECT_OPTIONS.map((subject) => (
+                {subjects.map((subject) => (
                   <option key={subject.id} value={subject.name}>
                     {subject.name}
                   </option>
@@ -193,20 +198,20 @@ export default function HomePage() {
             <div className="mx-auto mt-16 grid max-w-4xl grid-cols-2 gap-4 md:grid-cols-4">
               <Card>
                 <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-primary">{SITE_STATS.totalTutors}+</div>
+                  <div className="text-3xl font-bold text-primary">{stats.totalTutors}</div>
                   <div className="text-sm text-muted-foreground">Gia sư</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-primary">{SITE_STATS.totalStudents}+</div>
+                  <div className="text-3xl font-bold text-primary">{stats.totalStudents}</div>
                   <div className="text-sm text-muted-foreground">Học sinh</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl font-bold text-primary">
-                    {SITE_STATS.completedSessions}+
+                    {stats.completedSessions}
                   </div>
                   <div className="text-sm text-muted-foreground">Buổi học</div>
                 </CardContent>
@@ -214,7 +219,7 @@ export default function HomePage() {
               <Card>
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl font-bold text-primary">
-                    {SITE_STATS.satisfactionRate}%
+                    {stats.satisfactionRate}%
                   </div>
                   <div className="text-sm text-muted-foreground">Hài lòng</div>
                 </CardContent>
@@ -375,22 +380,22 @@ export default function HomePage() {
                     <div className="grid grid-cols-2 gap-4 text-white">
                       <div className="rounded-lg border border-white/10 bg-white/10 p-4">
                         <Users className="mb-2 h-8 w-8" />
-                        <div className="text-2xl font-bold">{SITE_STATS.totalTutors}+</div>
+                        <div className="text-2xl font-bold">{stats.totalTutors}</div>
                         <div className="text-sm opacity-80">Gia sư đăng ký</div>
                       </div>
                       <div className="rounded-lg border border-white/10 bg-white/10 p-4">
                         <BookOpen className="mb-2 h-8 w-8" />
-                        <div className="text-2xl font-bold">{SUBJECT_OPTIONS.length}</div>
+                        <div className="text-2xl font-bold">{subjects.length}</div>
                         <div className="text-sm opacity-80">Môn học</div>
                       </div>
                       <div className="rounded-lg border border-white/10 bg-white/10 p-4">
                         <CheckCircle className="mb-2 h-8 w-8" />
-                        <div className="text-2xl font-bold">{SITE_STATS.verifiedTutors}+</div>
+                        <div className="text-2xl font-bold">{stats.verifiedTutors}</div>
                         <div className="text-sm opacity-80">Đã xác minh</div>
                       </div>
                       <div className="rounded-lg border border-white/10 bg-white/10 p-4">
                         <Star className="mb-2 h-8 w-8" />
-                        <div className="text-2xl font-bold">{SITE_STATS.averageRating}</div>
+                        <div className="text-2xl font-bold">{stats.averageRating}</div>
                         <div className="text-sm opacity-80">Đánh giá TB</div>
                       </div>
                     </div>

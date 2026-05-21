@@ -18,9 +18,6 @@ interface UseAuthReturn {
   register: (data: RegisterFormData) => Promise<boolean>
   logout: () => void
   updateProfile: (data: Partial<User>) => Promise<boolean>
-  loginAsAdmin: () => Promise<boolean>
-  loginAsTutor: () => Promise<boolean>
-  loginAsStudent: () => Promise<boolean>
 }
 
 export function useAuth(): UseAuthReturn {
@@ -158,46 +155,6 @@ export function useAuth(): UseAuthReturn {
     [user, toast]
   )
 
-  // Demo login helpers
-  const loginAsAdmin = useCallback(async () => {
-    const result = await authService.loginAsAdmin()
-    if (result.success && result.user) {
-      setUser(result.user)
-      toast({
-        title: "Đăng nhập Admin Demo",
-        description: `Chào mừng ${result.user.fullName}!`,
-      })
-      return true
-    }
-    return false
-  }, [toast])
-
-  const loginAsTutor = useCallback(async () => {
-    const result = await authService.loginAsTutor()
-    if (result.success && result.user) {
-      setUser(result.user)
-      toast({
-        title: "Đăng nhập Gia sư Demo",
-        description: `Chào mừng ${result.user.fullName}!`,
-      })
-      return true
-    }
-    return false
-  }, [toast])
-
-  const loginAsStudent = useCallback(async () => {
-    const result = await authService.loginAsStudent()
-    if (result.success && result.user) {
-      setUser(result.user)
-      toast({
-        title: "Đăng nhập Học sinh Demo",
-        description: `Chào mừng ${result.user.fullName}!`,
-      })
-      return true
-    }
-    return false
-  }, [toast])
-
   return {
     user,
     isLoading,
@@ -206,8 +163,5 @@ export function useAuth(): UseAuthReturn {
     register,
     logout,
     updateProfile,
-    loginAsAdmin,
-    loginAsTutor,
-    loginAsStudent,
   }
 }

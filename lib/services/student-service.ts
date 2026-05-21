@@ -2,12 +2,14 @@ import type { ParentProfile, StudentProfile } from "@/types"
 import { apiRequest } from "@/lib/api/client"
 
 class StudentService {
-  getStudentProfiles(): StudentProfile[] {
-    return []
+  async getStudentProfiles(): Promise<StudentProfile[]> {
+    const profiles = await apiRequest<StudentProfile[]>("/admin/student-profiles")
+    return profiles.map(mapStudentProfile)
   }
 
-  getParentProfiles(): ParentProfile[] {
-    return []
+  async getParentProfiles(): Promise<ParentProfile[]> {
+    const profiles = await apiRequest<ParentProfile[]>("/admin/parent-profiles")
+    return profiles.map(mapParentProfile)
   }
 
   async upsertStudentProfile(
@@ -31,6 +33,21 @@ class StudentService {
       createdAt: updated.createdAt || new Date().toISOString(),
       updatedAt: updated.updatedAt || new Date().toISOString(),
     }
+  }
+}
+
+function mapStudentProfile(profile: StudentProfile): StudentProfile {
+  return {
+    ...profile,
+    learningGoals: Array.isArray(profile.learningGoals) ? profile.learningGoals : [],
+    favoriteTutorIds: Array.isArray(profile.favoriteTutorIds) ? profile.favoriteTutorIds : [],
+  }
+}
+
+function mapParentProfile(profile: ParentProfile): ParentProfile {
+  return {
+    ...profile,
+    studentIds: Array.isArray(profile.studentIds) ? profile.studentIds : [],
   }
 }
 

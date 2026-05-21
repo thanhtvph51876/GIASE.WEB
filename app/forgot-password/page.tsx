@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     try {
       const result = await authApi.forgotPassword(email)
-      setResetToken(result.resetToken || null)
+      setResetToken(result.resetToken || result.passwordResetToken || null)
       setSent(true)
       toast.success("Đã ghi nhận yêu cầu đặt lại mật khẩu")
     } catch (error) {
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
                 <p>Đã ghi nhận yêu cầu đặt lại mật khẩu. Nếu email tồn tại, hệ thống sẽ gửi hướng dẫn đặt lại.</p>
                 {resetToken && (
                   <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/reset-password?token=${resetToken}`}>Mở link đặt lại mật khẩu dev</Link>
+                    <Link href={`/reset-password?token=${resetToken}`}>Mở link đặt lại mật khẩu</Link>
                   </Button>
                 )}
               </div>

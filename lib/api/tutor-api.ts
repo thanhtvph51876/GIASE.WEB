@@ -58,6 +58,19 @@ export const tutorApi = {
       })
     )
   },
+  async favoriteTutors() {
+    return mapList(await apiRequest<Tutor[]>("/favorites/tutors"), mapTutor)
+  },
+  async favoriteTutorIds() {
+    const result = await apiRequest<{ ids: string[] }>("/favorites/tutors/ids")
+    return result.ids || []
+  },
+  async addFavoriteTutor(id: string) {
+    return apiRequest<{ isFavorite: boolean; ids: string[] }>(`/favorites/tutors/${id}`, { method: "POST" })
+  },
+  async removeFavoriteTutor(id: string) {
+    return apiRequest<{ isFavorite: boolean; ids: string[] }>(`/favorites/tutors/${id}`, { method: "DELETE" })
+  },
   async approveTutor(id: string) {
     return mapTutor(await apiRequest<Tutor>(`/admin/tutors/${id}/approve`, { method: "POST" }))
   },
