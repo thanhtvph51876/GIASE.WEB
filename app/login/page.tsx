@@ -17,6 +17,7 @@ import { GraduationCap, Loader2, Eye, EyeOff, ArrowLeft, CheckCircle2, KeyRound,
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { storage, STORAGE_KEYS } from "@/lib/storage"
 import { loginSchema } from "@/lib/validations"
+import { isAdminRole } from "@/lib/permissions"
 
 const loginPageSchema = loginSchema.extend({
   rememberEmail: z.boolean().default(true),
@@ -62,9 +63,10 @@ export default function LoginPage() {
 
   const redirectByCurrentUser = () => {
     const currentUser = authService.getCurrentUser()
-    if (currentUser?.role === "admin") router.push("/admin")
+    if (isAdminRole(currentUser?.role)) router.push("/admin")
     else if (currentUser?.role === "tutor") router.push("/dashboard/tutor")
-    else if (currentUser?.role === "student" || currentUser?.role === "parent") router.push("/dashboard/student")
+    else if (currentUser?.role === "parent") router.push("/dashboard/parent")
+    else if (currentUser?.role === "student") router.push("/dashboard/student")
     else router.push("/")
   }
 

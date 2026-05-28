@@ -60,16 +60,16 @@ export function mapUser(value: unknown): User {
     fullName: text(raw, "fullName", text(raw, "name")),
     email: text(raw, "email"),
     phone: text(raw, "phone"),
-    role: text(raw, "role", "student") as User["role"],
+    role: text(raw, "role") as User["role"],
     avatar: optionalText(raw, "avatar") || optionalText(raw, "avatarUrl"),
-    status: text(raw, "status", "active") === "suspended" ? "inactive" : (text(raw, "status", "active") as User["status"]),
-    createdAt: text(raw, "createdAt", new Date().toISOString()),
+    status: text(raw, "status") === "suspended" ? "inactive" : (text(raw, "status") as User["status"]),
+    createdAt: text(raw, "createdAt"),
   }
 }
 
 export function mapTutor(value: unknown): Tutor {
   const raw = toRaw(value)
-  const status = text(raw, "status", text(raw, "approvalStatus", "draft")) as Tutor["approvalStatus"]
+  const status = text(raw, "status", text(raw, "approvalStatus")) as Tutor["approvalStatus"]
   return {
     id: text(raw, "id"),
     userId: text(raw, "userId"),
@@ -84,7 +84,7 @@ export function mapTutor(value: unknown): Tutor {
     subjects: stringArray(raw, "subjects"),
     grades: stringArray(raw, "grades"),
     experienceYears: numberValue(raw, "experienceYears"),
-    teachingModes: text(raw, "teachingModes", text(raw, "learningMode", "both")) as Tutor["teachingModes"],
+    teachingModes: text(raw, "teachingModes", text(raw, "learningMode")) as Tutor["teachingModes"],
     locations: stringArray(raw, "locations"),
     pricePerHour: numberValue(raw, "pricePerHour", numberValue(raw, "hourlyRateMin", numberValue(raw, "hourlyRateMax"))),
     rating: numberValue(raw, "rating", numberValue(raw, "ratingAvg")),
@@ -103,7 +103,7 @@ export function mapTutor(value: unknown): Tutor {
     totalClasses: numberValue(raw, "totalClasses"),
     responseRate: numberValue(raw, "responseRate"),
     rejectReason: optionalText(raw, "rejectReason") || optionalText(raw, "statusReason"),
-    createdAt: text(raw, "createdAt", new Date().toISOString()),
+    createdAt: text(raw, "createdAt"),
   }
 }
 
@@ -117,7 +117,7 @@ export function mapTutorDocument(value: unknown): TutorDocument {
     fileName: text(raw, "fileName"),
     fileSize: numberValue(raw, "fileSize"),
     mimeType: text(raw, "mimeType", "application/octet-stream"),
-    status: text(raw, "status", "pending") as TutorDocument["status"],
+    status: text(raw, "status") as TutorDocument["status"],
     note: optionalText(raw, "note") || optionalText(raw, "reviewNote"),
     uploadedAt: text(raw, "uploadedAt", text(raw, "createdAt")),
     reviewedAt: optionalText(raw, "reviewedAt"),
@@ -136,8 +136,8 @@ export function mapLearningRequest(value: unknown): LearningRequest {
     email: optionalText(raw, "email"),
     grade: text(raw, "grade", text(raw, "studentGrade")),
     subject: text(raw, "subject"),
-    goal: text(raw, "goal", "improve_grades") as LearningRequest["goal"],
-    teachingMode: text(raw, "teachingMode", text(raw, "learningMode", "both")) as LearningRequest["teachingMode"],
+    goal: text(raw, "learningGoal", text(raw, "goal")) as LearningRequest["goal"],
+    teachingMode: text(raw, "teachingMode", text(raw, "learningMode")) as LearningRequest["teachingMode"],
     location: optionalText(raw, "location") || optionalText(raw, "province"),
     province: optionalText(raw, "province"),
     district: optionalText(raw, "district"),
@@ -146,7 +146,7 @@ export function mapLearningRequest(value: unknown): LearningRequest {
     budgetMax: numberValue(raw, "budgetMax") || undefined,
     preferredSchedule: optionalText(raw, "preferredSchedule"),
     note: optionalText(raw, "note"),
-    status: text(raw, "status", "new") as LearningRequest["status"],
+    status: text(raw, "status") as LearningRequest["status"],
     assignedTutorId: optionalText(raw, "assignedTutorId") || null,
     userId: optionalText(raw, "userId") || optionalText(raw, "requesterId"),
     createdAt: text(raw, "createdAt"),
@@ -184,7 +184,7 @@ export function mapVerification(value: unknown): UserVerification {
     reviewedBy: optionalText(raw, "reviewedBy"),
     reviewedAt: optionalText(raw, "reviewedAt"),
     agreementSigned: booleanValue(raw, "agreementSigned"),
-    createdAt: text(raw, "createdAt", new Date().toISOString()),
+    createdAt: text(raw, "createdAt"),
     updatedAt: optionalText(raw, "updatedAt"),
   }
 }
@@ -194,6 +194,7 @@ export function mapBooking(value: unknown) {
   return {
     ...raw,
     teachingMode: raw.teachingMode || raw.learningMode,
+    preferredTime: raw.preferredTime || raw.scheduledStart || raw.scheduledStartTime,
   } as unknown as TrialBooking
 }
 
@@ -217,8 +218,8 @@ export function mapTutorEarning(value: unknown): TutorEarning {
     platformFee: numberValue(raw, "platformFee"),
     netAmount,
     amount: netAmount,
-    status: text(raw, "status", "pending") as TutorEarning["status"],
-    createdAt: text(raw, "createdAt", new Date().toISOString()),
+    status: text(raw, "status") as TutorEarning["status"],
+    createdAt: text(raw, "createdAt"),
     updatedAt: optionalText(raw, "updatedAt"),
   }
 }
@@ -230,13 +231,13 @@ export function mapPayout(value: unknown): Payout {
     tutorId: text(raw, "tutorId"),
     tutorName: text(raw, "tutorName"),
     amount: numberValue(raw, "amount"),
-    status: text(raw, "status", "pending") as Payout["status"],
+    status: text(raw, "status") as Payout["status"],
     bankName: optionalText(raw, "bankName"),
     bankAccount: optionalText(raw, "bankAccount"),
     reason: optionalText(raw, "reason") || optionalText(raw, "adminNote"),
-    requestedAt: text(raw, "requestedAt", text(raw, "createdAt", new Date().toISOString())),
+    requestedAt: text(raw, "requestedAt", text(raw, "createdAt")),
     processedAt: optionalText(raw, "processedAt"),
-    createdAt: text(raw, "createdAt", text(raw, "requestedAt", new Date().toISOString())),
+    createdAt: text(raw, "createdAt", text(raw, "requestedAt")),
   }
 }
 export const mapAuditLog = (raw: unknown): AuditLog => raw as AuditLog

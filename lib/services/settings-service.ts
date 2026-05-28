@@ -7,7 +7,7 @@ const defaultSettings: SystemSetting = {
   tutorRegistrationEnabled: true,
   autoMatchingEnabled: true,
   commissionRate: 0.15,
-  trialLessonPolicy: "Học thử trước khi chuyển thành lớp chính thức.",
+  trialLessonPolicy: "Học thử 1 buổi, có thể chuyển thành lớp chính thức sau khi hoàn tất.",
   maintenanceMode: false,
   notificationSettings: {
     email: false,
@@ -15,22 +15,37 @@ const defaultSettings: SystemSetting = {
     paymentAlerts: true,
     reviewAlerts: true,
   },
-  updatedAt: new Date().toISOString(),
+  updatedAt: "",
+}
+
+function mapSettings(value: unknown): SystemSetting {
+  const raw = value && typeof value === "object" ? (value as Partial<SystemSetting>) : {}
+  return {
+    ...defaultSettings,
+    ...raw,
+    commissionRate:
+      typeof raw.commissionRate === "number"
+        ? raw.commissionRate
+        : Number(raw.commissionRate ?? defaultSettings.commissionRate),
+    notificationSettings: {
+      ...defaultSettings.notificationSettings,
+      ...(raw.notificationSettings || {}),
+    },
+  }
 }
 
 class SettingsService {
-  getSettings(): SystemSetting {
-    return defaultSettings
+  async getSettings(): Promise<SystemSetting> {
+    return this.loadSettings()
   }
 
   async loadSettings(): Promise<SystemSetting> {
-    const raw = (await settingsApi.get()) as Partial<SystemSetting>
-    return { ...defaultSettings, ...raw, updatedAt: new Date().toISOString() }
+    return mapSettings(await settingsApi.get())
   }
 
   async updateSettings(data: Partial<SystemSetting>, _actor?: User | null): Promise<{ success: boolean; settings: SystemSetting }> {
-    const settings = (await settingsApi.update(data)) as Partial<SystemSetting>
-    return { success: true, settings: { ...defaultSettings, ...settings, updatedAt: new Date().toISOString() } }
+    const settings = mapSettings(await settingsApi.update(data))
+    return { success: true, settings }
   }
 }
 

@@ -15,9 +15,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { GRADES, LOCATIONS_HCM, SUBJECT_OPTIONS, UNIVERSITIES } from "@/lib/constants"
+import { ErrorState, LoadingSkeleton } from "@/components/platform/operational-components"
 import { tutorRegistrationSchema, type TutorRegistrationValues } from "@/lib/validations"
 import { useAuthContext } from "@/lib/contexts/auth-context"
+import { useMasterDataCatalog } from "@/lib/hooks/use-master-data"
 import { useTutorRegistration } from "@/lib/hooks/use-tutors"
 import type { Gender, TeachingMode } from "@/types"
 
@@ -37,6 +38,16 @@ export default function RegisterTutorPage() {
   const [confirmed, setConfirmed] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const {
+    subjects: subjectOptions,
+    grades: gradeOptions,
+    locations: locationItems,
+    teachingModes,
+    error: masterDataError,
+    isLoading: masterDataLoading,
+    refresh: refreshMasterData,
+  } = useMasterDataCatalog()
+  const locationOptions = locationItems?.map((item) => item.fullPath || item.name) || []
 
   const {
     register,
@@ -51,7 +62,7 @@ export default function RegisterTutorPage() {
       email: user?.email || "",
       phone: user?.phone || "",
       gender: "female",
-      university: "Đại học Sư phạm TP.HCM",
+      university: "",
       subjects: [],
       grades: [],
       locations: [],
@@ -155,6 +166,11 @@ export default function RegisterTutorPage() {
         </section>
 
         <section className="app-container max-w-5xl py-8">
+          {masterDataError ? (
+            <ErrorState message="Không tải được master data từ backend." onRetry={() => refreshMasterData()} />
+          ) : masterDataLoading ? (
+            <LoadingSkeleton label="Đang tải danh mục từ backend..." />
+          ) : (
           <Card>
             <CardHeader>
               <CardTitle>Hồ sơ xét duyệt gia sư</CardTitle>
@@ -199,18 +215,7 @@ export default function RegisterTutorPage() {
                       <Input {...register("studentCode")} placeholder="46.01.101.001" />
                     </Field>
                     <Field label="Trường" error={errors.university?.message}>
-                      <Select defaultValue="Đại học Sư phạm TP.HCM" onValueChange={(value) => setValue("university", value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {UNIVERSITIES.map((university) => (
-                            <SelectItem key={university} value={university}>
-                              {university}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input {...register("university")} placeholder="Tên trường hoặc đơn vị đào tạo" />
                     </Field>
                     <Field label="Khoa" error={errors.faculty?.message}>
                       <Input {...register("faculty")} placeholder="Khoa Toán - Tin" />
@@ -224,7 +229,7 @@ export default function RegisterTutorPage() {
                 <Section title="3. Thông tin giảng dạy">
                   <div className="space-y-4">
                     <ChoiceGroup label="Môn có thể dạy" error={errors.subjects?.message}>
-                      {SUBJECT_OPTIONS.map((subject) => (
+                      {subjectOptions?.map((subject) => (
                         <Button
                           key={subject.id}
                           type="button"
@@ -237,15 +242,15 @@ export default function RegisterTutorPage() {
                       ))}
                     </ChoiceGroup>
                     <ChoiceGroup label="Lớp có thể dạy" error={errors.grades?.message}>
-                      {GRADES.map((grade) => (
+                      {gradeOptions?.map((grade) => (
                         <Button
-                          key={grade}
+                          key={grade.id}
                           type="button"
-                          variant={grades.includes(grade) ? "default" : "outline"}
+                          variant={grades.includes(grade.name) ? "default" : "outline"}
                           size="sm"
-                          onClick={() => toggle(grade, grades, setGrades, "grades")}
+                          onClick={() => toggle(grade.name, grades, setGrades, "grades")}
                         >
-                          {grade}
+                          {grade.name}
                         </Button>
                       ))}
                     </ChoiceGroup>
@@ -259,19 +264,21 @@ export default function RegisterTutorPage() {
                       <Field label="Hình thức dạy" error={errors.teachingModes?.message}>
                         <Select defaultValue="both" onValueChange={(value) => setValue("teachingModes", value as TeachingMode)}>
                           <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="online">Online</SelectItem>
-                            <SelectItem value="offline">Offline</SelectItem>
-                            <SelectItem value="both">Cả hai</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {teachingModes?.map((mode) => (
+                              <SelectItem key={mode.id} value={mode.value}>
+                                {mode.label}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
                       </Field>
                     </div>
                     {(teachingMode === "offline" || teachingMode === "both") && (
                       <ChoiceGroup label="Khu vực có thể dạy Offline" error={errors.locations?.message}>
-                        {LOCATIONS_HCM.slice(0, 12).map((location) => (
+                        {locationOptions.map((location) => (
                           <Button
                             key={location}
                             type="button"
@@ -335,6 +342,7 @@ export default function RegisterTutorPage() {
               </form>
             </CardContent>
           </Card>
+          )}
         </section>
       </main>
       <Footer />

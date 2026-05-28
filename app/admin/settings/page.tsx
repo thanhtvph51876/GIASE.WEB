@@ -17,7 +17,9 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SystemSetting | null>(null)
 
   useEffect(() => {
-    setSettings(settingsService.getSettings())
+    settingsService.getSettings().then(setSettings).catch(() => {
+      toast.error("Không tải được cài đặt hệ thống")
+    })
   }, [])
 
   if (!settings) return null

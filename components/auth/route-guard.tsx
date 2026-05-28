@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import type { UserRole } from "@/types"
 import { Spinner } from "@/components/ui/spinner"
+import { isAdminRole } from "@/lib/permissions"
 
 // ============================================
 // ROUTE GUARD COMPONENT
@@ -72,16 +73,19 @@ export function UnauthorizedPage() {
 
   const handleGoBack = () => {
     if (user) {
+      if (isAdminRole(user.role)) {
+        router.push("/admin")
+        return
+      }
       switch (user.role) {
-        case "admin":
-          router.push("/admin")
-          break
         case "tutor":
           router.push("/dashboard/tutor")
           break
         case "student":
-        case "parent":
           router.push("/dashboard/student")
+          break
+        case "parent":
+          router.push("/dashboard/parent")
           break
         default:
           router.push("/")

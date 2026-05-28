@@ -41,10 +41,10 @@ export const paymentGatewayOptions = [
 
 export function SecurePaymentBanner({ mode }: { mode?: string }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-sky-200/80 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(16,185,129,0.10),rgba(255,255,255,0.9))] p-5 shadow-sm">
+    <div className="gradient-mesh reveal overflow-hidden rounded-lg border border-sky-200/80 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(16,185,129,0.10),rgba(255,255,255,0.9))] p-5 shadow-sm">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-primary shadow-sm">
+          <div className="icon-float flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-primary shadow-sm">
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div>
@@ -88,14 +88,14 @@ export function PaymentMethodCard({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "group rounded-lg border bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+        "gradient-border-card hover-lift reveal group rounded-lg border bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
         active && "border-primary bg-primary/5 ring-4 ring-primary/10",
         disabled && "cursor-not-allowed opacity-45 hover:translate-y-0 hover:border-border hover:shadow-sm",
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700 group-hover:bg-primary group-hover:text-white">
+          <div className="icon-float flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700 group-hover:bg-primary group-hover:text-white">
             <Icon className="h-5 w-5" />
           </div>
           <div>
@@ -119,7 +119,7 @@ export function PaymentQuickFacts({ children }: { children?: ReactNode }) {
     "Có audit log cho thanh toán, hoàn tiền và đối soát.",
   ]
   return (
-    <Card className="border-slate-200/80 bg-white/95 shadow-sm">
+    <Card className="reveal border-slate-200/80 bg-white/95 shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <ShieldCheck className="h-5 w-5 text-primary" />

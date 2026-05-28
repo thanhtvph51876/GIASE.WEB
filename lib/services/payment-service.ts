@@ -1,6 +1,7 @@
 import type { Payment, PaymentStatus, Payout, User } from "@/types"
 import { earningApi } from "@/lib/api/earning-api"
 import { paymentApi } from "@/lib/api/payment-api"
+import { isAdminRole } from "@/lib/permissions"
 
 class PaymentService {
   async getSettings() {
@@ -35,7 +36,7 @@ class PaymentService {
     try {
       const payment =
         status === "paid" || status === "completed"
-          ? _actor?.role === "admin"
+          ? isAdminRole(_actor?.role)
             ? await paymentApi.markPaid(paymentId)
             : null
           : status === "failed"

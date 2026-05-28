@@ -26,6 +26,11 @@ const entityLabels: Record<string, string> = {
 
 const roleLabels: Record<string, string> = {
   admin: "Quản trị",
+  finance_admin: "Quản trị tài chính",
+  tutor_admin: "Quản trị gia sư",
+  support_admin: "Hỗ trợ vận hành",
+  verification_admin: "Duyệt xác thực",
+  system_admin: "Quản trị hệ thống",
   parent: "Phụ huynh",
   student: "Học sinh",
   tutor: "Gia sư",

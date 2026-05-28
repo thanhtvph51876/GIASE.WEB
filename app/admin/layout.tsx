@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { NotificationMenu } from "@/components/notifications/notification-menu"
+import { canAccessAdmin } from "@/lib/permissions"
 
 const items = [
   { href: "/admin", label: "Tổng quan", icon: Home },
@@ -39,7 +40,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 p-10 text-center text-sm font-medium text-slate-600">Đang kiểm tra quyền truy cập...</div>
   if (!user) return null
-  if (user.role !== "admin") {
+  if (!canAccessAdmin(user)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-center">
         <div className="surface-panel max-w-md p-8">

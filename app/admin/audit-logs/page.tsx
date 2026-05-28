@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAuditLogs } from "@/lib/hooks/use-admin"
 import { formatDateTime, getAuditActionLabel, getAuditEntityLabel, getRoleLabel } from "@/lib/helpers"
+import { isAdminRole } from "@/lib/permissions"
 
 export default function AdminAuditLogsPage() {
   const { logs } = useAuditLogs()
@@ -19,7 +20,7 @@ export default function AdminAuditLogsPage() {
   const actions = Array.from(new Set(logs.map((log) => log.action)))
   const entityTypes = Array.from(new Set(logs.map((log) => log.entityType)))
   const actorRoles = Array.from(new Set(logs.map((log) => log.actorRole)))
-  const adminLogs = logs.filter((log) => log.actorRole === "admin").length
+  const adminLogs = logs.filter((log) => isAdminRole(log.actorRole)).length
   const tutorLogs = logs.filter((log) => log.actorRole === "tutor").length
   const familyLogs = logs.filter((log) => log.actorRole === "student" || log.actorRole === "parent").length
 

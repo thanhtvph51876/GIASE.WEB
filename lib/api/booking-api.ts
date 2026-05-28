@@ -2,6 +2,16 @@ import type { TrialBooking, TrialBookingFormData } from "@/types"
 import { apiRequest } from "./client"
 import { mapBooking, mapList } from "./mappers"
 
+function bookingSchedulePayload(data: unknown) {
+  if (data && typeof data === "object" && "schedule" in data) {
+    const schedule = (data as { schedule?: unknown }).schedule
+    if (schedule && typeof schedule === "object") {
+      return { ...(data as Record<string, unknown>), ...(schedule as Record<string, unknown>) }
+    }
+  }
+  return data
+}
+
 export const bookingApi = {
   async list() {
     return mapList(await apiRequest<TrialBooking[]>("/bookings"), mapBooking)
@@ -27,10 +37,10 @@ export const bookingApi = {
   async update(id: string, data: Partial<TrialBooking>) {
     const status = data.status
     if (status === "cancelled") return mapBooking(await apiRequest<TrialBooking>(`/bookings/${id}/cancel`, { method: "POST" }))
-    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/schedule`, { method: "POST", body: data }))
+    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/schedule`, { method: "POST", body: bookingSchedulePayload(data) }))
   },
   async schedule(id: string, data: unknown) {
-    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/schedule`, { method: "POST", body: data }))
+    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/schedule`, { method: "POST", body: bookingSchedulePayload(data) }))
   },
   async complete(id: string, resultNote?: string) {
     return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/complete`, { method: "POST", body: { resultNote } }))

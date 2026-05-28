@@ -7,6 +7,15 @@ interface AssignTutorResponse {
   booking?: TrialBooking
 }
 
+function learningRequestPayload(data: StudentRegistrationFormData | Partial<LearningRequest>) {
+  const body: Record<string, unknown> = { ...data }
+  const goal = "goal" in data && typeof data.goal === "string" ? data.goal.trim() : ""
+  if (!goal) return body
+  body.goal = goal.length <= 50 ? goal : "custom"
+  body.learningGoal = goal
+  return body
+}
+
 export const learningRequestApi = {
   async list() {
     return mapList(await apiRequest<LearningRequest[]>("/learning-requests"), mapLearningRequest)
@@ -24,16 +33,16 @@ export const learningRequestApi = {
     return mapLearningRequest(await apiRequest<LearningRequest>(`/learning-requests/${id}`))
   },
   async create(data: StudentRegistrationFormData) {
-    return mapLearningRequest(await apiRequest<LearningRequest>("/learning-requests", { method: "POST", body: data }))
+    return mapLearningRequest(await apiRequest<LearningRequest>("/learning-requests", { method: "POST", body: learningRequestPayload(data) }))
   },
   async createStudent(data: StudentRegistrationFormData) {
-    return mapLearningRequest(await apiRequest<LearningRequest>("/student/learning-requests", { method: "POST", body: data }))
+    return mapLearningRequest(await apiRequest<LearningRequest>("/student/learning-requests", { method: "POST", body: learningRequestPayload(data) }))
   },
   async createPublic(data: StudentRegistrationFormData) {
-    return mapLearningRequest(await apiRequest<LearningRequest>("/public/learning-requests", { method: "POST", body: data, auth: false }))
+    return mapLearningRequest(await apiRequest<LearningRequest>("/public/learning-requests", { method: "POST", body: learningRequestPayload(data), auth: false }))
   },
   async update(id: string, data: Partial<LearningRequest>) {
-    return mapLearningRequest(await apiRequest<LearningRequest>(`/learning-requests/${id}`, { method: "PATCH", body: data }))
+    return mapLearningRequest(await apiRequest<LearningRequest>(`/learning-requests/${id}`, { method: "PATCH", body: learningRequestPayload(data) }))
   },
   async updateStatus(id: string, status: LearningRequestStatus) {
     return mapLearningRequest(await apiRequest<LearningRequest>(`/admin/learning-requests/${id}/status`, { method: "PATCH", body: { status } }))

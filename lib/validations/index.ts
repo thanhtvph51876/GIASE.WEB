@@ -1,4 +1,5 @@
 import { z } from "zod"
+import type { LearningGoal, TeachingMode } from "@/types"
 
 // ============================================
 // VALIDATION SCHEMAS
@@ -10,6 +11,14 @@ const phoneRegex = /^(0|\+84)[0-9]{9}$/
 const emailSchema = z.string().email("Email không hợp lệ")
 const phoneSchema = z.string().regex(phoneRegex, "Số điện thoại không hợp lệ")
 const requiredString = z.string().min(1, "Trường này là bắt buộc")
+const dynamicTeachingModeSchema = z.custom<TeachingMode>(
+  (value) => typeof value === "string" && value.trim().length > 0,
+  "Vui lòng chọn hình thức học"
+)
+const dynamicLearningGoalSchema = z.custom<LearningGoal>(
+  (value) => typeof value === "string" && value.trim().length > 0,
+  "Vui lòng nhập mục tiêu học tập"
+)
 
 // ============================================
 // AUTH SCHEMAS
@@ -17,14 +26,14 @@ const requiredString = z.string().min(1, "Trường này là bắt buộc")
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
+  password: z.string().min(8, "Mật khẩu tối thiểu 8 ký tự"),
 })
 
 export const registerSchema = z.object({
   fullName: requiredString.min(2, "Họ tên tối thiểu 2 ký tự"),
   email: emailSchema,
   phone: phoneSchema,
-  password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
+  password: z.string().min(8, "Mật khẩu tối thiểu 8 ký tự"),
   role: z.enum(["student", "parent", "tutor"], {
     required_error: "Vui lòng chọn vai trò",
   }),
@@ -44,12 +53,8 @@ export const studentStep1Schema = z.object({
 
 export const studentStep2Schema = z.object({
   subject: requiredString,
-  goal: z.enum(["improve_grades", "foundation", "exam_prep", "thpt_exam", "advanced"], {
-    required_error: "Vui lòng chọn mục tiêu học tập",
-  }),
-  teachingMode: z.enum(["online", "offline", "both"], {
-    required_error: "Vui lòng chọn hình thức học",
-  }),
+  goal: dynamicLearningGoalSchema,
+  teachingMode: dynamicTeachingModeSchema,
   location: z.string().optional(),
   preferredSchedule: z.string().optional(),
   expectedFee: z.number().positive("Học phí phải là số dương").optional(),
@@ -85,9 +90,7 @@ export const tutorTeachingSchema = z.object({
   grades: z.array(z.string()).min(1, "Chọn ít nhất 1 lớp dạy"),
   experienceYears: z.number().min(0, "Số năm kinh nghiệm không hợp lệ"),
   pricePerHour: z.number().positive("Học phí phải là số dương"),
-  teachingModes: z.enum(["online", "offline", "both"], {
-    required_error: "Vui lòng chọn hình thức dạy",
-  }),
+  teachingModes: dynamicTeachingModeSchema,
   locations: z.array(z.string()).optional(),
   availableSlots: z
     .array(

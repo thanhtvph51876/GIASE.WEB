@@ -1,31 +1,30 @@
 "use client"
 
-import { ReactNode, useEffect } from "react"
+import type { ReactNode } from "react"
 import Link from "next/link"
+import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Bell, BookOpen, Calendar, CreditCard, GraduationCap, Heart, Home, LogOut, Menu, MessageSquare, Settings, User, Users } from "lucide-react"
+import { Bell, BookOpen, Calendar, CreditCard, GraduationCap, Home, LogOut, Menu, MessageSquare, Settings, User, Users } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
-import { useAuthContext } from "@/lib/contexts/auth-context"
 import { NotificationMenu } from "@/components/notifications/notification-menu"
+import { useAuthContext } from "@/lib/contexts/auth-context"
+import { cn } from "@/lib/utils"
 
 const items = [
-  { href: "/dashboard/student", label: "Tổng quan", icon: Home },
-  { href: "/dashboard/student/requests", label: "Yêu cầu học", icon: BookOpen },
-  { href: "/dashboard/student/bookings", label: "Booking học thử", icon: Calendar },
-  { href: "/dashboard/student/classes", label: "Lớp học", icon: Users },
-  { href: "/dashboard/student/favorites", label: "Gia sư đã lưu", icon: Heart },
-  { href: "/dashboard/student/schedule", label: "Lịch học", icon: Calendar },
-  { href: "/dashboard/student/messages", label: "Tin nhắn", icon: MessageSquare },
-  { href: "/dashboard/student/notifications", label: "Thông báo", icon: Bell },
-  { href: "/dashboard/student/profile", label: "Hồ sơ cá nhân", icon: User },
-  { href: "/dashboard/student/settings", label: "Cài đặt", icon: Settings },
+  { href: "/dashboard/parent", label: "Tổng quan", icon: Home },
+  { href: "/dashboard/parent/students", label: "Hồ sơ con", icon: Users },
+  { href: "/dashboard/parent/proposals", label: "Proposal gia sư", icon: BookOpen },
+  { href: "/dashboard/parent/schedule", label: "Lịch học", icon: Calendar },
+  { href: "/dashboard/parent/payments", label: "Thanh toán", icon: CreditCard },
+  { href: "/dashboard/messages", label: "Tin nhắn", icon: MessageSquare },
+  { href: "/dashboard/notifications", label: "Thông báo", icon: Bell },
+  { href: "/settings", label: "Cài đặt", icon: Settings },
 ]
 
-export default function StudentDashboardLayout({ children }: { children: ReactNode }) {
+export default function ParentDashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, isLoading, logout } = useAuthContext()
@@ -36,18 +35,14 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
 
   if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 p-10 text-center text-sm font-medium text-slate-600">Đang kiểm tra phiên đăng nhập...</div>
   if (!user) return null
-  if (user.role === "parent") {
-    router.replace("/dashboard/parent")
-    return null
-  }
-  if (user.role !== "student") {
+  if (user.role !== "parent") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-center">
         <div className="surface-panel max-w-md p-8">
           <h1 className="text-2xl font-bold">Không có quyền truy cập</h1>
-          <p className="mt-2 text-muted-foreground">Khu vực này chỉ dành cho học sinh.</p>
+          <p className="mt-2 text-muted-foreground">Dashboard này dành riêng cho phụ huynh.</p>
           <Button asChild className="mt-5">
-            <Link href="/">Về trang chủ</Link>
+            <Link href="/dashboard">Mở dashboard phù hợp</Link>
           </Button>
         </div>
       </div>
@@ -60,7 +55,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/25">
           <GraduationCap className="h-5 w-5" />
         </div>
-        <span className="font-bold text-slate-950">Gia Sư Sư Phạm</span>
+        <span className="font-bold text-slate-950">Phụ huynh</span>
       </Link>
       <nav className="flex-1 space-y-1 p-4">
         {items.map((item) => {
@@ -94,11 +89,9 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              {Sidebar}
-            </SheetContent>
+            <SheetContent side="left" className="w-72 p-0">{Sidebar}</SheetContent>
           </Sheet>
-          <div className="hidden text-sm font-semibold text-slate-600 sm:block">Dashboard học sinh</div>
+          <div className="hidden text-sm font-semibold text-slate-600 sm:block">Dashboard phụ huynh</div>
           <div className="ml-auto flex items-center gap-2">
             <NotificationMenu userId={user.id} />
             <DropdownMenu>
@@ -113,7 +106,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/student/profile">
+                  <Link href="/profile">
                     <User className="mr-2 h-4 w-4" />
                     Hồ sơ
                   </Link>

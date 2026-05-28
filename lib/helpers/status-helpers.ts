@@ -122,11 +122,7 @@ const labels: Record<StatusKind, Record<string, string>> = {
     student_absent: "Học viên vắng",
     tutor_absent: "Gia sư vắng",
   },
-  teachingMode: {
-    online: "Online",
-    offline: "Tại nhà",
-    both: "Linh hoạt",
-  },
+  teachingMode: {},
   user: {
     active: "Đang hoạt động",
     inactive: "Tạm khóa",

@@ -30,8 +30,8 @@ class StudentService {
       school: profile.school,
       learningGoals: profile.learningGoals,
       favoriteTutorIds: profile.favoriteTutorIds,
-      createdAt: updated.createdAt || new Date().toISOString(),
-      updatedAt: updated.updatedAt || new Date().toISOString(),
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
     }
   }
 }

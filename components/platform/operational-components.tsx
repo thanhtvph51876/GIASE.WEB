@@ -51,7 +51,7 @@ export function PageHero({
   stats?: Array<{ label: string; value: string | number }>
 }) {
   return (
-    <section className="surface-panel overflow-hidden border-l-4 border-l-primary bg-white">
+    <section className="surface-panel gradient-mesh reveal overflow-hidden border-l-4 border-l-primary bg-white">
       <div className="relative grid gap-5 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
         <div className="flex gap-4">
@@ -94,9 +94,9 @@ export function EmptyState({
   href?: string
 }) {
   return (
-    <Card className="border-dashed bg-slate-50/70">
+    <Card className="reveal border-dashed bg-slate-50/70">
       <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-white text-muted-foreground shadow-sm">
+        <div className="icon-float flex h-14 w-14 items-center justify-center rounded-lg bg-white text-muted-foreground shadow-sm">
           <Inbox className="h-7 w-7" />
         </div>
         <h3 className="mt-4 text-lg font-semibold text-slate-950">{title}</h3>
@@ -113,7 +113,7 @@ export function EmptyState({
 
 export function LoadingSkeleton({ label = "Đang tải dữ liệu..." }: { label?: string }) {
   return (
-    <div className="flex min-h-[240px] items-center justify-center rounded-lg border bg-white text-sm text-muted-foreground">
+    <div className="reveal soft-glow flex min-h-[240px] items-center justify-center rounded-lg border bg-white text-sm text-muted-foreground">
       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       {label}
     </div>
@@ -122,7 +122,7 @@ export function LoadingSkeleton({ label = "Đang tải dữ liệu..." }: { labe
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700">
+    <div className="reveal soft-glow rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700">
       <AlertTriangle className="mx-auto h-8 w-8" />
       <p className="mt-2 font-medium">{message}</p>
       {onRetry && (
@@ -150,7 +150,7 @@ export function DashboardMetricCard({
   className?: string
 }) {
   return (
-    <div className={cn("metric-tile group overflow-hidden", className)}>
+    <div className={cn("metric-tile premium-card hover-lift reveal group overflow-hidden", className)}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
@@ -158,7 +158,7 @@ export function DashboardMetricCard({
           {helper && <p className="mt-1 text-xs text-muted-foreground">{helper}</p>}
         </div>
         {Icon && (
-          <div className={cn("flex h-11 w-11 items-center justify-center rounded-lg shadow-sm transition-transform group-hover:scale-105", toneClasses[tone].icon)}>
+          <div className={cn("icon-float flex h-11 w-11 items-center justify-center rounded-lg shadow-sm transition-transform group-hover:scale-105", toneClasses[tone].icon)}>
             <Icon className="h-5 w-5" />
           </div>
         )}
@@ -187,7 +187,7 @@ export function EntityCard({
   children?: ReactNode
 }) {
   return (
-    <div className="item-row overflow-hidden p-0">
+    <div className="item-row premium-card reveal overflow-hidden p-0">
       <div className="grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
         <div className="flex min-w-0 gap-3">
           {Icon && (
@@ -236,6 +236,11 @@ export function InsightPanel({
 export function RoleBadge({ role }: { role?: string }) {
   const labels: Record<string, string> = {
     admin: "Admin",
+    finance_admin: "Finance",
+    tutor_admin: "Tutor Ops",
+    support_admin: "Support",
+    verification_admin: "Verification",
+    system_admin: "System",
     tutor: "Gia sư",
     student: "Học sinh",
     parent: "Phụ huynh",

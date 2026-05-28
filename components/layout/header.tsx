@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { NotificationMenu } from "@/components/notifications/notification-menu"
+import { isAdminRole } from "@/lib/permissions"
 
 const publicNavItems = [
   { href: "/", label: "Trang chủ" },
@@ -37,15 +38,14 @@ export function Header() {
 
   const getDashboardLink = () => {
     if (!user) return "/login"
+    if (isAdminRole(user.role)) return "/admin"
     switch (user.role) {
-      case "admin":
-        return "/admin"
       case "tutor":
         return "/dashboard/tutor"
       case "student":
         return "/dashboard/student"
       case "parent":
-        return "/dashboard/student"
+        return "/dashboard/parent"
       default:
         return "/login"
     }
@@ -53,9 +53,8 @@ export function Header() {
 
   const getRoleLabel = () => {
     if (!user) return ""
+    if (isAdminRole(user.role)) return "Quản trị viên"
     switch (user.role) {
-      case "admin":
-        return "Quản trị viên"
       case "tutor":
         return "Gia sư"
       case "student":
@@ -174,69 +173,75 @@ export function Header() {
       </div>
 
       {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="border-t border-slate-200 bg-white/95 shadow-lg shadow-slate-950/5 backdrop-blur md:hidden">
-          <nav className="app-container flex flex-col gap-1 py-4">
-            {publicNavItems.map((item) => (
+      <div
+        aria-hidden={!mobileMenuOpen}
+        className={cn(
+          "overflow-hidden border-t border-slate-200 bg-white/95 shadow-lg shadow-slate-950/5 backdrop-blur-xl transition-[max-height,opacity,transform] duration-300 ease-out md:hidden",
+          mobileMenuOpen
+            ? "max-h-[540px] translate-y-0 opacity-100"
+            : "pointer-events-none max-h-0 -translate-y-2 opacity-0",
+        )}
+      >
+        <nav className="app-container flex flex-col gap-1 py-4">
+          {publicNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(
+                "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                pathname === item.href
+                  ? "bg-primary/10 text-primary"
+                  : "text-slate-600 hover:bg-primary/10 hover:text-primary"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <div className="my-2 border-t" />
+          {isAuthenticated && user ? (
+            <>
               <Link
-                key={item.href}
-                href={item.href}
+                href={getDashboardLink()}
                 onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
-                  pathname === item.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-slate-600 hover:bg-primary/10 hover:text-primary"
-                )}
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
               >
-                {item.label}
+                Dashboard
               </Link>
-            ))}
-            <div className="my-2 border-t" />
-            {isAuthenticated && user ? (
-              <>
-                <Link
-                  href={getDashboardLink()}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/profile"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
-                >
-                  Hồ sơ cá nhân
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-destructive hover:bg-destructive/10"
-                >
-                  Đăng xuất
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
-                >
-                  Đăng nhập
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20"
-                >
-                  Đăng ký
-                </Link>
-              </>
-            )}
-          </nav>
-        </div>
-      )}
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
+              >
+                Hồ sơ cá nhân
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-destructive hover:bg-destructive/10"
+              >
+                Đăng xuất
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20"
+              >
+                Đăng ký
+              </Link>
+            </>
+          )}
+        </nav>
+      </div>
     </header>
   )
 }

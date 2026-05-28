@@ -18,7 +18,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ../backend
     container_name: tutor-platform-backend
     depends_on:
       postgres:
@@ -34,6 +34,8 @@ services:
       UPLOAD_DIR: /app/uploads
       UPLOAD_PUBLIC_BASE_URL: http://localhost:8080/api/v1/files
       PAYMENT_MODE: sandbox
+      PAYMENT_PROVIDER: simulated
+      VERIFICATION_PROVIDER: mock
       ENABLED_GATEWAYS: bank_qr,vnpay,momo,payos,stripe
       DEFAULT_GATEWAY: bank_qr
       FRONTEND_BASE_URL: http://localhost:3000

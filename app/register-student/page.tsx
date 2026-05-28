@@ -16,10 +16,11 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { GRADES, LEARNING_GOALS, LOCATIONS_HCM, SUBJECT_OPTIONS } from "@/lib/constants"
+import { ErrorState, LoadingSkeleton } from "@/components/platform/operational-components"
 import { studentRegistrationSchema, type StudentRegistrationValues } from "@/lib/validations"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useLearningRequests } from "@/lib/hooks/use-learning-requests"
+import { useMasterDataCatalog } from "@/lib/hooks/use-master-data"
 
 const steps = ["Thông tin", "Nhu cầu", "Xác nhận"]
 
@@ -30,6 +31,16 @@ export default function RegisterStudentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successCode, setSuccessCode] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
+  const {
+    subjects,
+    grades,
+    locations,
+    teachingModes,
+    error: masterDataError,
+    isLoading: masterDataLoading,
+    refresh: refreshMasterData,
+  } = useMasterDataCatalog()
+  const locationOptions = locations?.map((item) => item.fullPath || item.name) || []
 
   const {
     register,
@@ -45,7 +56,7 @@ export default function RegisterStudentPage() {
       phone: user?.phone || "",
       email: user?.email || "",
       teachingMode: "both",
-      goal: "improve_grades",
+      goal: "",
     },
   })
 
@@ -96,7 +107,7 @@ export default function RegisterStudentPage() {
                 </Button>
                 {user && (
                   <Button asChild>
-                    <Link href="/dashboard/student/requests">Xem trong dashboard</Link>
+                    <Link href={user.role === "parent" ? "/dashboard/parent" : "/dashboard/student/requests"}>Xem trong dashboard</Link>
                   </Button>
                 )}
               </div>
@@ -123,6 +134,11 @@ export default function RegisterStudentPage() {
         </section>
 
         <section className="app-container max-w-4xl py-8">
+          {masterDataError ? (
+            <ErrorState message="Không tải được master data từ backend." onRetry={() => refreshMasterData()} />
+          ) : masterDataLoading ? (
+            <LoadingSkeleton label="Đang tải danh mục từ backend..." />
+          ) : (
           <Card>
             <CardHeader>
               <CardTitle>Tạo yêu cầu tìm gia sư</CardTitle>
@@ -159,10 +175,10 @@ export default function RegisterStudentPage() {
                         <SelectTrigger>
                           <SelectValue placeholder="Chọn lớp" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {GRADES.map((grade) => (
-                            <SelectItem key={grade} value={grade}>
-                              {grade}
+                          <SelectContent>
+                          {grades?.map((grade) => (
+                            <SelectItem key={grade.id} value={grade.name}>
+                              {grade.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -178,8 +194,8 @@ export default function RegisterStudentPage() {
                         <SelectTrigger>
                           <SelectValue placeholder="Chọn môn học" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {SUBJECT_OPTIONS.map((subject) => (
+                          <SelectContent>
+                          {subjects?.map((subject) => (
                             <SelectItem key={subject.id} value={subject.name}>
                               {subject.name}
                             </SelectItem>
@@ -188,18 +204,7 @@ export default function RegisterStudentPage() {
                       </Select>
                     </Field>
                     <Field label="Mục tiêu học" error={errors.goal?.message}>
-                      <Select value={values.goal} onValueChange={(value) => setValue("goal", value as StudentRegistrationValues["goal"])}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {LEARNING_GOALS.map((goal) => (
-                            <SelectItem key={goal.value} value={goal.value}>
-                              {goal.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Textarea {...register("goal")} rows={3} placeholder="Ví dụ: củng cố kiến thức mất gốc, ôn thi lớp 10, luyện IELTS 6.5..." />
                     </Field>
                     <Field label="Hình thức học" error={errors.teachingMode?.message}>
                       <Select value={values.teachingMode} onValueChange={(value) => setValue("teachingMode", value as StudentRegistrationValues["teachingMode"])}>
@@ -207,9 +212,11 @@ export default function RegisterStudentPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="online">Online</SelectItem>
-                          <SelectItem value="offline">Offline</SelectItem>
-                          <SelectItem value="both">Cả hai</SelectItem>
+                          {teachingModes?.map((mode) => (
+                            <SelectItem key={mode.id} value={mode.value}>
+                              {mode.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </Field>
@@ -219,7 +226,7 @@ export default function RegisterStudentPage() {
                           <SelectValue placeholder="Chọn khu vực" />
                         </SelectTrigger>
                         <SelectContent>
-                          {LOCATIONS_HCM.slice(0, 18).map((location) => (
+                          {locationOptions.map((location) => (
                             <SelectItem key={location} value={location}>
                               {location}
                             </SelectItem>
@@ -286,6 +293,7 @@ export default function RegisterStudentPage() {
               </form>
             </CardContent>
           </Card>
+          )}
         </section>
       </main>
       <Footer />

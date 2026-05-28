@@ -46,7 +46,7 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
 
   if (variant === "compact") {
     return (
-      <Card className="overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+      <Card className="reveal hover-lift overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
         <CardContent className="p-4">
           <div className="flex gap-3">
             <Avatar className="h-12 w-12 ring-2 ring-primary/10">
@@ -80,11 +80,11 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
   }
 
   return (
-    <Card className="group overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+    <Card className="reveal hover-lift group overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
       <div className="h-1 bg-primary" />
       <CardContent className="p-5">
         <div className="flex gap-4">
-          <Avatar className="h-20 w-20 shrink-0 ring-4 ring-primary/10">
+          <Avatar className="icon-float h-20 w-20 shrink-0 ring-4 ring-primary/10">
             <AvatarImage src={tutor.avatar} alt={tutor.fullName} />
             <AvatarFallback className="text-lg">{getInitials(tutor.fullName)}</AvatarFallback>
           </Avatar>

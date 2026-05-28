@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/lib/contexts/auth-context"
+import { ScrollRevealProvider } from "@/components/layout/scroll-reveal-provider"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -51,9 +52,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className="bg-background font-sans antialiased">
+      <body className="app-gradient-bg bg-background font-sans antialiased">
         <AuthProvider>
-          {children}
+          <ScrollRevealProvider>{children}</ScrollRevealProvider>
           <Toaster position="top-right" richColors />
         </AuthProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}

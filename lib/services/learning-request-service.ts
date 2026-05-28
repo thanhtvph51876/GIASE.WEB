@@ -4,7 +4,7 @@ import { learningRequestApi } from "@/lib/api/learning-request-api"
 class LearningRequestService {
   async createLearningRequest(data: StudentRegistrationFormData, userId?: string) {
     try {
-      const request = userId ? await learningRequestApi.createStudent(data) : await learningRequestApi.createPublic(data)
+      const request = userId ? await learningRequestApi.create(data) : await learningRequestApi.createPublic(data)
       return { success: true, request }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể tạo yêu cầu học" }

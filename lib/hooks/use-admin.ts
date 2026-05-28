@@ -1,7 +1,7 @@
 "use client"
 
 import useSWR from "swr"
-import { adminService, auditLogService, bookingService, classService, learningRequestService, reviewService, scheduleService, tutorService } from "@/lib/services"
+import { adminOperationService, adminService, auditLogService, bookingService, classService, learningRequestService, reviewService, scheduleService, tutorService } from "@/lib/services"
 import type { User } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 
@@ -47,7 +47,30 @@ export function useAdminOperations() {
   const { data, error, isLoading, mutate } = useSWR(
     "admin-operations",
     async () => {
-      const [tutors, requests, bookings, sessions, classes, reviews] = await Promise.all([
+      const [
+        overview,
+        matchingQueue,
+        bookingRisk,
+        verificationRisk,
+        paymentReconciliation,
+        payoutQueue,
+        tutorQuality,
+        disputes,
+        tutors,
+        requests,
+        bookings,
+        sessions,
+        classes,
+        reviews,
+      ] = await Promise.all([
+        adminOperationService.overview(),
+        adminOperationService.matchingQueue(),
+        adminOperationService.bookingRisk(),
+        adminOperationService.verificationRisk(),
+        adminOperationService.paymentReconciliation(),
+        adminOperationService.payoutQueue(),
+        adminOperationService.tutorQuality(),
+        adminOperationService.disputes(),
         tutorService.getAllTutors(),
         learningRequestService.getAllRequests(),
         bookingService.getAllBookings(),
@@ -55,7 +78,22 @@ export function useAdminOperations() {
         classService.getAllClasses(),
         reviewService.getAllReviews(),
       ])
-      return { tutors, requests, bookings, sessions, classes, reviews }
+      return {
+        overview,
+        matchingQueue,
+        bookingRisk,
+        verificationRisk,
+        paymentReconciliation,
+        payoutQueue,
+        tutorQuality,
+        disputes,
+        tutors,
+        requests,
+        bookings,
+        sessions,
+        classes,
+        reviews,
+      }
     },
     { revalidateOnFocus: false }
   )

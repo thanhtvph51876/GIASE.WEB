@@ -1,9 +1,15 @@
 import type { ClassSession, Conversation, LearningRequest, TrialBooking, Tutor, User } from "@/types"
+import type { UserRole } from "@/types"
 
 export const PERMISSION_ERROR = "Bạn không có quyền thực hiện thao tác này."
+export const ADMIN_ROLES: UserRole[] = ["admin", "finance_admin", "tutor_admin", "support_admin", "verification_admin", "system_admin"]
+
+export function isAdminRole(role?: UserRole | null): boolean {
+  return !!role && ADMIN_ROLES.includes(role)
+}
 
 export function canAccessAdmin(user?: User | null): boolean {
-  return user?.role === "admin"
+  return isAdminRole(user?.role)
 }
 
 export function canAccessStudentDashboard(user?: User | null): boolean {
@@ -50,7 +56,7 @@ export function canViewStudentRequest(
   user: User | null | undefined,
   request: LearningRequest
 ): boolean {
-  if (user?.role === "admin") return true
+  if (canAccessAdmin(user)) return true
   if (user?.role === "student" || user?.role === "parent") {
     return request.userId === user.id
   }

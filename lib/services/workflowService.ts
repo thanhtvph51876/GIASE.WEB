@@ -8,7 +8,7 @@ export interface TrialScheduleInput {
   date: string
   startTime: string
   endTime: string
-  mode: "online" | "offline" | "both"
+  mode: string
   location?: string
   note?: string
 }
@@ -49,29 +49,11 @@ class WorkflowService {
     _tutorId: string,
     selectedSchedule: TrialScheduleInput,
     _actor?: User | null
-  ): Promise<{ booking: TrialBooking; session: ClassSession; class: LearningClass }> {
+  ): Promise<{ booking: TrialBooking }> {
     ensureSchedule(selectedSchedule)
     const result = await bookingService.acceptBooking(bookingId, selectedSchedule)
     if (!result.success || !result.booking) throw new Error(result.error || "Không thể chấp nhận booking.")
-    return {
-      booking: result.booking,
-      session: {
-        id: "",
-        tutorId: result.booking.tutorId,
-        studentId: result.booking.studentId || result.booking.userId || "",
-        tutorName: "",
-        studentName: result.booking.studentName,
-        subject: result.booking.subject,
-        grade: result.booking.grade,
-        startTime: `${selectedSchedule.date}T${selectedSchedule.startTime}:00`,
-        endTime: `${selectedSchedule.date}T${selectedSchedule.endTime}:00`,
-        mode: selectedSchedule.mode,
-        location: selectedSchedule.location,
-        status: "scheduled",
-        createdAt: new Date().toISOString(),
-      },
-      class: {} as LearningClass,
-    }
+    return { booking: result.booking }
   }
 
   async rejectTrialBooking(bookingId: string, _tutorId: string, reason: string, _actor?: User | null): Promise<TrialBooking> {

@@ -1,109 +1,182 @@
 "use client"
 
 import Link from "next/link"
-import { Children } from "react"
+import { AlertTriangle, BookOpen, CalendarDays, CreditCard, ShieldCheck, Star, Wallet } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { StatusBadge } from "@/components/ui/status-badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useAuthContext } from "@/lib/contexts/auth-context"
-import { useAdminOperations, useTutorApprovalActions } from "@/lib/hooks/use-admin"
-import { formatDateTime } from "@/lib/helpers"
+import { ErrorState, LoadingSkeleton } from "@/components/platform/operational-components"
+import { useAdminOperations } from "@/lib/hooks/use-admin"
+
+type QueueRow = Record<string, unknown>
 
 export default function AdminOperationsPage() {
-  const { user } = useAuthContext()
-  const { data, refresh } = useAdminOperations()
-  const { approveTutor } = useTutorApprovalActions(user, refresh)
+  const { data, error, isLoading, refresh } = useAdminOperations()
 
-  const tutors = data?.tutors || []
-  const requests = data?.requests || []
-  const bookings = data?.bookings || []
-  const sessions = data?.sessions || []
-  const classes = data?.classes || []
-  const reviews = data?.reviews || []
+  if (isLoading) return <LoadingSkeleton label="Đang tải trung tâm vận hành..." />
+  if (error) return <ErrorState message="Không tải được dữ liệu vận hành từ backend." onRetry={() => refresh()} />
 
-  const pendingTutors = tutors.filter((tutor) => tutor.approvalStatus === "pending")
-  const newRequests = requests.filter((request) => request.status === "new")
-  const needAssign = requests.filter((request) => request.status === "new" || !request.assignedTutorId)
-  const pendingBookings = bookings.filter((booking) => booking.status === "pending")
-  const trialSessions = sessions.filter((session) => session.isTrial && session.status === "upcoming")
-  const activeClasses = classes.filter((item) => item.status === "active")
-  const qualityWarnings = reviews.filter((review) => review.rating <= 3)
+  const overview = data?.overview || {}
+  const queues = [
+    {
+      key: "matching",
+      label: "Matching",
+      title: "Request cần match/SLA",
+      items: data?.matchingQueue || [],
+      href: "/admin/learning-requests",
+    },
+    {
+      key: "booking",
+      label: "Booking risk",
+      title: "Booking rủi ro",
+      items: data?.bookingRisk || [],
+      href: "/admin/bookings",
+    },
+    {
+      key: "verification",
+      label: "Verification",
+      title: "Xác minh cần xử lý",
+      items: data?.verificationRisk || [],
+      href: "/admin/verifications",
+    },
+    {
+      key: "payment",
+      label: "Payment",
+      title: "Đối soát thanh toán",
+      items: data?.paymentReconciliation || [],
+      href: "/admin/payments",
+    },
+    {
+      key: "payout",
+      label: "Payout",
+      title: "Payout pending",
+      items: data?.payoutQueue || [],
+      href: "/admin/payouts",
+    },
+    {
+      key: "quality",
+      label: "Quality",
+      title: "Cảnh báo chất lượng",
+      items: data?.tutorQuality || [],
+      href: "/admin/tutors",
+    },
+    {
+      key: "disputes",
+      label: "Disputes",
+      title: "Tranh chấp",
+      items: data?.disputes || [],
+      href: "/admin/complaints",
+    },
+  ]
 
   return (
     <div className="space-y-5">
       <div className="surface-panel border-l-4 border-l-primary p-6">
-        <h1 className="text-2xl font-bold text-slate-950">Trung tâm vận hành</h1>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">Điều phối hồ sơ, yêu cầu học, booking, học thử và cảnh báo chất lượng.</p>
+        <h1 className="text-2xl font-bold text-slate-950">Trung tâm vận hành marketplace</h1>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          Theo dõi SLA, matching, booking rủi ro, payment, payout, verification và chất lượng gia sư từ API operation backend.
+        </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
-        <Metric label="Chờ duyệt" value={pendingTutors.length} />
-        <Metric label="Yêu cầu mới" value={newRequests.length} />
-        <Metric label="Cần gán" value={needAssign.length} />
-        <Metric label="Booking chờ" value={pendingBookings.length} />
-        <Metric label="Học thử" value={trialSessions.length} />
-        <Metric label="Lớp active" value={activeClasses.length} />
-        <Metric label="Cảnh báo" value={qualityWarnings.length} />
+
+      <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-8">
+        <Metric label="Request mới" value={overview.newRequests} icon={BookOpen} />
+        <Metric label="Chưa có gia sư" value={overview.unmatchedRequests} icon={AlertTriangle} />
+        <Metric label="Quá SLA" value={overview.overdueRequests} icon={AlertTriangle} />
+        <Metric label="Trial sắp tới" value={overview.upcomingTrialBookings} icon={CalendarDays} />
+        <Metric label="No-show" value={overview.noShowBookings} icon={AlertTriangle} />
+        <Metric label="Payment pending" value={overview.pendingPayments} icon={CreditCard} />
+        <Metric label="Payout pending" value={overview.pendingPayouts} icon={Wallet} />
+        <Metric label="Verification" value={overview.pendingVerifications} icon={ShieldCheck} />
       </div>
-      <Tabs defaultValue="pending-tutors" className="space-y-4">
+
+      <Tabs defaultValue="matching" className="space-y-4">
         <TabsList className="h-auto flex-wrap">
-          <TabsTrigger value="pending-tutors">Chờ duyệt gia sư</TabsTrigger>
-          <TabsTrigger value="new-requests">Yêu cầu học mới</TabsTrigger>
-          <TabsTrigger value="assign">Cần gán gia sư</TabsTrigger>
-          <TabsTrigger value="bookings">Booking chờ xác nhận</TabsTrigger>
-          <TabsTrigger value="trial">Lịch học thử</TabsTrigger>
-          <TabsTrigger value="classes">Lớp đang học</TabsTrigger>
-          <TabsTrigger value="quality">Cảnh báo chất lượng</TabsTrigger>
+          {queues.map((queue) => (
+            <TabsTrigger key={queue.key} value={queue.key}>
+              {queue.label}
+              <Badge variant="secondary" className="ml-2">{queue.items.length}</Badge>
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="pending-tutors"><List title="Hồ sơ gia sư chờ duyệt">{pendingTutors.map((tutor) => <Row key={tutor.id} title={tutor.fullName} meta={`${tutor.subjects.join(", ")} · ${tutor.university}`} badge={tutor.approvalStatus} badgeKind="approval" action={<Button size="sm" onClick={() => approveTutor(tutor.id)}>Duyệt nhanh</Button>} />)}</List></TabsContent>
-        <TabsContent value="new-requests"><List title="Yêu cầu học mới">{newRequests.map((request) => <Row key={request.id} title={`${request.subject} · ${request.grade}`} meta={`${request.studentName} · ${request.phone}`} badge={request.status} badgeKind="learningRequest" action={<Button size="sm" asChild><Link href="/admin/learning-requests">Xử lý</Link></Button>} />)}</List></TabsContent>
-        <TabsContent value="assign"><List title="Yêu cầu cần gán gia sư">{needAssign.map((request) => <Row key={request.id} title={request.requestCode} meta={`${request.subject} · ${request.grade} · ${request.location || "Online"}`} badge={request.status} badgeKind="learningRequest" action={<Button size="sm" asChild><Link href="/admin/learning-requests">Gán gia sư</Link></Button>} />)}</List></TabsContent>
-        <TabsContent value="bookings"><List title="Booking chờ gia sư xác nhận">{pendingBookings.map((booking) => <Row key={booking.id} title={`${booking.studentName} · ${booking.subject}`} meta={booking.preferredTime} badge={booking.status} badgeKind="booking" />)}</List></TabsContent>
-        <TabsContent value="trial"><List title="Lịch học thử">{trialSessions.map((session) => <Row key={session.id} title={`${session.subject} · ${session.studentName}`} meta={formatDateTime(session.startTime)} badge={session.status} badgeKind="session" action={<Button size="sm" asChild><Link href="/admin/classes">Xem lớp</Link></Button>} />)}</List></TabsContent>
-        <TabsContent value="classes"><List title="Lớp đang học">{activeClasses.map((item) => <Row key={item.id} title={`${item.subject} · ${item.grade}`} meta={`${item.tutorName} · ${item.studentName}`} badge={item.status} badgeKind="class" action={<Button size="sm" asChild><Link href="/admin/classes">Quản lý</Link></Button>} />)}</List></TabsContent>
-        <TabsContent value="quality"><List title="Cảnh báo chất lượng">{qualityWarnings.map((review) => <Row key={review.id} title={`${review.rating} sao từ ${review.studentName}`} meta={review.content} badge="Review thấp" action={<Button size="sm" asChild><Link href="/admin/reports">Xem báo cáo</Link></Button>} />)}</List></TabsContent>
+        {queues.map((queue) => (
+          <TabsContent key={queue.key} value={queue.key}>
+            <Queue title={queue.title} items={queue.items} href={queue.href} />
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   )
 }
 
-function List({ title, children }: { title: string; children: React.ReactNode }) {
-  const count = Children.count(children)
+function Metric({ label, value, icon: Icon }: { label: string; value?: unknown; icon: typeof BookOpen }) {
+  return (
+    <div className="metric-tile p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <Icon className="h-4 w-4 text-primary" />
+      </div>
+      <p className="mt-2 text-2xl font-bold text-slate-950">{Number(value || 0).toLocaleString("vi-VN")}</p>
+    </div>
+  )
+}
+
+function Queue({ title, items, href }: { title: string; items: QueueRow[]; href: string }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{count} mục cần theo dõi.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between gap-3">
+        <div>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{items.length} mục từ backend operation queue.</CardDescription>
+        </div>
+        <Button asChild size="sm" variant="outline">
+          <Link href={href}>Mở module</Link>
+        </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        {count ? children : <div className="soft-panel border-dashed p-8 text-center text-sm text-muted-foreground">Không có việc cần xử lý.</div>}
+        {items.length ? (
+          items.slice(0, 20).map((item, index) => <Row key={String(item.id || index)} item={item} />)
+        ) : (
+          <div className="soft-panel border-dashed p-8 text-center text-sm text-muted-foreground">Không có việc cần xử lý.</div>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="metric-tile p-4">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-slate-950">{value}</p>
-    </div>
-  )
-}
+function Row({ item }: { item: QueueRow }) {
+  const title = text(item, "requestCode", "studentName", "fullName", "tutorName", "userName", "email", "id")
+  const status = text(item, "status", "verificationStatus", "disputeStatus", "riskLevel")
+  const meta = [
+    text(item, "subject", "subjectName"),
+    text(item, "grade", "gradeName"),
+    values(item, "amount", "currency", "gateway", "proposalCount", "transactionCount", "riskScore", "duplicateFile").join(" · "),
+    text(item, "createdAt", "scheduledStartTime", "scheduledStart", "requestedAt", "updatedAt"),
+  ].filter(Boolean).join(" · ")
 
-function Row({ title, meta, badge, badgeKind, action }: { title: string; meta: string; badge: string; badgeKind?: React.ComponentProps<typeof StatusBadge>["kind"]; action?: React.ReactNode }) {
   return (
     <div className="item-row grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-semibold">{title}</p>
-          {badgeKind ? <StatusBadge kind={badgeKind} status={badge} /> : <Badge variant="secondary">{badge}</Badge>}
+          <p className="font-semibold">{title || "Bản ghi vận hành"}</p>
+          {status && <Badge variant="secondary">{status}</Badge>}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">{meta}</p>
+        {meta && <p className="mt-1 text-sm text-muted-foreground">{meta}</p>}
       </div>
-      {action}
+      <Star className="h-4 w-4 text-amber-500" />
     </div>
   )
+}
+
+function text(item: QueueRow, ...keys: string[]) {
+  for (const key of keys) {
+    const value = item[key]
+    if (value !== undefined && value !== null && String(value).trim()) return String(value)
+  }
+  return ""
+}
+
+function values(item: QueueRow, ...keys: string[]) {
+  return keys.map((key) => item[key]).filter((value) => value !== undefined && value !== null && String(value).trim()).map(String)
 }

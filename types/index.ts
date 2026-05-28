@@ -2,7 +2,17 @@
 // USER & AUTH TYPES
 // ============================================
 
-export type UserRole = "guest" | "student" | "parent" | "tutor" | "admin"
+export type UserRole =
+  | "guest"
+  | "student"
+  | "parent"
+  | "tutor"
+  | "admin"
+  | "finance_admin"
+  | "tutor_admin"
+  | "support_admin"
+  | "verification_admin"
+  | "system_admin"
 export type UserStatus = "active" | "inactive" | "pending"
 
 export interface User {
@@ -43,7 +53,7 @@ export interface ParentProfile {
 // TUTOR TYPES
 // ============================================
 
-export type TeachingMode = "online" | "offline" | "both"
+export type TeachingMode = string
 export type TutorProfileStatus =
   | "draft"
   | "pending"
@@ -120,46 +130,83 @@ export interface Tutor {
 export interface Subject {
   id: string
   name: string
-  icon: string
-  description: string
-  tutorCount: number
-  category: string
+  icon?: string
+  description?: string
+  tutorCount?: number
+  category?: string
+  code?: string
+  categoryId?: string
+  categoryName?: string
+  isActive?: boolean
 }
 
 export interface GradeLevel {
   id: string
   name: string
-  group: "primary" | "secondary" | "high_school" | "exam" | "university"
+  group?: string
+  code?: string
+  educationLevelId?: string
+  educationLevelName?: string
+  isActive?: boolean
 }
 
 export interface Location {
   id: string
+  code?: string
   name: string
-  city: string
+  city?: string
+  type?: string
   district?: string
+  parentId?: string
+  fullPath?: string
+  isActive?: boolean
+}
+
+export interface MasterDataItem {
+  id: string
+  code?: string
+  name: string
+  description?: string
+  isActive?: boolean
+  sortOrder?: number
+}
+
+export interface SubjectCategory extends MasterDataItem {
+  slug?: string
+  parentId?: string
+}
+
+export interface EducationLevel extends MasterDataItem {}
+
+export interface Language extends MasterDataItem {
+  nativeName?: string
+}
+
+export interface Certificate extends MasterDataItem {
+  languageId?: string
+  languageCode?: string
+  languageName?: string
+}
+
+export interface TeachingModeOption extends MasterDataItem {
+  value: TeachingMode
+  label: string
+}
+
+export interface CancellationPolicy extends MasterDataItem {
+  appliesTo?: string
+  freeCancelBeforeHours?: number
+  penaltyType?: string
+  penaltyValue?: number
 }
 
 // ============================================
 // LEARNING REQUEST TYPES
 // ============================================
 
-export type LearningRequestStatus =
-  | "new"
-  | "consulting"
-  | "matched"
-  | "trial_scheduled"
-  | "trial_completed"
-  | "active"
-  | "rematch"
-  | "completed"
-  | "cancelled"
+export type LearningRequestStatus = string
 
-export type LearningGoal =
-  | "improve_grades"
-  | "foundation"
-  | "exam_prep"
-  | "thpt_exam"
-  | "advanced"
+export type LearningGoal = string
 
 export interface LearningRequest {
   id: string
@@ -191,14 +238,7 @@ export interface LearningRequest {
 // TRIAL BOOKING TYPES
 // ============================================
 
-export type BookingStatus = "pending" | "accepted" | "rejected" | "completed"
-  | "assigned"
-  | "scheduled"
-  | "no_show_student"
-  | "no_show_tutor"
-  | "converted"
-  | "cancelled"
-  | "expired"
+export type BookingStatus = string
 
 export interface TrialBooking {
   id: string

@@ -14,12 +14,13 @@ export const adminApi = {
       apiRequest<CountRow[]>("/admin/reports/subject-distribution"),
       apiRequest<CountRow[]>("/admin/reports/tutor-status-distribution"),
       apiRequest<CountRow[]>("/admin/reports/conversion-funnel"),
-    ]).then(([requestsByMonth, subjectDistribution, tutorStatusDistribution, conversionFunnel]) => ({
+      apiRequest<CountRow[]>("/admin/reports/teaching-mode-distribution"),
+    ]).then(([requestsByMonth, subjectDistribution, tutorStatusDistribution, conversionFunnel, teachingModeRatio]) => ({
       requestsByMonth,
       subjectDistribution,
       tutorStatusDistribution,
       conversionFunnel,
-      teachingModeRatio: [] as CountRow[],
+      teachingModeRatio,
     }))
   },
   users() {

@@ -9,19 +9,29 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { GRADES, LOCATIONS_HCM, SUBJECT_OPTIONS } from "@/lib/constants"
+import { ErrorState, LoadingSkeleton } from "@/components/platform/operational-components"
 import { useOpenLearningRequests } from "@/lib/hooks/use-learning-requests"
+import { useMasterDataCatalog } from "@/lib/hooks/use-master-data"
 import { formatCurrency, formatDate } from "@/lib/helpers"
 import type { LearningRequestStatus } from "@/types"
 
 const statusLabels: Record<LearningRequestStatus, string> = {
   new: "Yêu cầu mới",
+  draft: "Nháp",
+  submitted: "Đã gửi",
+  matching: "Đang matching",
+  waiting_tutor_proposal: "Chờ proposal",
+  proposal_received: "Đã có proposal",
+  waiting_parent_confirmation: "Chờ phụ huynh xác nhận",
   consulting: "Đang tư vấn",
   matched: "Đã ghép gia sư",
   trial_scheduled: "Đã hẹn học thử",
   trial_completed: "Đã học thử",
   active: "Đang học",
   rematch: "Cần ghép lại",
+  converted_to_class: "Đã chuyển lớp",
+  expired: "Hết hạn",
+  closed: "Đã đóng",
   completed: "Hoàn thành",
   cancelled: "Đã hủy",
 }
@@ -31,7 +41,16 @@ export default function LearningRequestsPage() {
   const [subject, setSubject] = useState("all")
   const [grade, setGrade] = useState("all")
   const [location, setLocation] = useState("all")
-  const { requests: openRequests } = useOpenLearningRequests()
+  const { requests: openRequests, isLoading: requestsLoading, error: requestsError, refetch } = useOpenLearningRequests()
+  const {
+    subjects,
+    grades,
+    locations,
+    isLoading: masterDataLoading,
+    error: masterDataError,
+    refresh: refreshMasterData,
+  } = useMasterDataCatalog()
+  const locationOptions = locations?.map((item) => item.fullPath || item.name) || []
 
   const requests = useMemo(() => {
     return openRequests.filter((request) => {
@@ -76,39 +95,39 @@ export default function LearningRequestsPage() {
                   className="pl-9"
                 />
               </div>
-              <Select value={subject} onValueChange={setSubject}>
+              <Select value={subject} onValueChange={setSubject} disabled={masterDataLoading}>
                 <SelectTrigger>
                   <SelectValue placeholder="Môn học" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả môn</SelectItem>
-                  {SUBJECT_OPTIONS.map((item) => (
+                  {subjects?.map((item) => (
                     <SelectItem key={item.id} value={item.name}>
                       {item.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={grade} onValueChange={setGrade}>
+              <Select value={grade} onValueChange={setGrade} disabled={masterDataLoading}>
                 <SelectTrigger>
                   <SelectValue placeholder="Lớp" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả lớp</SelectItem>
-                  {GRADES.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
+                  {grades?.map((item) => (
+                    <SelectItem key={item.id} value={item.name}>
+                      {item.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={location} onValueChange={setLocation}>
+              <Select value={location} onValueChange={setLocation} disabled={masterDataLoading}>
                 <SelectTrigger>
                   <SelectValue placeholder="Khu vực" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả khu vực</SelectItem>
-                  {LOCATIONS_HCM.slice(0, 18).map((item) => (
+                  {locationOptions.map((item) => (
                     <SelectItem key={item} value={item}>
                       {item}
                     </SelectItem>
@@ -118,6 +137,18 @@ export default function LearningRequestsPage() {
             </CardContent>
           </Card>
 
+          {masterDataError || requestsError ? (
+            <ErrorState
+              message={masterDataError ? "Không tải được master data từ backend." : "Không tải được yêu cầu học đang mở."}
+              onRetry={() => {
+                refreshMasterData()
+                refetch()
+              }}
+            />
+          ) : requestsLoading ? (
+            <LoadingSkeleton label="Đang tải yêu cầu học..." />
+          ) : (
+            <>
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Tìm thấy <b className="text-foreground">{requests.length}</b> yêu cầu phù hợp
@@ -137,7 +168,7 @@ export default function LearningRequestsPage() {
                         <CardTitle className="text-lg">{request.subject} · {request.grade}</CardTitle>
                         <p className="mt-1 text-sm text-muted-foreground">{request.requestCode}</p>
                       </div>
-                      <Badge variant="secondary">{statusLabels[request.status]}</Badge>
+                      <Badge variant="secondary">{statusLabels[request.status] || request.status}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
@@ -169,6 +200,8 @@ export default function LearningRequestsPage() {
                 <p className="mt-2 text-sm text-muted-foreground">Hãy thử thay đổi bộ lọc hoặc quay lại sau.</p>
               </CardContent>
             </Card>
+          )}
+            </>
           )}
         </section>
       </main>

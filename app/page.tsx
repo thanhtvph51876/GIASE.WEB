@@ -20,9 +20,11 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Header, Footer } from "@/components/layout"
 import { TutorCard } from "@/components/tutor"
+import { ErrorState } from "@/components/platform/operational-components"
 import { SubjectIcon } from "@/lib/helpers"
+import { useMasterDataCatalog } from "@/lib/hooks/use-master-data"
 import { useTutors } from "@/lib/hooks/use-tutors"
-import { emptySiteStats, publicApi } from "@/lib/api/public-api"
+import { publicApi } from "@/lib/api/public-api"
 
 const features = [
   {
@@ -75,29 +77,28 @@ const steps = [
 ]
 
 export default function HomePage() {
-  const { data: stats = emptySiteStats } = useSWR("public-stats", () => publicApi.stats(), {
+  const { data: stats, error: statsError, mutate: refreshStats } = useSWR("public-stats", () => publicApi.stats(), {
     revalidateOnFocus: false,
   })
-  const { data: subjects = [] } = useSWR("catalog-subjects", () => publicApi.subjects(), {
-    revalidateOnFocus: false,
-  })
+  const { subjects, grades, locations, teachingModes, error: masterDataError, refresh: refreshMasterData } = useMasterDataCatalog()
   const { tutors } = useTutors({
     initialFilters: { verified: true },
     initialSortBy: "rating_desc",
   })
   const featuredTutors = tutors.slice(0, 3)
-  const popularSubjects = subjects.slice(0, 8)
+  const popularSubjects = (subjects || []).slice(0, 8)
+  const locationOptions = locations?.map((item) => item.fullPath || item.name) || []
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-shell page-enter flex min-h-screen flex-col">
       <Header />
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="page-band relative overflow-hidden py-12 md:py-16">
+        <section className="page-band gradient-mesh relative overflow-hidden py-12 md:py-16">
           <div className="app-container">
             <div className="grid gap-8 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
-              <div>
+              <div className="content-fade-up">
                 <Badge variant="secondary" className="mb-4 shadow-sm">
                   <GraduationCap className="mr-1 h-3 w-3" />
                   Gia sư từ trường Sư phạm
@@ -121,7 +122,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="surface-panel overflow-hidden">
+              <div className="surface-panel premium-card content-fade-up overflow-hidden">
                 <div className="border-b border-slate-200/80 bg-slate-50/80 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -131,9 +132,9 @@ export default function HomePage() {
                     <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Đang hoạt động</Badge>
                   </div>
                 </div>
-                <div className="space-y-3 p-4">
+                <div className="stagger-list space-y-3 p-4">
                   {featuredTutors.map((tutor) => (
-                    <Link key={tutor.id} href={`/tutors/${tutor.id}`} className="item-row flex items-center justify-between gap-3">
+                    <Link key={tutor.id} href={`/tutors/${tutor.id}`} className="item-row stagger-item flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <Avatar className="h-12 w-12 ring-2 ring-primary/10">
                           <AvatarImage src={tutor.avatar} alt={tutor.fullName} />
@@ -156,11 +157,11 @@ export default function HomePage() {
 
             <form
               action="/tutors"
-              className="surface-panel mx-auto mt-10 grid max-w-5xl gap-3 p-4 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+              className="surface-panel reveal mx-auto mt-10 grid max-w-5xl gap-3 p-4 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
             >
               <select name="subject" className="h-11 rounded-lg border bg-white px-3 text-sm">
                 <option value="">Chọn môn học</option>
-                {subjects.map((subject) => (
+                {subjects?.map((subject) => (
                   <option key={subject.id} value={subject.name}>
                     {subject.name}
                   </option>
@@ -168,21 +169,23 @@ export default function HomePage() {
               </select>
               <select name="grade" className="h-11 rounded-lg border bg-white px-3 text-sm">
                 <option value="">Chọn lớp</option>
-                {["Lớp 6", "Lớp 7", "Lớp 8", "Lớp 9", "Lớp 10", "Lớp 11", "Lớp 12", "Luyện thi THPT"].map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}
+                {grades?.map((grade) => (
+                  <option key={grade.id} value={grade.name}>
+                    {grade.name}
                   </option>
                 ))}
               </select>
               <select name="mode" className="h-11 rounded-lg border bg-white px-3 text-sm">
                 <option value="">Hình thức học</option>
-                <option value="online">Online</option>
-                <option value="offline">Offline</option>
-                <option value="both">Cả hai</option>
+                {teachingModes?.map((mode) => (
+                  <option key={mode.id} value={mode.value}>
+                    {mode.label}
+                  </option>
+                ))}
               </select>
               <select name="location" className="h-11 rounded-lg border bg-white px-3 text-sm">
                 <option value="">Khu vực</option>
-                {["Quận 1", "Quận 3", "Quận 7", "Quận 10", "Bình Thạnh", "Cầu Giấy", "Đống Đa"].map((location) => (
+                {locationOptions.map((location) => (
                   <option key={location} value={location}>
                     {location}
                   </option>
@@ -195,41 +198,53 @@ export default function HomePage() {
             </form>
 
             {/* Stats */}
-            <div className="mx-auto mt-16 grid max-w-4xl grid-cols-2 gap-4 md:grid-cols-4">
-              <Card>
+            {statsError || masterDataError ? (
+              <div className="mx-auto mt-16 max-w-4xl">
+                <ErrorState
+                  message={statsError ? "Không tải được thống kê public." : "Không tải được master data."}
+                  onRetry={() => {
+                    refreshStats()
+                    refreshMasterData()
+                  }}
+                />
+              </div>
+            ) : (
+            <div className="stagger-list mx-auto mt-16 grid max-w-4xl grid-cols-2 gap-4 md:grid-cols-4">
+              <Card className="stagger-item">
                 <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-primary">{stats.totalTutors}</div>
+                  <div className="text-3xl font-bold text-primary">{stats?.totalTutors ?? "..."}</div>
                   <div className="text-sm text-muted-foreground">Gia sư</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="stagger-item">
                 <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-primary">{stats.totalStudents}</div>
+                  <div className="text-3xl font-bold text-primary">{stats?.totalStudents ?? "..."}</div>
                   <div className="text-sm text-muted-foreground">Học sinh</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="stagger-item">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl font-bold text-primary">
-                    {stats.completedSessions}
+                    {stats?.completedSessions ?? "..."}
                   </div>
                   <div className="text-sm text-muted-foreground">Buổi học</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="stagger-item">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl font-bold text-primary">
-                    {stats.satisfactionRate}%
+                    {stats ? `${stats.satisfactionRate}%` : "..."}
                   </div>
                   <div className="text-sm text-muted-foreground">Hài lòng</div>
                 </CardContent>
               </Card>
             </div>
+            )}
           </div>
         </section>
 
         {/* Features Section */}
-        <section className="py-20">
+        <section className="reveal py-20">
           <div className="app-container">
             <div className="mb-12 text-center">
               <h2 className="mb-4 text-3xl font-bold">Tại sao chọn chúng tôi?</h2>
@@ -237,11 +252,11 @@ export default function HomePage() {
                 Chúng tôi kết nối bạn với những gia sư giỏi nhất từ các trường Sư phạm uy tín
               </p>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="stagger-list grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {features.map((feature) => (
-                <Card key={feature.title} className="hover:border-primary/30">
+                <Card key={feature.title} className="stagger-item gradient-border-card hover:border-primary/30">
                   <CardContent className="p-6">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                    <div className="icon-float mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                       <feature.icon className="h-6 w-6 text-primary" />
                     </div>
                     <h3 className="mb-2 font-semibold">{feature.title}</h3>
@@ -254,7 +269,7 @@ export default function HomePage() {
         </section>
 
         {/* Popular Subjects */}
-        <section className="bg-slate-100/60 py-20">
+        <section className="gradient-mesh reveal bg-slate-100/60 py-20">
           <div className="app-container">
             <div className="mb-12 flex items-end justify-between">
               <div>
@@ -270,22 +285,24 @@ export default function HomePage() {
                 </Link>
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
+            <div className="stagger-list grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
               {popularSubjects.map((subject) => (
                 <Link
                   key={subject.id}
                   href={`/tutors?subject=${encodeURIComponent(subject.name)}`}
-                  className="group"
+                  className="stagger-item group"
                 >
                   <Card className="transition-colors hover:border-primary/30">
                     <CardContent className="p-4 text-center">
-                      <div className="mb-2 flex justify-center">
-                        <SubjectIcon name={subject.icon} className="h-6 w-6 text-primary" />
+                      <div className="icon-float mb-2 flex justify-center">
+                        <SubjectIcon name={subject.icon || subject.name} className="h-6 w-6 text-primary" />
                       </div>
                       <h3 className="text-sm font-medium group-hover:text-primary">
                         {subject.name}
                       </h3>
-                      <p className="text-xs text-muted-foreground">{subject.tutorCount} gia sư</p>
+                      <p className="text-xs text-muted-foreground">
+                        {subject.tutorCount === undefined ? "Chưa có số liệu" : `${subject.tutorCount} gia sư`}
+                      </p>
                     </CardContent>
                   </Card>
                 </Link>
@@ -295,7 +312,7 @@ export default function HomePage() {
         </section>
 
         {/* Featured Tutors */}
-        <section className="py-20">
+        <section className="reveal py-20">
           <div className="app-container">
             <div className="mb-12 flex items-end justify-between">
               <div>
@@ -311,9 +328,11 @@ export default function HomePage() {
                 </Link>
               </Button>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="stagger-list grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {featuredTutors.map((tutor) => (
-                <TutorCard key={tutor.id} tutor={tutor} />
+                <div key={tutor.id} className="stagger-item">
+                  <TutorCard tutor={tutor} />
+                </div>
               ))}
             </div>
             <div className="mt-8 text-center md:hidden">
@@ -328,7 +347,7 @@ export default function HomePage() {
         </section>
 
         {/* How it works */}
-        <section className="bg-slate-100/60 py-20">
+        <section className="gradient-mesh reveal bg-slate-100/60 py-20">
           <div className="app-container">
             <div className="mb-12 text-center">
               <h2 className="mb-4 text-3xl font-bold">Cách thức hoạt động</h2>
@@ -336,9 +355,9 @@ export default function HomePage() {
                 Chỉ với 4 bước đơn giản, bạn có thể bắt đầu học cùng gia sư chất lượng
               </p>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="stagger-list grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {steps.map((item, index) => (
-                <div key={item.step} className="relative">
+                <div key={item.step} className="stagger-item relative">
                   <div className="mb-4 flex items-center gap-3">
                     <span className="text-4xl font-bold text-primary/20">{item.step}</span>
                     {index < steps.length - 1 && (
@@ -354,9 +373,9 @@ export default function HomePage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20">
+        <section className="reveal py-20">
           <div className="app-container">
-            <Card className="overflow-hidden border-slate-900 bg-slate-950">
+            <Card className="gradient-mesh overflow-hidden border-slate-900 bg-slate-950">
               <CardContent className="p-8 md:p-12">
                 <div className="grid items-center gap-8 md:grid-cols-2">
                   <div>
@@ -377,25 +396,25 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="hidden md:block">
-                    <div className="grid grid-cols-2 gap-4 text-white">
-                      <div className="rounded-lg border border-white/10 bg-white/10 p-4">
+                    <div className="stagger-list grid grid-cols-2 gap-4 text-white">
+                      <div className="stagger-item rounded-lg border border-white/10 bg-white/10 p-4">
                         <Users className="mb-2 h-8 w-8" />
-                        <div className="text-2xl font-bold">{stats.totalTutors}</div>
+                        <div className="text-2xl font-bold">{stats?.totalTutors ?? "..."}</div>
                         <div className="text-sm opacity-80">Gia sư đăng ký</div>
                       </div>
-                      <div className="rounded-lg border border-white/10 bg-white/10 p-4">
+                      <div className="stagger-item rounded-lg border border-white/10 bg-white/10 p-4">
                         <BookOpen className="mb-2 h-8 w-8" />
-                        <div className="text-2xl font-bold">{subjects.length}</div>
+                        <div className="text-2xl font-bold">{subjects?.length ?? "..."}</div>
                         <div className="text-sm opacity-80">Môn học</div>
                       </div>
-                      <div className="rounded-lg border border-white/10 bg-white/10 p-4">
+                      <div className="stagger-item rounded-lg border border-white/10 bg-white/10 p-4">
                         <CheckCircle className="mb-2 h-8 w-8" />
-                        <div className="text-2xl font-bold">{stats.verifiedTutors}</div>
+                        <div className="text-2xl font-bold">{stats?.verifiedTutors ?? "..."}</div>
                         <div className="text-sm opacity-80">Đã xác minh</div>
                       </div>
-                      <div className="rounded-lg border border-white/10 bg-white/10 p-4">
+                      <div className="stagger-item rounded-lg border border-white/10 bg-white/10 p-4">
                         <Star className="mb-2 h-8 w-8" />
-                        <div className="text-2xl font-bold">{stats.averageRating}</div>
+                        <div className="text-2xl font-bold">{stats?.averageRating ?? "..."}</div>
                         <div className="text-sm opacity-80">Đánh giá TB</div>
                       </div>
                     </div>

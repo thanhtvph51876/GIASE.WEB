@@ -16,8 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Slider } from "@/components/ui/slider"
 import { Skeleton } from "@/components/ui/skeleton"
-import { LOCATIONS_HCM, SUBJECT_OPTIONS } from "@/lib/constants"
+import { ErrorState } from "@/components/platform/operational-components"
 import { useAuthContext } from "@/lib/contexts/auth-context"
+import { useMasterDataCatalog } from "@/lib/hooks/use-master-data"
 import { useFavorites, useTutors } from "@/lib/hooks/use-tutors"
 import type { Gender, TeachingMode, TutorFilters, TutorSortBy } from "@/types"
 
@@ -39,9 +40,18 @@ function TutorsContent() {
     teachingMode: (searchParams.get("mode") as TeachingMode | null) || undefined,
   }
   const { user } = useAuthContext()
-  const { tutors, filters, sortBy, isLoading, updateFilters, setSortBy, resetFilters } = useTutors({
+  const { tutors, filters, sortBy, isLoading, error: tutorsError, updateFilters, setSortBy, resetFilters, refresh } = useTutors({
     initialFilters,
   })
+  const {
+    subjects,
+    grades,
+    locations,
+    teachingModes,
+    error: masterDataError,
+    isLoading: masterDataLoading,
+    refresh: refreshMasterData,
+  } = useMasterDataCatalog()
   const { toggleFavorite, isFavorite } = useFavorites(
     user?.role === "student" || user?.role === "parent" ? user.id : undefined
   )
@@ -61,6 +71,7 @@ function TutorsContent() {
     filters.gender,
   ].filter(Boolean).length
   const comparedTutors = tutors.filter((tutor) => compareIds.includes(tutor.id))
+  const locationOptions = locations?.map((location) => location.fullPath || location.name) || []
   const toggleCompare = (id: string) => {
     setCompareIds((current) => {
       if (current.includes(id)) return current.filter((item) => item !== id)
@@ -96,7 +107,7 @@ function TutorsContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả môn học</SelectItem>
-            {SUBJECT_OPTIONS.map((subject) => (
+            {subjects?.map((subject) => (
               <SelectItem key={subject.id} value={subject.name}>
                 {subject.name}
               </SelectItem>
@@ -116,9 +127,9 @@ function TutorsContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả lớp</SelectItem>
-            {["Lớp 1", "Lớp 2", "Lớp 3", "Lớp 4", "Lớp 5", "Lớp 6", "Lớp 7", "Lớp 8", "Lớp 9", "Lớp 10", "Lớp 11", "Lớp 12", "Luyện thi THPT", "IELTS"].map((grade) => (
-              <SelectItem key={grade} value={grade}>
-                {grade}
+            {grades?.map((grade) => (
+              <SelectItem key={grade.id} value={grade.name}>
+                {grade.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -136,7 +147,7 @@ function TutorsContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả khu vực</SelectItem>
-            {LOCATIONS_HCM.slice(0, 18).map((location) => (
+            {locationOptions.map((location) => (
               <SelectItem key={location} value={location}>
                 {location}
               </SelectItem>
@@ -158,9 +169,11 @@ function TutorsContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả hình thức</SelectItem>
-            <SelectItem value="online">Online</SelectItem>
-            <SelectItem value="offline">Offline</SelectItem>
-            <SelectItem value="both">Cả hai</SelectItem>
+            {teachingModes?.map((mode) => (
+              <SelectItem key={mode.id} value={mode.value}>
+                {mode.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -227,6 +240,11 @@ function TutorsContent() {
       </Button>
     </div>
   )
+
+  const retryAll = () => {
+    refreshMasterData()
+    refresh()
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -358,7 +376,12 @@ function TutorsContent() {
                 </div>
               )}
 
-              {isLoading ? (
+              {masterDataError || tutorsError ? (
+                <ErrorState
+                  message={masterDataError ? "Không tải được master data từ backend." : "Không tải được danh sách gia sư."}
+                  onRetry={retryAll}
+                />
+              ) : isLoading || masterDataLoading ? (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, index) => (
                     <Skeleton key={index} className="h-80 rounded-lg" />

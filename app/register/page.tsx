@@ -74,8 +74,8 @@ function RegisterContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100/70 px-4 py-8">
-      <Card className="w-full max-w-md">
+    <div className="page-shell page-enter gradient-mesh flex min-h-screen items-center justify-center bg-slate-100/70 px-4 py-8">
+      <Card className="reveal soft-glow w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto mb-4 flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/25">
@@ -100,38 +100,38 @@ function RegisterContent() {
               >
                 <Label
                   htmlFor="student"
-                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+                  className={`gradient-border-card hover-lift group flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
                     selectedRole === "student"
                       ? "border-primary bg-primary/10 shadow-sm"
                       : "border-muted hover:border-primary/50"
                   }`}
                 >
                   <RadioGroupItem value="student" id="student" className="sr-only" />
-                  <User className="h-8 w-8" />
+                  <User className="icon-float h-8 w-8" />
                   <span className="font-medium">Học sinh</span>
                 </Label>
                 <Label
                   htmlFor="parent"
-                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+                  className={`gradient-border-card hover-lift group flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
                     selectedRole === "parent"
                       ? "border-primary bg-primary/10 shadow-sm"
                       : "border-muted hover:border-primary/50"
                   }`}
                 >
                   <RadioGroupItem value="parent" id="parent" className="sr-only" />
-                  <User className="h-8 w-8" />
+                  <User className="icon-float h-8 w-8" />
                   <span className="font-medium">Phụ huynh</span>
                 </Label>
                 <Label
                   htmlFor="tutor"
-                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+                  className={`gradient-border-card hover-lift group flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
                     selectedRole === "tutor"
                       ? "border-primary bg-primary/10 shadow-sm"
                       : "border-muted hover:border-primary/50"
                   }`}
                 >
                   <RadioGroupItem value="tutor" id="tutor" className="sr-only" />
-                  <BookOpen className="h-8 w-8" />
+                  <BookOpen className="icon-float h-8 w-8" />
                   <span className="font-medium">Gia sư</span>
                 </Label>
               </RadioGroup>
@@ -236,7 +236,7 @@ function RegisterContent() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Đang tải form đăng ký...</div>}>
+    <Suspense fallback={<div className="page-shell page-enter flex min-h-screen items-center justify-center">Đang tải form đăng ký...</div>}>
       <RegisterContent />
     </Suspense>
   )
