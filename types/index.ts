@@ -56,8 +56,12 @@ export interface ParentProfile {
 export type TeachingMode = string
 export type TutorProfileStatus =
   | "draft"
+  | "submitted"
   | "pending"
+  | "pending_verification"
   | "need_update"
+  | "needs_more_documents"
+  | "verified"
   | "approved"
   | "rejected"
   | "suspended"
@@ -121,6 +125,69 @@ export interface Tutor {
   responseRate: number
   rejectReason?: string
   createdAt: string
+}
+
+export type TutorApprovalProfileStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "PENDING_VERIFICATION"
+  | "NEEDS_MORE_DOCUMENTS"
+  | "VERIFIED"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED"
+
+export type TutorApprovalDocumentStatus =
+  | "MISSING"
+  | "UPLOADED"
+  | "PENDING_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
+  | "EXPIRED"
+
+export interface TutorApprovalRiskBreakdownItem {
+  reason: string
+  score: number
+}
+
+export interface TutorApprovalEligibility {
+  tutorId: string
+  eligibleForApproval: boolean
+  profileStatus: TutorApprovalProfileStatus
+  rawProfileStatus?: TutorProfileStatus | string
+  riskScore: number
+  riskLevel: "LOW" | "MEDIUM" | "HIGH"
+  riskBreakdown: TutorApprovalRiskBreakdownItem[]
+  reasons: string[]
+  checklist: {
+    profileSubmitted: boolean
+    identityApproved: boolean
+    certificateApproved: boolean
+    commitmentSigned: boolean
+    commitmentVersionValid: boolean
+    duplicateDocumentDetected: boolean
+    riskScoreAcceptable: boolean
+  }
+  documents: Array<{
+    type: "IDENTITY" | "CERTIFICATE"
+    status: TutorApprovalDocumentStatus
+    verificationId?: string
+    uploadedAt?: string
+    reviewedAt?: string
+    duplicateDocumentDetected?: boolean
+    riskScore?: number
+    mimeType?: string
+    fileSize?: number
+    rejectReason?: string
+  }>
+  commitment: {
+    signed: boolean
+    versionValid: boolean
+    requiredVersion: string
+    version?: string
+    signedAt?: string
+    fullNameAtSigning?: string
+  }
 }
 
 // ============================================
@@ -477,6 +544,14 @@ export interface UserVerification {
   agreementSigned?: boolean
   createdAt: string
   updatedAt?: string
+}
+
+export interface VerificationTerms {
+  version: string
+  effectiveDate: string
+  title: string
+  content: string
+  contentHash: string
 }
 
 // ============================================

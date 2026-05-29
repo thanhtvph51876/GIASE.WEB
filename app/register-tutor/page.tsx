@@ -123,16 +123,21 @@ export default function RegisterTutorPage() {
               </div>
               <h1 className="mt-6 text-3xl font-bold">Hồ sơ của bạn đã được gửi xét duyệt</h1>
               <p className="mt-3 text-muted-foreground">
-                Nhà trường sẽ phản hồi sau khi kiểm tra thông tin. Trạng thái sẽ được cập nhật trong dashboard gia sư.
+                Bước tiếp theo là xác thực danh tính và bằng cấp/chứng chỉ để admin có thể duyệt hồ sơ gia sư.
               </p>
-              <div className="mt-8 flex justify-center gap-3">
+              <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Button variant="outline" asChild>
                   <Link href="/">Trang chủ</Link>
                 </Button>
                 {user?.role === "tutor" && (
-                  <Button asChild>
-                    <Link href="/dashboard/tutor/profile">Xem hồ sơ</Link>
-                  </Button>
+                  <>
+                    <Button asChild>
+                      <Link href="/dashboard/tutor/verification">Xác thực giấy tờ</Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link href="/dashboard/tutor/profile">Xem hồ sơ</Link>
+                    </Button>
+                  </>
                 )}
               </div>
             </CardContent>

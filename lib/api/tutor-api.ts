@@ -1,4 +1,4 @@
-import type { Tutor, TutorDocument, TutorFilters, TutorRegistrationFormData, TutorSortBy } from "@/types"
+import type { Tutor, TutorApprovalEligibility, TutorDocument, TutorFilters, TutorRegistrationFormData, TutorSortBy } from "@/types"
 import { apiRequest, uploadFile } from "./client"
 import { mapList, mapTutor, mapTutorDocument } from "./mappers"
 
@@ -36,6 +36,9 @@ export const tutorApi = {
   },
   async getMyProfile() {
     return mapTutor(await apiRequest<Tutor>("/tutor/profile"))
+  },
+  async myApprovalEligibility() {
+    return apiRequest<TutorApprovalEligibility>("/tutor/approval-eligibility")
   },
   async createTutorProfile(data: TutorRegistrationFormData) {
     return mapTutor(await apiRequest<Tutor>("/tutor/profile", { method: "PATCH", body: data }))
@@ -85,5 +88,8 @@ export const tutorApi = {
   },
   async reactivateTutor(id: string) {
     return mapTutor(await apiRequest<Tutor>(`/admin/tutors/${id}/reactivate`, { method: "POST" }))
+  },
+  async approvalEligibility(id: string) {
+    return apiRequest<TutorApprovalEligibility>(`/admin/tutors/${id}/approval-eligibility`)
   },
 }

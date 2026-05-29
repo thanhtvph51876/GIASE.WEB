@@ -10,6 +10,10 @@ class VerificationService {
     return verificationApi.myTutorVerifications()
   }
 
+  getTutorTerms() {
+    return verificationApi.tutorTerms()
+  }
+
   uploadStudentCard(input: StudentCardUploadInput) {
     return verificationApi.uploadStudentCard(input)
   }

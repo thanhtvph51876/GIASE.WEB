@@ -1,4 +1,4 @@
-import type { UserVerification, VerificationStatus, VerificationType } from "@/types"
+import type { UserVerification, VerificationStatus, VerificationTerms, VerificationType } from "@/types"
 import { apiRequest } from "./client"
 import { mapList, mapVerification } from "./mappers"
 
@@ -43,6 +43,9 @@ export const verificationApi = {
   },
   async myTutorVerifications() {
     return mapList(await apiRequest<UserVerification[]>("/tutor/verifications/me"), mapVerification)
+  },
+  async tutorTerms() {
+    return apiRequest<VerificationTerms>("/verification/terms/tutor")
   },
   async signTutorAgreement(id: string, signerFullName: string, signerEmail?: string) {
     return mapVerification(await apiRequest<UserVerification>(`/tutor/verifications/${id}/agreement/sign`, {

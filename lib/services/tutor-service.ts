@@ -1,5 +1,6 @@
-import type { Tutor, TutorDocument, TutorFilters, TutorRegistrationFormData, TutorSortBy, User } from "@/types"
+import type { Tutor, TutorApprovalEligibility, TutorDocument, TutorFilters, TutorRegistrationFormData, TutorSortBy, User } from "@/types"
 import { tutorApi } from "@/lib/api/tutor-api"
+import { ApiClientError } from "@/lib/api/client"
 
 class TutorService {
   private favoriteIdsByUser = new Map<string, string[]>()
@@ -87,7 +88,17 @@ class TutorService {
 
   async getPendingTutors(): Promise<Tutor[]> {
     const tutors = await this.getAllTutors()
-    return tutors.filter((tutor) => tutor.approvalStatus === "pending")
+    return tutors.filter((tutor) =>
+      ["submitted", "pending", "pending_verification", "needs_more_documents", "need_update", "verified"].includes(tutor.approvalStatus)
+    )
+  }
+
+  async getApprovalEligibility(id: string): Promise<TutorApprovalEligibility> {
+    return tutorApi.approvalEligibility(id)
+  }
+
+  async getMyApprovalEligibility(): Promise<TutorApprovalEligibility> {
+    return tutorApi.myApprovalEligibility()
   }
 
   async approveTutor(id: string) {
@@ -173,8 +184,19 @@ class TutorService {
       const tutor = await action()
       return { success: true, tutor }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : "Thao tác thất bại" }
+      return { success: false, error: this.formatError(error) }
     }
+  }
+
+  private formatError(error: unknown) {
+    if (error instanceof ApiClientError) {
+      const details = error.details as { reasons?: string[] } | { eligibility?: { reasons?: string[] } } | undefined
+      const directReasons = details && "reasons" in details ? details.reasons : undefined
+      const nestedReasons = details && "eligibility" in details ? details.eligibility?.reasons : undefined
+      const reasons = directReasons || nestedReasons || []
+      return reasons.length ? `${error.message} (${reasons.join(", ")})` : error.message
+    }
+    return error instanceof Error ? error.message : "Thao tác thất bại"
   }
 }
 
