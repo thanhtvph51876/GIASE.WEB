@@ -24,7 +24,7 @@ export const earningApi = {
   async payouts() {
     return mapList(await apiRequest<Payout[]>("/tutor/payouts"), mapPayout)
   },
-  async requestPayout(data: { amount: number; bankName?: string; bankAccount?: string; accountHolder?: string }) {
+  async requestPayout(data: { amount: number; bankName?: string; bankAccount?: string; accountHolder?: string; note?: string }) {
     return mapPayout(await apiRequest<Payout>("/tutor/payouts", { method: "POST", body: data }))
   },
   async summary(): Promise<TutorEarningSummary> {

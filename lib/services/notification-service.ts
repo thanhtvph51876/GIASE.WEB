@@ -37,6 +37,10 @@ class NotificationService {
     return notificationApi.list()
   }
 
+  async getAdminNotifications(): Promise<Notification[]> {
+    return notificationApi.adminList()
+  }
+
   async getNotificationsByUser(userId: string): Promise<Notification[]> {
     return this.getNotifications(userId)
   }

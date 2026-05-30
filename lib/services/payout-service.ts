@@ -1,6 +1,14 @@
 import type { User } from "@/types"
 import { paymentService } from "./payment-service"
 
+export interface PayoutRequestInput {
+  amount: number
+  bankName: string
+  bankAccount: string
+  accountHolder: string
+  note?: string
+}
+
 class PayoutService {
   getPayoutsByTutor(tutorId: string) {
     return paymentService.getPayoutsByTutor(tutorId)
@@ -10,12 +18,12 @@ class PayoutService {
     return paymentService.getAllPayouts()
   }
 
-  requestPayout(tutorId: string, tutorName: string, amount: number) {
-    return paymentService.requestPayout(tutorId, tutorName, amount)
+  requestPayout(tutorId: string, tutorName: string, input: number | PayoutRequestInput) {
+    return paymentService.requestPayout(tutorId, tutorName, input)
   }
 
-  approvePayout(payoutId: string, actor?: User | null) {
-    return paymentService.approvePayout(payoutId, actor)
+  approvePayout(payoutId: string, actor?: User | null, reason?: string) {
+    return paymentService.approvePayout(payoutId, actor, reason)
   }
 
   rejectPayout(payoutId: string, reason: string, actor?: User | null) {

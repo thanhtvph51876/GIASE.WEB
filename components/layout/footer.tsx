@@ -9,6 +9,7 @@ const footerLinks = {
     { href: "/register?role=parent", label: "Đăng ký tìm gia sư" },
   ],
   support: [
+    { href: "/about", label: "Giới thiệu" },
     { href: "/how-it-works", label: "Quy trình" },
     { href: "/contact", label: "Liên hệ" },
     { href: "/register-student", label: "Đăng ký học" },
@@ -26,6 +27,8 @@ const footerLinks = {
 }
 
 export function Footer() {
+  const facebookUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL
+
   return (
     <footer className="border-t border-slate-200/80 bg-white/90">
       <div className="app-container py-12">
@@ -42,17 +45,19 @@ export function Footer() {
               Nền tảng kết nối gia sư chất lượng từ các trường Sư phạm với học sinh, 
               phụ huynh trên toàn quốc.
             </p>
-            <div className="flex gap-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground transition-colors hover:text-primary"
-              >
-                <Facebook className="h-5 w-5" />
-                <span className="sr-only">Facebook</span>
-              </a>
-            </div>
+            {facebookUrl ? (
+              <div className="flex gap-4">
+                <a
+                  href={facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground transition-colors hover:text-primary"
+                >
+                  <Facebook className="h-5 w-5" />
+                  <span className="sr-only">Facebook</span>
+                </a>
+              </div>
+            ) : null}
           </div>
 
           {/* Services */}

@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
+import { AdminActionButton } from "@/components/admin/admin-action-button"
+import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -10,20 +12,44 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { MatchingScoreBadge } from "@/components/platform/operational-components"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useAdminLearningRequests } from "@/lib/hooks/use-learning-requests"
-import { useTutors } from "@/lib/hooks/use-tutors"
-import { matchingService } from "@/lib/services"
+import { learningRequestService } from "@/lib/services"
 import { formatCurrency, getStatusLabel } from "@/lib/helpers"
-import type { LearningRequestStatus } from "@/types"
+import type { LearningRequestStatus, Tutor } from "@/types"
+import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
 
-const statuses: LearningRequestStatus[] = ["new", "consulting", "matched", "trial_scheduled", "trial_completed", "active", "rematch", "completed", "cancelled"]
+type BackendTutorMatch = {
+  tutor: Tutor
+  matchingScore?: number
+  score?: number
+  reasons?: Record<string, unknown> | string[]
+}
+
+const quickStatuses: Array<{ status: LearningRequestStatus; label: string }> = [
+  { status: "consulting", label: "Bắt đầu tư vấn" },
+  { status: "matching", label: "Bắt đầu matching" },
+  { status: "closed", label: "Đóng yêu cầu" },
+]
 
 export default function AdminLearningRequestsPage() {
   const { user } = useAuthContext()
   const { requests, updateStatus, assignTutor, refresh } = useAdminLearningRequests(user)
-  const { tutors } = useTutors({ initialFilters: { verified: true }, initialSortBy: "best_match" })
   const [selectedTutor, setSelectedTutor] = useState("")
+  const [matchesByRequest, setMatchesByRequest] = useState<Record<string, BackendTutorMatch[]>>({})
+  const [loadingMatches, setLoadingMatches] = useState<Record<string, boolean>>({})
   const update = async (id: string, status: LearningRequestStatus) => { const ok = await updateStatus(id, status); if (ok) { toast.success("Cập nhật trạng thái thành công"); refresh() } }
   const assign = async (requestId: string) => { if (!selectedTutor) return; const ok = await assignTutor(requestId, selectedTutor); if (ok) { toast.success("Admin gán gia sư thành công"); setSelectedTutor(""); refresh() } }
+  const loadMatches = async (requestId: string) => {
+    if (matchesByRequest[requestId] || loadingMatches[requestId]) return
+    setLoadingMatches((current) => ({ ...current, [requestId]: true }))
+    try {
+      const matches = await learningRequestService.getMatchingTutors(requestId) as BackendTutorMatch[]
+      setMatchesByRequest((current) => ({ ...current, [requestId]: matches }))
+    } catch (error) {
+      toast.error("Không tải được matching từ backend", { description: error instanceof Error ? error.message : undefined })
+    } finally {
+      setLoadingMatches((current) => ({ ...current, [requestId]: false }))
+    }
+  }
   const needAssign = requests.filter((request) => !request.assignedTutorId || request.status === "new").length
   const activeCount = requests.filter((request) => request.status === "active").length
 
@@ -59,9 +85,9 @@ export default function AdminLearningRequestsPage() {
                 {request.assignedTutorId && <p className="mt-1 text-sm font-medium text-primary">Gia sư được gán: {request.assignedTutorId}</p>}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Dialog>
+                <Dialog onOpenChange={(open) => { if (open) loadMatches(request.id) }}>
                   <DialogTrigger asChild>
-                    <Button size="sm">Gán gia sư</Button>
+                    <AdminActionButton size="sm" availability={getAdminActionAvailability(user, "learning_request", "learningRequest.assign", request.status, request)}>Gán gia sư</AdminActionButton>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -72,43 +98,68 @@ export default function AdminLearningRequestsPage() {
                         <SelectValue placeholder="Chọn gia sư" />
                       </SelectTrigger>
                       <SelectContent>
-                        {tutors
-                          .map((tutor) => matchingService.calculateMatchingScore(request, tutor))
-                          .filter((match) => match.score >= 30)
-                          .sort((a, b) => b.score - a.score)
+                        {(matchesByRequest[request.id] || [])
+                          .filter((match) => score(match) >= 30)
                           .map((match) => (
                             <SelectItem key={match.tutor.id} value={match.tutor.id}>
-                              {match.tutor.fullName} · {match.score}/100 · {match.reasons.slice(0, 2).join(", ")}
+                              {match.tutor.fullName} · {score(match)}/100 · {reasonText(match).slice(0, 2).join(", ")}
                             </SelectItem>
                           ))}
                       </SelectContent>
                     </Select>
                     <div className="space-y-2">
-                      {tutors
-                        .map((tutor) => matchingService.calculateMatchingScore(request, tutor))
-                        .sort((a, b) => b.score - a.score)
+                      {loadingMatches[request.id] && <p className="soft-panel p-3 text-sm text-muted-foreground">Đang tải matching từ backend...</p>}
+                      {(matchesByRequest[request.id] || [])
                         .slice(0, 3)
                         .map((match) => (
                           <div key={match.tutor.id} className="soft-panel flex items-center justify-between gap-3 bg-white p-3 text-sm">
                             <div>
                               <p className="font-semibold">{match.tutor.fullName}</p>
-                              <p className="text-muted-foreground">{match.reasons.join(", ")}</p>
+                              <p className="text-muted-foreground">{reasonText(match).join(", ")}</p>
                             </div>
-                            <MatchingScoreBadge score={match.score} />
+                            <MatchingScoreBadge score={score(match)} />
                           </div>
                         ))}
+                      {!loadingMatches[request.id] && !(matchesByRequest[request.id] || []).length && (
+                        <p className="soft-panel border-dashed p-3 text-sm text-muted-foreground">Backend chưa trả gợi ý phù hợp.</p>
+                      )}
                     </div>
-                    <Button onClick={() => assign(request.id)}>Xác nhận gán</Button>
+                    <ConfirmReasonDialog
+                      trigger={<Button disabled={!selectedTutor}>Xác nhận gán</Button>}
+                      title="Gán gia sư và tạo booking học thử"
+                      description="Backend sẽ đảm bảo tutor đã được duyệt và không tạo booking trùng."
+                      actionName="Gán gia sư"
+                      severity="warning"
+                      requireReason={false}
+                      onConfirm={() => assign(request.id)}
+                    />
                   </DialogContent>
                 </Dialog>
-                <Select value={request.status} onValueChange={(value) => update(request.id, value as LearningRequestStatus)}>
-                  <SelectTrigger className="w-44">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map((status) => <SelectItem key={status} value={status}>{getStatusLabel("learningRequest", status)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                {quickStatuses.map((item) => (
+                  <AdminActionButton
+                    key={item.status}
+                    size="sm"
+                    variant="outline"
+                    availability={getAdminActionAvailability(user, "learning_request", "learningRequest.update", request.status, request)}
+                    disabled={request.status === item.status}
+                    onClick={() => update(request.id, item.status)}
+                  >
+                    {item.label}
+                  </AdminActionButton>
+                ))}
+                <ConfirmReasonDialog
+                  trigger={<AdminActionButton size="sm" variant="outline" availability={getAdminActionAvailability(user, "learning_request", "learningRequest.cancel", request.status, request)}>Hủy</AdminActionButton>}
+                  title="Hủy yêu cầu học"
+                  description="Yêu cầu sẽ chuyển sang trạng thái hủy nếu backend cho phép."
+                  actionName="Hủy yêu cầu"
+                  severity="danger"
+                  reasonOptions={[
+                    { value: "PARENT_CANCELLED", label: "Phụ huynh/học viên hủy" },
+                    { value: "NO_RESPONSE", label: "Không liên hệ được" },
+                    { value: "OTHER", label: "Lý do khác" },
+                  ]}
+                  onConfirm={() => update(request.id, "cancelled")}
+                />
               </div>
             </div>
           ))}
@@ -117,6 +168,18 @@ export default function AdminLearningRequestsPage() {
       </Card>
     </div>
   )
+}
+
+function score(match: BackendTutorMatch) {
+  return Number(match.matchingScore ?? match.score ?? 0)
+}
+
+function reasonText(match: BackendTutorMatch) {
+  if (Array.isArray(match.reasons)) return match.reasons.map(String)
+  if (!match.reasons) return []
+  return Object.entries(match.reasons)
+    .filter(([, value]) => value === true || (typeof value === "number" && value > 0))
+    .map(([key]) => getStatusLabel("learningRequest", key))
 }
 
 function Metric({ label, value }: { label: string; value: number }) {

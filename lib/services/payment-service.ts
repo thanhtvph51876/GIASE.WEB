@@ -32,17 +32,17 @@ class PaymentService {
     return paymentApi.refunds()
   }
 
-  async updatePaymentStatus(paymentId: string, status: PaymentStatus, _actor?: User | null) {
+  async updatePaymentStatus(paymentId: string, status: PaymentStatus, _actor?: User | null, reason?: string) {
     try {
       const payment =
         status === "paid" || status === "completed"
           ? isAdminRole(_actor?.role)
-            ? await paymentApi.markPaid(paymentId)
+            ? await paymentApi.markPaid(paymentId, reason || "Admin đối soát thủ công")
             : null
           : status === "failed"
-            ? await paymentApi.markFailed(paymentId)
+            ? await paymentApi.markFailed(paymentId, reason)
             : status === "refunded"
-              ? await paymentApi.refund(paymentId)
+              ? await paymentApi.refund(paymentId, { reason: reason || "Admin xử lý hoàn tiền" })
               : null
       if (!payment) {
         return { success: false, error: "Trạng thái thanh toán chỉ được cập nhật qua gateway hoặc admin." }
@@ -53,8 +53,8 @@ class PaymentService {
     }
   }
 
-  async markAsPaid(paymentId: string, actor?: User | null) {
-    return this.updatePaymentStatus(paymentId, "paid", actor)
+  async markAsPaid(paymentId: string, actor?: User | null, reason?: string) {
+    return this.updatePaymentStatus(paymentId, "paid", actor, reason)
   }
 
   async createCheckout(paymentId: string, gateway: string) {
@@ -88,12 +88,12 @@ class PaymentService {
     return paymentApi.invoice(paymentId)
   }
 
-  async markAsFailed(paymentId: string, actor?: User | null) {
-    return this.updatePaymentStatus(paymentId, "failed", actor)
+  async markAsFailed(paymentId: string, actor?: User | null, reason?: string) {
+    return this.updatePaymentStatus(paymentId, "failed", actor, reason)
   }
 
-  async refundPayment(paymentId: string, actor?: User | null) {
-    return this.updatePaymentStatus(paymentId, "refunded", actor)
+  async refundPayment(paymentId: string, actor?: User | null, reason?: string) {
+    return this.updatePaymentStatus(paymentId, "refunded", actor, reason)
   }
 
   async getPayoutsByTutor(_tutorId: string): Promise<Payout[]> {
@@ -104,9 +104,14 @@ class PaymentService {
     return paymentApi.adminPayouts()
   }
 
-  async requestPayout(_tutorId: string, _tutorName: string, amount: number) {
+  async requestPayout(
+    _tutorId: string,
+    _tutorName: string,
+    input: number | { amount: number; bankName?: string; bankAccount?: string; accountHolder?: string; note?: string }
+  ) {
     try {
-      const payout = await earningApi.requestPayout({ amount })
+      const payload = typeof input === "number" ? { amount: input } : input
+      const payout = await earningApi.requestPayout(payload)
       return { success: true, payout }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể tạo yêu cầu rút tiền" }
@@ -117,7 +122,7 @@ class PaymentService {
     try {
       const payout =
         status === "completed" || status === "paid"
-          ? await paymentApi.approvePayout(payoutId)
+          ? await paymentApi.approvePayout(payoutId, reason)
           : await paymentApi.rejectPayout(payoutId, reason || "")
       return { success: true, payout }
     } catch (error) {
@@ -125,8 +130,8 @@ class PaymentService {
     }
   }
 
-  async approvePayout(payoutId: string, actor?: User | null) {
-    return this.updatePayoutStatus(payoutId, "paid", actor)
+  async approvePayout(payoutId: string, actor?: User | null, reason?: string) {
+    return this.updatePayoutStatus(payoutId, "paid", actor, reason)
   }
 
   async rejectPayout(payoutId: string, reason: string, actor?: User | null) {

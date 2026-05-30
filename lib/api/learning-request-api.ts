@@ -59,8 +59,8 @@ export const learningRequestApi = {
       booking: result.booking ? mapBooking(result.booking) : undefined,
     }
   },
-  async cancel(id: string) {
-    return mapLearningRequest(await apiRequest<LearningRequest>(`/learning-requests/${id}/cancel`, { method: "POST" }))
+  async cancel(id: string, reason?: string) {
+    return mapLearningRequest(await apiRequest<LearningRequest>(`/learning-requests/${id}/cancel`, { method: "POST", body: reason ? { reason } : undefined }))
   },
   matchingTutors(id: string) {
     return apiRequest(`/admin/learning-requests/${id}/matching-tutors`)

@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useLearningRequests } from "@/lib/hooks/use-learning-requests"
+import { EmptyState, ErrorState, LoadingSkeleton } from "@/components/platform/operational-components"
 import { formatDate, getStatusLabel } from "@/lib/helpers"
 import type { LearningRequestStatus } from "@/types"
 
@@ -14,10 +16,13 @@ const statuses: Array<LearningRequestStatus | "all"> = ["all", "new", "consultin
 
 export default function StudentRequestsPage() {
   const { user } = useAuthContext()
-  const { requests } = useLearningRequests(user?.id)
+  const { requests, isLoading, error, refresh } = useLearningRequests(user?.id)
   const [status, setStatus] = useState<LearningRequestStatus | "all">("all")
 
   const filtered = status === "all" ? requests : requests.filter((request) => request.status === status)
+
+  if (isLoading) return <LoadingSkeleton label="Đang tải yêu cầu học..." />
+  if (error) return <ErrorState message="Không tải được yêu cầu học." onRetry={() => refresh()} />
 
   return (
     <div className="space-y-5">
@@ -57,12 +62,10 @@ export default function StudentRequestsPage() {
                 </p>
                 {request.assignedTutorId && <p className="mt-1 text-sm text-primary">Đã gán gia sư: {request.assignedTutorId}</p>}
               </div>
-              <Button variant="outline">Xem chi tiết</Button>
+              <Button variant="outline" asChild><Link href={`/dashboard/student/requests/${request.id}`}>Xem chi tiết</Link></Button>
             </div>
           )) : (
-            <div className="soft-panel border-dashed p-10 text-center text-muted-foreground">
-              Chưa có yêu cầu nào theo bộ lọc này.
-            </div>
+            <EmptyState title="Chưa có yêu cầu nào" description="Bạn chưa có yêu cầu học theo bộ lọc này." actionLabel="Tạo yêu cầu học" href="/register-student" />
           )}
         </CardContent>
       </Card>

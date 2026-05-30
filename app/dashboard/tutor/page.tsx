@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { BookOpen, Calendar, ShieldCheck, Star, Users, Wallet } from "lucide-react"
+import useSWR from "swr"
+import { AlertCircle, BookOpen, Calendar, CheckCircle2, CircleDashed, ShieldCheck, Star, Users, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -14,7 +15,9 @@ import { useSchedule } from "@/lib/hooks/use-schedule"
 import { useTutorEarnings } from "@/lib/hooks/use-tutor-earnings"
 import { useTutorProfileByUser } from "@/lib/hooks/use-tutors"
 import { useTutorVerifications } from "@/lib/hooks/use-verifications"
+import { tutorService } from "@/lib/services"
 import { formatCurrency, formatDateTime, getStatusLabel } from "@/lib/helpers"
+import type { TutorApprovalEligibility } from "@/types"
 
 export default function TutorDashboardPage() {
   const { user } = useAuthContext()
@@ -26,9 +29,13 @@ export default function TutorDashboardPage() {
   const { totalEarnings } = useTutorEarnings(Boolean(tutor?.id))
   const { classes } = useClasses({ tutorId: tutor?.id, role: "tutor" })
   const { latest: verification } = useTutorVerifications(Boolean(user))
+  const eligibilityQuery = useSWR(user ? "tutor-dashboard-eligibility" : null, () => tutorService.getMyApprovalEligibility(), { revalidateOnFocus: false })
 
   const income = totalEarnings
   const pending = bookings.filter((booking) => booking.status === "pending" || booking.status === "assigned").length + requests.filter((request) => request.status === "matched").length
+  const onboardingItems = buildOnboardingItems(tutor, verification, eligibilityQuery.data)
+  const onboardingDone = onboardingItems.filter((item) => item.status === "DONE").length
+  const canReceiveLeads = tutor?.approvalStatus === "approved" && eligibilityQuery.data?.eligibleForApproval !== false
 
   return (
     <div className="space-y-6">
@@ -69,6 +76,46 @@ export default function TutorDashboardPage() {
           <Button asChild variant={verification?.status === "approved" ? "outline" : "default"}>
             <Link href="/dashboard/tutor/verification">{verification?.status === "approved" ? "Xem hồ sơ" : "Xác thực ngay"}</Link>
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card className={canReceiveLeads ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle>Checklist nhận lớp</CardTitle>
+            <CardDescription className={canReceiveLeads ? "text-emerald-700" : "text-amber-700"}>
+              {canReceiveLeads
+                ? "Hồ sơ của bạn đã sẵn sàng nhận lead và gửi proposal."
+                : "Bạn chưa thể nhận lớp/gửi proposal cho đến khi hoàn tất hồ sơ và xác thực."}
+            </CardDescription>
+          </div>
+          <Button asChild variant={canReceiveLeads ? "default" : "outline"}>
+            <Link href={canReceiveLeads ? "/dashboard/tutor/leads" : "/dashboard/tutor/verification"}>
+              {canReceiveLeads ? "Xem lead phù hợp" : "Hoàn tất xác thực"}
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-3 text-sm font-medium text-slate-800">
+            Đã hoàn thành {onboardingDone}/{onboardingItems.length} bước
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {onboardingItems.map((item) => (
+              <Link key={item.label} href={item.href} className="rounded-lg border bg-white p-3 transition hover:border-primary/40 hover:bg-slate-50">
+                <div className="flex items-start gap-2">
+                  {item.status === "DONE"
+                    ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
+                    : item.status === "REJECTED"
+                      ? <AlertCircle className="mt-0.5 h-4 w-4 text-rose-600" />
+                      : <CircleDashed className="mt-0.5 h-4 w-4 text-amber-600" />}
+                  <div>
+                    <p className="font-medium text-slate-950">{item.label}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -150,4 +197,74 @@ function Stat({ title, value, icon: Icon }: { title: string; value: string | num
       </CardContent>
     </Card>
   )
+}
+
+function buildOnboardingItems(
+  tutor: ReturnType<typeof useTutorProfileByUser>["tutor"],
+  verification: ReturnType<typeof useTutorVerifications>["latest"],
+  eligibility?: TutorApprovalEligibility
+) {
+  const checklist = eligibility?.checklist
+  const profileComplete = Boolean(tutor?.fullName && tutor.bio && tutor.pricePerHour && tutor.teachingMethod)
+  const hasSubjects = Boolean(tutor?.subjects?.length && tutor?.grades?.length)
+  const hasAreas = Boolean(tutor?.locations?.length && tutor?.teachingModes)
+  const hasSlots = Boolean(tutor?.availableSlots?.length)
+  const rejected = verification?.status === "rejected"
+
+  return [
+    {
+      label: "Hoàn thiện thông tin cá nhân",
+      description: profileComplete ? "Thông tin cơ bản đã đủ." : "Bổ sung bio, học phí và phương pháp dạy.",
+      href: "/dashboard/tutor/profile",
+      status: profileComplete ? "DONE" : "PENDING",
+    },
+    {
+      label: "Thêm môn/lớp dạy",
+      description: hasSubjects ? "Đã có môn và khối lớp." : "Cần chọn môn học và lớp có thể dạy.",
+      href: "/dashboard/tutor/profile",
+      status: hasSubjects ? "DONE" : "PENDING",
+    },
+    {
+      label: "Thêm khu vực/hình thức",
+      description: hasAreas ? "Đã có khu vực hoặc hình thức dạy." : "Cần khu vực/hình thức để matching chính xác.",
+      href: "/dashboard/tutor/profile",
+      status: hasAreas ? "DONE" : "PENDING",
+    },
+    {
+      label: "Thêm lịch rảnh",
+      description: hasSlots ? "Đã có lịch rảnh." : "Lịch rảnh giúp phụ huynh chọn lịch học thử.",
+      href: "/dashboard/tutor/profile",
+      status: hasSlots ? "DONE" : "PENDING",
+    },
+    {
+      label: "Upload giấy tờ danh tính",
+      description: checklist?.identityApproved ? "Danh tính đã được duyệt." : rejected ? verification?.rejectReason || "Giấy tờ cần bổ sung." : "Cần giấy tờ để admin duyệt.",
+      href: "/dashboard/tutor/verification",
+      status: checklist?.identityApproved ? "DONE" : rejected ? "REJECTED" : "PENDING",
+    },
+    {
+      label: "Upload bằng cấp/chứng chỉ",
+      description: checklist?.certificateApproved ? "Bằng cấp/chứng chỉ đã duyệt." : "Bổ sung bằng cấp hoặc chứng chỉ liên quan.",
+      href: "/dashboard/tutor/verification",
+      status: checklist?.certificateApproved ? "DONE" : "PENDING",
+    },
+    {
+      label: "Ký bản cam kết",
+      description: checklist?.commitmentSigned ? "Đã ký bản cam kết." : "Cần ký cam kết trách nhiệm trước khi nhận lớp.",
+      href: "/dashboard/tutor/verification",
+      status: checklist?.commitmentSigned ? "DONE" : "PENDING",
+    },
+    {
+      label: "Chờ admin duyệt",
+      description: tutor?.approvalStatus === "approved" ? "Admin đã duyệt hồ sơ." : `Trạng thái hiện tại: ${tutor?.approvalStatus || "chưa có hồ sơ"}.`,
+      href: "/dashboard/tutor/verification",
+      status: tutor?.approvalStatus === "approved" ? "DONE" : rejected ? "REJECTED" : "IN_REVIEW",
+    },
+    {
+      label: "Đủ điều kiện nhận lớp",
+      description: tutor?.approvalStatus === "approved" ? "Có thể xem lead và gửi proposal." : "Hoàn tất các bước trên để mở lead.",
+      href: "/dashboard/tutor/leads",
+      status: tutor?.approvalStatus === "approved" ? "DONE" : "PENDING",
+    },
+  ] as Array<{ label: string; description: string; href: string; status: "DONE" | "PENDING" | "REJECTED" | "IN_REVIEW" }>
 }

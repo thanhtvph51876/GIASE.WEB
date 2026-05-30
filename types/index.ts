@@ -301,6 +301,57 @@ export interface LearningRequest {
   updatedAt?: string
 }
 
+export interface TutorLead {
+  id: string
+  requestCode?: string
+  studentProfileId?: string
+  studentName?: string
+  subject?: string
+  subjectName?: string
+  grade?: string
+  gradeName?: string
+  province?: string
+  district?: string
+  location?: string
+  learningMode?: string
+  teachingMode?: string
+  budgetMin?: number
+  budgetMax?: number
+  preferredSchedule?: string
+  status?: string
+  proposalId?: string
+  proposalStatus?: string
+  createdAt?: string
+}
+
+export interface TutorProposal {
+  id: string
+  learningRequestId: string
+  studentProfileId?: string
+  requestCode?: string
+  tutorId: string
+  tutorName?: string
+  tutorAvatar?: string
+  studentName?: string
+  subject?: string
+  grade?: string
+  proposedFee?: number
+  feeUnit?: string
+  teachingMode?: string
+  availableSlots?: unknown
+  proposedStartDate?: string
+  teachingPlan?: string
+  relevantExperience?: string
+  expectedOutcome?: string
+  messageToParent?: string
+  trialSessionType?: string
+  trialFee?: number
+  status: string
+  requestStatus?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
 // ============================================
 // TRIAL BOOKING TYPES
 // ============================================
@@ -334,6 +385,19 @@ export interface TrialBooking {
   classId?: string
   createdAt: string
   updatedAt?: string
+}
+
+export interface PublicTrialBookingRequestResult {
+  id: string
+  requestCode: string
+  status: string
+  tutorId: string
+  tutorName?: string
+  subject: string
+  grade: string
+  preferredSchedule?: string
+  nextStep?: string
+  createdAt?: string
 }
 
 // ============================================
@@ -501,6 +565,7 @@ export interface Payout {
   status: PayoutStatus
   bankName?: string
   bankAccount?: string
+  accountHolder?: string
   reason?: string
   requestedAt: string
   processedAt?: string

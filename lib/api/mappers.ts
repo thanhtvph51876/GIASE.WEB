@@ -234,6 +234,7 @@ export function mapPayout(value: unknown): Payout {
     status: text(raw, "status") as Payout["status"],
     bankName: optionalText(raw, "bankName"),
     bankAccount: optionalText(raw, "bankAccount"),
+    accountHolder: optionalText(raw, "accountHolder"),
     reason: optionalText(raw, "reason") || optionalText(raw, "adminNote"),
     requestedAt: text(raw, "requestedAt", text(raw, "createdAt")),
     processedAt: optionalText(raw, "processedAt"),

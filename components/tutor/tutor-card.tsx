@@ -159,8 +159,8 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
         <Button variant="outline" className="flex-1" asChild>
           <Link href={`/tutors/${tutor.id}`}>Xem chi tiết</Link>
         </Button>
-        <Button className="flex-1" asChild>
-          <Link href={`/tutors/${tutor.id}/booking`}>Đăng ký học thử</Link>
+        <Button className="flex-1 whitespace-normal px-2 text-xs sm:text-sm" asChild>
+          <Link href={`/tutors/${tutor.id}/booking`}>Học thử không cần đăng nhập</Link>
         </Button>
       </CardFooter>
     </Card>

@@ -19,9 +19,9 @@ const items = [
   { href: "/dashboard/parent/proposals", label: "Proposal gia sư", icon: BookOpen },
   { href: "/dashboard/parent/schedule", label: "Lịch học", icon: Calendar },
   { href: "/dashboard/parent/payments", label: "Thanh toán", icon: CreditCard },
-  { href: "/dashboard/messages", label: "Tin nhắn", icon: MessageSquare },
-  { href: "/dashboard/notifications", label: "Thông báo", icon: Bell },
-  { href: "/settings", label: "Cài đặt", icon: Settings },
+  { href: "/dashboard/parent/messages", label: "Tin nhắn", icon: MessageSquare },
+  { href: "/dashboard/parent/notifications", label: "Thông báo", icon: Bell },
+  { href: "/dashboard/parent/settings", label: "Cài đặt", icon: Settings },
 ]
 
 export default function ParentDashboardLayout({ children }: { children: ReactNode }) {

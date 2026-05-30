@@ -15,7 +15,9 @@ import { NotificationMenu } from "@/components/notifications/notification-menu"
 const items = [
   { href: "/dashboard/tutor", label: "Tổng quan", icon: Home },
   { href: "/dashboard/tutor/profile", label: "Hồ sơ của tôi", icon: User },
-  { href: "/dashboard/tutor/requests", label: "Yêu cầu dạy học", icon: BookOpen },
+  { href: "/dashboard/tutor/leads", label: "Lead phù hợp", icon: BookOpen },
+  { href: "/dashboard/tutor/proposals", label: "Proposal đã gửi", icon: Star },
+  { href: "/dashboard/tutor/requests", label: "Booking cần xử lý", icon: Calendar },
   { href: "/dashboard/tutor/classes", label: "Lớp đang dạy", icon: Users },
   { href: "/dashboard/tutor/schedule", label: "Lịch dạy", icon: Calendar },
   { href: "/dashboard/tutor/students", label: "Học sinh của tôi", icon: Users },

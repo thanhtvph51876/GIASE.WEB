@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuthContext } from "@/lib/contexts/auth-context"
 import { messageService } from "@/lib/services"
 import { formatDateTime } from "@/lib/helpers"
 import type { Conversation } from "@/types"
 
 export default function AdminMessagesPage() {
-  const { user } = useAuthContext()
   const [conversations, setConversations] = useState<Conversation[]>([])
-  useEffect(() => { if (user) messageService.getConversations(user.id).then(setConversations) }, [user])
+  useEffect(() => { messageService.getAdminConversations().then(setConversations) }, [])
   return (
     <div className="space-y-5">
       <div className="surface-panel border-l-4 border-l-primary p-6"><h1 className="text-2xl font-bold">Tin nhắn admin</h1><p className="text-sm text-muted-foreground">Các conversation giữa admin và người dùng.</p></div>

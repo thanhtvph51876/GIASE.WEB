@@ -64,9 +64,9 @@ export function useLearningRequests(userId?: string) {
 
   // Cancel request
   const cancelRequest = useCallback(
-    async (id: string): Promise<boolean> => {
+    async (id: string, reason?: string): Promise<boolean> => {
       try {
-        const result = await learningRequestService.cancelRequest(id)
+        const result = await learningRequestService.cancelRequest(id, reason)
 
         if (result.success) {
           mutate()

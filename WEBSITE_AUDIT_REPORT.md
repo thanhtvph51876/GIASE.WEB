@@ -322,3 +322,144 @@ Validation đã chạy:
 | `NEXT_DIST_DIR=.next-codex-phase1c npm run build` | Fail do Windows EPERM khi rename `server-reference-manifest.json`, sau bước compile start; không phát hiện lỗi TypeScript |
 | `H:\backend\.\mvnw.cmd -DskipTests package` | Pass |
 | `H:\backend\.\mvnw.cmd test` | Build success, 10 tests chạy pass, 16 integration tests skip do Docker/Testcontainers chưa có Docker runtime |
+
+## Cập nhật hotfix - Admin report 500
+
+Ngày cập nhật: 2026-05-30
+
+Lỗi production thấy trên console:
+
+| Endpoint | Lỗi | Nguyên nhân khả dĩ | Hotfix |
+|---|---|---|---|
+| `/api/v1/admin/reports/request-trends` | 500 Internal Server Error | Report mapper dùng `Map.of(...)`; nếu DB production có dữ liệu cũ/null hoặc query report lỗi phụ thì backend ném exception và làm admin dashboard fail | Backend report service dùng query null-safe, `safeReport(...)` log warning và trả dataset rỗng thay vì 500 |
+
+File đã sửa:
+
+| File | Sửa gì | Vì sao |
+|---|---|---|
+| `H:\backend\src\main\java\com\example\tutorplatform\admin\AdminReportService.java` | Null-safe mapper, `coalesce(...)`, `safeReport(...)`, logging warning | Không để widget báo cáo phụ làm endpoint admin 500 |
+| `lib/api/admin-api.ts` | Đổi report fetch từ `Promise.all` sang `Promise.allSettled` | Một report API lỗi không làm toàn bộ dashboard/admin reports sập |
+
+Validation hotfix:
+
+| Command | Kết quả |
+|---|---|
+| `npm run lint` | Pass |
+| `H:\backend\.\mvnw.cmd -DskipTests package` | Pass |
+| `npx tsc --noEmit` | Pass |
+
+## Cập nhật chuyên sâu - Nghiệp vụ admin dưới góc BE + DEV
+
+Ngày cập nhật: 2026-05-30  
+Phạm vi soi kỹ: `app/admin/**`, `lib/hooks/use-admin.ts`, `lib/hooks/use-learning-requests.ts`, `lib/services/**`, `lib/api/**`, backend `SecurityConfig`, `AdminPermissionInterceptor`, `PermissionService`, `StatusTransitionPolicy`, `LearningRequestService`, `BookingWorkflowService`, `TrialBookingService`, `ClassSessionService`, `PaymentService`, `VerificationController`, `AdminOperationService`.
+
+### Nguyên tắc phân vai
+
+| Vai | Trách nhiệm đúng | Không được để vai này làm |
+|---|---|---|
+| Backend | Source of truth cho RBAC, ownership, status transition, transaction, audit log, notification, ledger, file private policy | Không phụ thuộc vào disabled button hoặc filter FE để bảo vệ dữ liệu |
+| Frontend admin | Hiển thị queue, gợi ý thao tác, validate nhập liệu cơ bản, confirm action nguy hiểm, refresh/error state, điều hướng theo role | Không tự quyết định quyền, không tự chuyển trạng thái trái state machine, không tự tính tiền/payout để backend tin |
+| Service/hook FE | Chuẩn hóa mutation, toast, optimistic/refresh, mapping API, tái sử dụng workflow | Không tạo business rule song song khác backend nếu backend đã có endpoint chuyên trách |
+
+### Ma trận role admin đang có trên BE
+
+| Role | Quyền BE chính | Module admin nên hiện trên FE | Ghi chú DEV |
+|---|---|---|---|
+| `admin`, `system_admin` | `*` | Tất cả module | Full quyền vận hành, cấu hình, audit |
+| `finance_admin` | `payments.*`, `payouts.*`, `reports.read`, `operations.read` | Operations, Payments, Payouts, Reports | Không nên thấy Tutor/Request/Class action nếu API sẽ 403 |
+| `tutor_admin` | Tutor, verification, learning requests, matching, bookings, classes, reports, operations | Tutors, Tutor approvals, Verifications, Requests, Bookings, Classes, Sessions, Reports, Operations | Role vận hành marketplace chính |
+| `support_admin` | users read, learning request read, booking/class read, conversations read, notifications, contact requests, reviews, reports, operations | Students/Parents, Requests read-only, Bookings/Classes read-only, Messages, Notifications, Contacts, Reviews, Reports, Operations | FE cần chế độ read-only rõ, không chỉ ẩn menu |
+| `verification_admin` | `verifications.*`, `files.view_verification`, reports, operations | Verifications, Reports, Operations | Không nên gọi `/admin/tutors/*/approve` nếu role chỉ xác thực giấy tờ |
+
+Nhận xét: BE đã enforce granular RBAC bằng `AdminPermissionInterceptor`; FE `app/admin/layout.tsx` hiện chỉ check `canAccessAdmin(user)` nên các sub-role vẫn nhìn thấy toàn bộ menu và dễ bấm vào màn sẽ bị API 403. Cần bổ sung permission map FE để menu, landing page và action button khớp với BE.
+
+### Ma trận module admin
+
+| Màn admin | FE/hook/service | API chính | Rule BE bắt buộc | Gap DEV còn lại |
+|---|---|---|---|---|
+| `/admin` | `useAdminDashboard()` gom stats, reports, tutors, requests, sessions, classes, bookings, reviews | `/admin/reports/*`, `/admin/tutors`, `/admin/learning-requests`, `/admin/bookings`, `/admin/classes`, `/admin/reviews` | Admin role + permissions từng endpoint | Dashboard tổng sẽ lỗi với sub-role thiếu quyền; nên tách dashboard theo role hoặc dùng `allSettled`/permission-aware widgets |
+| `/admin/operations` | `useAdminOperations()` | `/admin/operations/*`, `/admin/disputes` | `operations.read` | Tốt về đọc queue; thiếu action owner, SLA deadline, priority score thống nhất |
+| `/admin/tutors` | `useAllTutors`, `useTutorApprovalEligibilityMap`, `useTutorApprovalActions`, `adminService`, `tutorService` | `/admin/tutors`, approve/reject/request-update/suspend/reactivate, tutor-document review | Tutor phải đạt eligibility, document/commitment/risk hợp lệ, audit + notify | Action nguy hiểm chưa confirm đồng đều; sub-role permission chưa chặn ở UI |
+| `/admin/tutor-approvals` | Pending tutors + eligibility panel | `/admin/tutors/*/approval-eligibility`, approve/reject/request-update | Không duyệt nếu thiếu identity/certificate/commitment hoặc duplicate/risk cao | Lý do từ chối dùng state chung cho nhiều dialog; cần per-row form state |
+| `/admin/verifications` | `useAdminVerifications`, `fileApi.getFileBlob` | `/admin/verifications`, approve/reject/need-more-info, `/files/{id}` | Duplicate file không được approve; private file policy; audit + notify | Thiếu preview cam kết/PDF, thiếu checklist "đủ điều kiện duyệt tutor" ngay cạnh verification |
+| `/admin/learning-requests`, `/admin/requests` | `useAdminLearningRequests`, `workflowService.assignTutorToRequest`, `matchingService` | `/admin/learning-requests`, status, assign-tutor-with-booking, matching-tutors | Status transition policy; tutor phải approved; assign tạo booking idempotent | FE đang tính matching local thay vì dùng `/admin/learning-requests/{id}/matching-tutors`; cần dùng score/reasons từ BE để tránh lệch |
+| `/admin/bookings` | `bookingService.getAllBookings`, complete/convert/cancel | `/admin/bookings/*` | Booking status policy, schedule conflict, convert idempotency | Button luôn hiện dù status không hợp lệ; thiếu schedule/reschedule form; cần confirm + reason khi hủy |
+| `/admin/classes` | `useClasses`, `workflowService.resolveTrialResult` | `/admin/classes`, `/admin/sessions`, request status | Class transition trial -> active/cancelled, request transition, audit | Đã sửa FE workflow để khi học thử phù hợp thì class cũng chuyển `active`; `scheduleText` vẫn chưa có field lưu ở BE |
+| `/admin/sessions` | `scheduleService.updateSessionStatus` | `/admin/sessions/{id}/complete/cancel/mark-*` | Session transition; complete tạo payment/earning theo BE | Button luôn hiện; cần disable theo status và hiển thị payment phát sinh sau complete |
+| `/admin/payments` | `paymentService` | `/admin/payments`, mark-paid, mark-failed, refund, transactions, webhooks, refunds | Permission payments.*, reason bắt buộc mark-paid, amount/currency/order verify, idempotent webhook, ledger refund | UI cần reason/amount/refund modal thay vì default reason; cần dual confirmation khi refund |
+| `/admin/payouts` | `payoutService` | `/admin/payouts`, approve/reject | Permission payouts.*, lock earning qua `payout_earning_items`, approve/reject ledger đúng | UI thiếu bank verification, dual control, reason bắt buộc có nội dung thật |
+| `/admin/reports` | `useAdminDashboard().reports` | `/admin/reports/*` | `reports.read`; report API đã được hotfix null-safe | Thiếu export CSV/XLSX/PDF, date range, filter role/subdomain |
+| `/admin/audit-logs` | `useAuditLogs` | `/admin/audit-logs` | `audit.read` | Tốt cho filter cơ bản; cần detail metadata, IP/requestId, before/after diff |
+| `/admin/settings` | `settingsService` | `/admin/settings` | `settings.read/update` | UI chưa guard theo role; thay đổi nguy hiểm cần confirm và audit reason |
+| `/admin/students`, `/admin/parents` | `useAdminStudents` | `/admin/users`, `/admin/student-profiles`, `/admin/parent-profiles` | `users.read/manage` | Hiện chỉ list account; thiếu detail, lock/unlock, ownership/profiles |
+| `/admin/contacts` | `contactService` | `/admin/contact-requests/*` | `contact_requests.manage` | Cần assignee/SLA/call note; hiện chỉ đổi status |
+| `/admin/messages` | `messageService.getConversations(user.id)` | `/conversations` hiện lấy conversation của chính admin | BE có `/admin/conversations` | Màn admin messages đang dùng endpoint user conversation, chưa phải toàn hệ thống |
+| `/admin/notifications` | Re-export notification page của student | `/notifications` | User notification owner | Chưa phải console gửi/xem notification toàn hệ thống dù BE có `/admin/notifications/send` |
+| `/admin/complaints` | Empty state | `/admin/disputes` ở operations | `operations.read` | Chưa nối complaint/dispute queue thành màn xử lý thật |
+
+### State machine nghiệp vụ cần giữ đồng nhất
+
+| Entity | Trạng thái chính | Chuyển trạng thái hợp lệ trên BE | FE cần làm gì |
+|---|---|---|---|
+| Tutor profile | `draft`, `submitted`, `pending`, `pending_verification`, `needs_more_documents`, `verified`, `approved`, `rejected`, `suspended`, `inactive` | `StatusTransitionPolicy.requireTutor` + eligibility service | Disable/ẩn action sai trạng thái, hiển thị checklist thiếu gì trước khi duyệt |
+| Verification | `draft`, `pending_review`, `approved`, `rejected`, `need_more_info` | Duplicate/risk/agreement rules trong `VerificationController` | Bắt reason cho reject/need-more-info, mở file private bằng Authorization |
+| Learning request | `new`, `consulting`, `matching`, `waiting_tutor_proposal`, `proposal_received`, `waiting_parent_confirmation`, `matched`, `trial_scheduled`, `trial_completed`, `active`, `rematch`, `converted_to_class`, `cancelled`, `completed`, `expired`, `closed` | `StatusTransitionPolicy.requireLearningRequest` | Không cho admin chọn mọi status tùy tiện; action nên là "tư vấn", "match", "gán", "rematch", "hủy" thay vì select thô |
+| Trial booking | `requested`, `parent_confirmed`, `tutor_confirmed`, `pending`, `assigned`, `accepted`, `scheduled`, `completed`, `converted`, `converted_to_class`, `rejected`, `cancelled*`, `no_show*`, `expired` | `StatusTransitionPolicy.requireBooking`, conflict schedule | Button theo trạng thái; complete chỉ khi scheduled; convert chỉ khi completed |
+| Class | `trial`, `active`, `paused`, `completed`, `cancelled` | Trial -> active/cancelled; active -> paused/completed/cancelled | Khi admin xác nhận học thử phù hợp, phải update cả request và class |
+| Session | `scheduled`, `upcoming`, `completed`, `cancelled`, `student_absent`, `tutor_absent` | scheduled/upcoming -> completed/cancelled/absent | Complete session có hậu quả tài chính, cần confirm |
+| Payment | `pending`, `processing`, `paid`, `completed`, `failed`, `expired`, `cancelled`, `refunded`, `partially_refunded` | Webhook/manual theo `PaymentService`, amount/currency/order verified | Manual paid/refund phải có reason rõ, hiển thị webhook/transaction trước khi thao tác |
+| Payout | `pending`, `processing`, `approved`, `paid`, `completed`, `rejected` | Ledger lock/release qua earning items | Approve/reject cần kiểm tra bank + dual approval trước production |
+
+### Vấn đề nghiệp vụ ưu tiên
+
+| Ưu tiên | Vấn đề | Tác động | Hướng xử lý |
+|---|---|---|---|
+| P0 | Backend runtime/local chưa ổn định nên chưa E2E được admin thật | Không xác minh được luồng duyệt, match, payment, payout | Bật Docker/Postgres/backend seed và chạy kịch bản admin end-to-end |
+| P0 | FE admin chưa permission-aware theo granular role BE | Sub-role thấy sai màn, dễ gặp 403 hoặc thao tác nhầm | Thêm `hasAdminPermission(role, permission)`, lọc sidebar, guard page/action |
+| P1 | Admin dashboard tổng gọi nhiều endpoint ngoài quyền sub-role | Finance/verification/support admin có thể fail widget | Dashboard theo role hoặc widget fetch bằng `allSettled` + permission map |
+| P1 | Matching FE tính local, BE có endpoint matching riêng | Score/reason có thể lệch dữ liệu thật DB | Dùng `/admin/learning-requests/{id}/matching-tutors` làm nguồn chính |
+| P1 | Action nguy hiểm thiếu confirm/reason thống nhất | Dễ khóa tutor, refund, payout, cancel sai | Dùng `ConfirmReasonDialog` cho suspend/reject/refund/payout/cancel/no-show |
+| P1 | Một số admin pages còn dùng endpoint user thường | Messages/notifications chưa đúng vai admin console | Đổi sang `/admin/conversations`, `/admin/notifications/send` và queue toàn hệ thống |
+| P1 | Button admin chưa disable theo state machine | Admin bấm action sai status sẽ nhận lỗi backend | Tạo helper `allowedAdminActions(entity, status, role)` từ policy đã biết |
+| P2 | Báo cáo thiếu export/date range | Vận hành khó báo cáo khách hàng/nội bộ | CSV/XLSX/PDF export + filter thời gian |
+| P2 | Audit chưa có detail metadata/requestId/IP | Điều tra sự cố chậm | Audit detail drawer + before/after diff + request id |
+
+### Fix đã thực hiện trong lượt này
+
+| File | Sửa | Lý do |
+|---|---|---|
+| `lib/services/workflowService.ts` | Khi admin resolve học thử `active`, FE service cập nhật cả `learning_request` sang `active` và `class` sang `active`; nếu có `feePerSession` thì gửi kèm về backend | Trước đó màn admin classes chỉ đổi request, còn lớp học thử có thể vẫn ở trạng thái `trial` |
+| `lib/helpers/status-helpers.ts` | Bổ sung nhãn/tone cho các status learning request backend đang dùng: `submitted`, `matching`, `waiting_tutor_proposal`, `proposal_received`, `waiting_parent_confirmation`, `converted_to_class`, `expired`, `closed` | Tránh admin nhìn thấy raw status và giúp UI khớp state machine BE |
+| `lib/admin/admin-permissions.ts` | Thêm permission map granular cho `admin/system_admin/finance_admin/tutor_admin/support_admin/verification_admin`, module map và action permission helper | Sidebar/page/action dùng chung một nguồn quyền, không hard-code role rải rác |
+| `lib/admin/admin-actions.ts` | Thêm helper `getAdminActionAvailability`/`allowedAdminActions` theo permission + state machine cho tutor, verification, request, booking, class, session, payment, payout | Button sai quyền/sai trạng thái bị disable kèm lý do trước khi gọi backend |
+| `app/admin/layout.tsx` | Sidebar lọc theo permission, hiện badge `Chỉ xem`, direct route thiếu quyền render 403 đẹp trước khi mount page | Sub-role không thấy module ngoài quyền và không gọi API ngoài quyền khi nhập URL trực tiếp |
+| `components/admin/admin-permission-guard.tsx`, `components/admin/admin-action-button.tsx`, `components/admin/ConfirmReasonDialog.tsx` | Thêm page guard, action button có tooltip lý do, dialog confirm/reason/typed confirmation dùng chung | Chuẩn hóa UX cho 403 và action nguy hiểm |
+| `lib/hooks/use-admin.ts`, `app/admin/page.tsx` | Dashboard permission-aware, fetch widget theo quyền và dùng `Promise.allSettled` | Finance/verification/support admin không bị sập dashboard vì endpoint ngoài quyền |
+| `app/admin/tutors/page.tsx`, `app/admin/tutor-approvals/page.tsx`, `app/admin/verifications/page.tsx` | Gắn action guard, eligibility/duplicate check và per-row confirm reason | Không approve/reject/request-update lẫn state giữa rows, verification duplicate không duyệt được |
+| `app/admin/learning-requests/page.tsx`, `lib/services/learning-request-service.ts` | Matching dùng `/admin/learning-requests/{id}/matching-tutors`, hiển thị score/reasons backend | Tránh lệch score local và giữ assign tutor qua workflow idempotent backend |
+| `app/admin/bookings/page.tsx`, `app/admin/classes/page.tsx`, `app/admin/sessions/page.tsx` | Booking/session/class actions disable theo state machine và confirm reason cho complete/cancel/no-show | Giảm thao tác sai trạng thái; complete session có cảnh báo hậu quả tài chính |
+| `app/admin/payments/page.tsx`, `app/admin/payouts/page.tsx`, `lib/api/payment-api.ts`, `lib/services/payment-service.ts`, `lib/services/payout-service.ts` | Manual paid/refund/payout approve/reject dùng reason, typed confirmation và bank/status guard | Finance action có reason/audit payload, refund/payout không chạy ngay khi click |
+| `app/admin/messages/page.tsx`, `app/admin/notifications/page.tsx`, `lib/api/message-api.ts`, `lib/services/message-service.ts`, `lib/api/notification-api.ts`, `lib/services/notification-service.ts` | Messages dùng `/admin/conversations`; notifications là admin console dùng `/admin/notifications` và `/admin/notifications/send` | Không dùng inbox/thông báo user thường cho màn admin |
+| `app/admin/reports/page.tsx`, `app/admin/audit-logs/page.tsx`, `app/admin/settings/page.tsx`, `app/admin/complaints/page.tsx`, `docs/ADMIN_E2E_SECURITY_TEST_PLAN.md` | Thêm filter/export CSV reports, audit detail metadata, settings guard reason, complaints đọc `/admin/disputes`, test plan theo role/security | Hoàn thiện P2 nền tảng và acceptance test cho rollout production |
+
+Validation lượt này:
+
+| Command | Kết quả |
+|---|---|
+| `npm run lint` | Pass |
+| `npx tsc --noEmit` | Pass |
+
+### Checklist acceptance cho admin production
+
+| Luồng | Điều kiện pass |
+|---|---|
+| Admin role | Mỗi sub-role chỉ thấy menu/action có quyền; direct route không gọi API ngoài quyền |
+| Duyệt tutor | Không approve nếu thiếu identity/certificate/commitment hoặc duplicate/risk cao; reject/request-update có reason và audit |
+| Match request | BE trả danh sách gia sư kèm score/reason; assign tạo booking học thử idempotent; học viên/gia sư nhận notification |
+| Booking | Schedule validate offline location, end sau start, không trùng lịch; complete/convert chỉ khi đúng status |
+| Trial result | Active chuyển request + class active; rematch hủy trial class và đưa request về consulting/rematch; cancelled ghi lý do |
+| Session/payment | Complete session tạo/đánh dấu payment/earning đúng; review chỉ sau session completed |
+| Payment | Manual paid/refund có reason; webhook signature invalid không đổi payment; amount mismatch không tạo earning |
+| Payout | Payout approve chỉ mark earning đã lock trong payout đó; reject release đúng earning |
+| Audit | Mọi action nhạy cảm có actor, role, entity, before/after hoặc note, timestamp, metadata điều tra |
+| Error UX | API 401 logout/redirect; 403 hiện không có quyền; 5xx/network giữ session và hiện retry |

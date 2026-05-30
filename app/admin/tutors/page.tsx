@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { TutorApprovalEligibilityPanel } from "@/components/admin/tutor-approval-eligibility"
+import { AdminActionButton } from "@/components/admin/admin-action-button"
+import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +16,8 @@ import { useTutorApprovalActions } from "@/lib/hooks/use-admin"
 import { useTutorApprovalEligibilityMap } from "@/lib/hooks/use-tutor-approval-eligibility"
 import { useAllTutors } from "@/lib/hooks/use-tutors"
 import { adminService, tutorService } from "@/lib/services"
+import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
+import { canPerformAdminAction } from "@/lib/admin/admin-permissions"
 
 export default function AdminTutorsPage() {
   const { user } = useAuthContext()
@@ -25,17 +29,17 @@ export default function AdminTutorsPage() {
     await approveTutor(id)
     refreshEligibility()
   }
-  const reject = async (id: string) => {
-    await rejectTutor(id, "Cần bổ sung minh chứng hồ sơ")
+  const reject = async (id: string, reason: string) => {
+    await rejectTutor(id, reason)
     refreshEligibility()
   }
-  const requestUpdate = async (id: string) => {
-    await adminService.requestTutorUpdate(id, "Vui lòng bổ sung giấy tờ và mô tả kinh nghiệm dạy học.", user)
+  const requestUpdate = async (id: string, reason: string) => {
+    await adminService.requestTutorUpdate(id, reason, user)
     refresh()
     refreshEligibility()
   }
-  const suspend = async (id: string) => {
-    await adminService.suspendTutor(id, "Tạm khóa hồ sơ để kiểm tra chất lượng phản hồi.", user)
+  const suspend = async (id: string, reason: string) => {
+    await adminService.suspendTutor(id, reason, user)
     refresh()
   }
   const reactivate = async (id: string) => {
@@ -77,7 +81,12 @@ export default function AdminTutorsPage() {
           <div className="space-y-3">
             {filtered.map((tutor) => {
               const eligibility = eligibilityByTutorId[tutor.id]
-              const canApprove = Boolean(eligibility?.eligibleForApproval) && !eligibilityLoading
+              const approveAvailability = getAdminActionAvailability(user, "tutor", "tutor.approve", tutor.approvalStatus, tutor, { eligibility })
+              const rejectAvailability = getAdminActionAvailability(user, "tutor", "tutor.reject", tutor.approvalStatus, tutor)
+              const updateAvailability = getAdminActionAvailability(user, "tutor", "tutor.requestUpdate", tutor.approvalStatus, tutor)
+              const suspendAvailability = getAdminActionAvailability(user, "tutor", "tutor.suspend", tutor.approvalStatus, tutor)
+              const reactivateAvailability = getAdminActionAvailability(user, "tutor", "tutor.reactivate", tutor.approvalStatus, tutor)
+              const documentReviewAllowed = canPerformAdminAction(user, "tutor.approve")
               return (
                 <div key={tutor.id} className="item-row grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
                   <div>
@@ -97,17 +106,68 @@ export default function AdminTutorsPage() {
                     <TutorApprovalEligibilityPanel eligibility={eligibility} loading={eligibilityLoading} />
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button size="sm" disabled={!canApprove} title={canApprove ? undefined : "Backend báo hồ sơ chưa đủ điều kiện duyệt"} onClick={() => approve(tutor.id)}>
-                      Duyệt
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => requestUpdate(tutor.id)}>Yêu cầu bổ sung</Button>
-                    <Button size="sm" variant="outline" onClick={() => reject(tutor.id)}>Từ chối</Button>
+                    <ConfirmReasonDialog
+                      trigger={<AdminActionButton size="sm" availability={approveAvailability} disabled={eligibilityLoading}>Duyệt</AdminActionButton>}
+                      title="Duyệt hồ sơ gia sư"
+                      description="Hồ sơ sẽ được công khai cho học viên nếu backend xác nhận đủ điều kiện."
+                      actionName="Duyệt hồ sơ"
+                      severity="warning"
+                      requireReason={false}
+                      onConfirm={() => approve(tutor.id)}
+                    />
+                    <ConfirmReasonDialog
+                      trigger={<AdminActionButton size="sm" variant="outline" availability={updateAvailability}>Yêu cầu bổ sung</AdminActionButton>}
+                      title="Yêu cầu gia sư bổ sung hồ sơ"
+                      description="Ghi rõ giấy tờ hoặc thông tin còn thiếu để gia sư cập nhật đúng."
+                      actionName="Gửi yêu cầu"
+                      severity="warning"
+                      reasonOptions={[
+                        { value: "MISSING_DOCUMENT", label: "Thiếu giấy tờ bắt buộc" },
+                        { value: "PROFILE_INCOMPLETE", label: "Thông tin hồ sơ chưa đầy đủ" },
+                        { value: "OTHER", label: "Lý do khác" },
+                      ]}
+                      onConfirm={(reason, note) => requestUpdate(tutor.id, note || reason)}
+                    />
+                    <ConfirmReasonDialog
+                      trigger={<AdminActionButton size="sm" variant="outline" availability={rejectAvailability}>Từ chối</AdminActionButton>}
+                      title="Từ chối hồ sơ gia sư"
+                      description="Lý do sẽ được gửi cho gia sư và lưu audit."
+                      actionName="Từ chối"
+                      severity="danger"
+                      reasonOptions={[
+                        { value: "INVALID_DOCUMENT", label: "Giấy tờ không hợp lệ" },
+                        { value: "LOW_TRUST", label: "Rủi ro xác minh cao" },
+                        { value: "OTHER", label: "Lý do khác" },
+                      ]}
+                      onConfirm={(reason, note) => reject(tutor.id, note || reason)}
+                    />
                     {tutor.approvalStatus === "suspended" ? (
-                      <Button size="sm" variant="outline" onClick={() => reactivate(tutor.id)}>Mở khóa</Button>
+                      <ConfirmReasonDialog
+                        trigger={<AdminActionButton size="sm" variant="outline" availability={reactivateAvailability}>Mở khóa</AdminActionButton>}
+                        title="Mở khóa hồ sơ gia sư"
+                        description="Hồ sơ có thể quay lại trạng thái hoạt động nếu backend cho phép."
+                        actionName="Mở khóa"
+                        severity="warning"
+                        requireReason={false}
+                        onConfirm={() => reactivate(tutor.id)}
+                      />
                     ) : (
-                      <Button size="sm" variant="destructive" onClick={() => suspend(tutor.id)}>Khóa</Button>
+                      <ConfirmReasonDialog
+                        trigger={<AdminActionButton size="sm" variant="destructive" availability={suspendAvailability}>Khóa</AdminActionButton>}
+                        title="Khóa hồ sơ gia sư"
+                        description="Gia sư sẽ không còn được nhận lớp trong thời gian kiểm tra."
+                        actionName="Khóa hồ sơ"
+                        severity="danger"
+                        requireTypedConfirmation="KHOA"
+                        reasonOptions={[
+                          { value: "QUALITY_REVIEW", label: "Cần kiểm tra chất lượng" },
+                          { value: "POLICY_RISK", label: "Dấu hiệu vi phạm chính sách" },
+                          { value: "OTHER", label: "Lý do khác" },
+                        ]}
+                        onConfirm={(reason, note) => suspend(tutor.id, note || reason)}
+                      />
                     )}
-                    {tutor.documents?.[0] && (
+                    {documentReviewAllowed && tutor.documents?.[0] && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => reviewFirstDocument(tutor.id, tutor.documents![0].id, "approved")}>Duyệt giấy tờ</Button>
                         <Button size="sm" variant="outline" onClick={() => reviewFirstDocument(tutor.id, tutor.documents![0].id, "rejected")}>Từ chối giấy tờ</Button>

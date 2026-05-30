@@ -5,7 +5,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
-import { ArrowLeft, CheckCircle2, Star } from "lucide-react"
+import { ArrowLeft, CheckCircle2, LockKeyhole, Star } from "lucide-react"
 import { Header, Footer } from "@/components/layout"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -20,13 +20,22 @@ import { useTutorDetail } from "@/lib/hooks/use-tutors"
 import { formatCurrency, formatAvailableSlots } from "@/lib/helpers"
 import { trialBookingSchema, type TrialBookingValues } from "@/lib/validations"
 
-export default function BookingPage({ params }: { params: Promise<{ id: string }> }) {
+export default function BookingPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ type?: string; mode?: string }>
+}) {
   const { id } = use(params)
+  const query = use(searchParams)
   const { user } = useAuthContext()
   const { tutor, isLoading } = useTutorDetail(id)
-  const { createBooking } = useBookings({ userId: user?.id })
+  const { createBooking, createPublicTrialBookingRequest } = useBookings({ userId: user?.id })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [requestCode, setRequestCode] = useState<string | null>(null)
+  const isOfficialBooking = query.type === "official" || query.mode === "official"
 
   const {
     register,
@@ -79,16 +88,55 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
 
   const onSubmit = async (values: TrialBookingValues) => {
     setIsSubmitting(true)
-    const booking = await createBooking(tutor.id, values)
+    const result = isOfficialBooking
+      ? await createBooking(tutor.id, values)
+      : await createPublicTrialBookingRequest(tutor.id, values)
     setIsSubmitting(false)
-    if (booking) {
-      toast.success("Đăng ký học thử thành công", {
-        description: "Yêu cầu đã được lưu và sẽ xuất hiện trong dashboard nếu bạn đã đăng nhập.",
+    if (result) {
+      if (!isOfficialBooking && "requestCode" in result) setRequestCode(result.requestCode)
+      toast.success(isOfficialBooking ? "Đặt lịch chính thức thành công" : "Đăng ký học thử thành công", {
+        description: isOfficialBooking
+          ? "Bạn có thể theo dõi trạng thái booking trong dashboard."
+          : "Tư vấn viên sẽ liên hệ để xác nhận lịch học.",
       })
       setSubmitted(true)
     } else {
       toast.error("Không thể gửi yêu cầu")
     }
+  }
+
+  if (isOfficialBooking && !user) {
+    const redirect = `/tutors/${tutor.id}/booking?type=official`
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="app-container flex flex-1 items-center justify-center py-12">
+          <Card className="max-w-xl text-center">
+            <CardContent className="p-8">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <LockKeyhole className="h-7 w-7" />
+              </div>
+              <h1 className="mt-5 text-2xl font-bold text-slate-950">Đặt lịch chính thức cần đăng nhập</h1>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                Học thử/tư vấn có thể gửi không cần đăng nhập. Booking chính thức cần tài khoản để xác nhận lịch, theo dõi trạng thái và bảo vệ thông tin thanh toán.
+              </p>
+              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                <Button asChild>
+                  <Link href={`/login?redirect=${encodeURIComponent(redirect)}`}>Đăng nhập để tiếp tục</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href={`/register?role=student&redirect=${encodeURIComponent(redirect)}`}>Tạo tài khoản</Link>
+                </Button>
+                <Button variant="ghost" asChild>
+                  <Link href={`/tutors/${tutor.id}/booking`}>Đăng ký học thử</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -105,20 +153,38 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
         <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
           <Card>
             <CardHeader>
-              <CardTitle>Đăng ký học thử</CardTitle>
+              <CardTitle>{isOfficialBooking ? "Đặt lịch chính thức" : "Đăng ký học thử / tư vấn"}</CardTitle>
               <CardDescription>
-                Flow 4 bước: chọn môn/lớp, chọn lịch học thử, nhập mục tiêu và xác nhận booking.
+                {isOfficialBooking
+                  ? "Cần đăng nhập để xác nhận booking chính thức và theo dõi trạng thái trong dashboard."
+                  : "Không cần đăng nhập. Tư vấn viên sẽ liên hệ để xác nhận lịch học thử."}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {submitted ? (
                 <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
                   <CheckCircle2 className="h-14 w-14 text-emerald-600" />
-                  <h2 className="mt-4 text-2xl font-bold text-slate-950">Booking học thử đã được tạo</h2>
-                  <p className="mt-2 max-w-md text-sm text-muted-foreground">Gia sư và admin đã nhận thông báo. Bạn có thể theo dõi trạng thái trong dashboard.</p>
+                  <h2 className="mt-4 text-2xl font-bold text-slate-950">
+                    {isOfficialBooking ? "Booking chính thức đã được tạo" : "Yêu cầu học thử đã được gửi"}
+                  </h2>
+                  <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                    {isOfficialBooking
+                      ? "Bạn có thể theo dõi trạng thái trong dashboard."
+                      : "Tư vấn viên sẽ liên hệ để xác nhận lịch học."}
+                  </p>
+                  {!isOfficialBooking && requestCode && (
+                    <p className="mt-3 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
+                      Mã yêu cầu: <b>{requestCode}</b>
+                    </p>
+                  )}
                   <div className="mt-5 flex flex-wrap justify-center gap-2">
-                    <Button asChild><Link href="/dashboard/student/bookings">Về dashboard</Link></Button>
+                    <Button asChild>
+                      <Link href={isOfficialBooking ? "/dashboard/student/bookings" : "/register?role=student&redirect=%2Fdashboard%2Fstudent"}>
+                        {isOfficialBooking ? "Về dashboard" : "Tạo tài khoản để theo dõi"}
+                      </Link>
+                    </Button>
                     <Button variant="outline" asChild><Link href={`/tutors/${tutor.id}`}>Xem lại hồ sơ</Link></Button>
+                    {!isOfficialBooking && <Button variant="outline" asChild><Link href="/tutors">Tiếp tục tìm gia sư</Link></Button>}
                   </div>
                 </div>
               ) : (
@@ -178,7 +244,11 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
                   <Textarea {...register("message")} rows={5} placeholder="Mục tiêu học, tình trạng hiện tại, yêu cầu đặc biệt..." />
                 </Field>
                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu học thử"}
+                  {isSubmitting
+                    ? "Đang gửi yêu cầu..."
+                    : isOfficialBooking
+                    ? "Xác nhận đặt lịch chính thức"
+                    : "Gửi yêu cầu học thử"}
                 </Button>
               </form>
               )}

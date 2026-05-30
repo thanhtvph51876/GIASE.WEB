@@ -6,18 +6,28 @@ import { CalendarCheck, Clock3, ClipboardCheck, MessageSquare, XCircle } from "l
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { DashboardMetricCard, EmptyState, EntityCard, InsightPanel, PageHero } from "@/components/platform/operational-components"
+import { ConfirmReasonDialog, type ReasonOption } from "@/components/dashboard/confirm-reason-dialog"
+import { DashboardMetricCard, EmptyState, EntityCard, ErrorState, InsightPanel, LoadingSkeleton, PageHero } from "@/components/platform/operational-components"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useBookings } from "@/lib/hooks/use-bookings"
 import { bookingService, messageService } from "@/lib/services"
+import { canCancelBooking, getNormalizedBookingStatusLabel } from "@/lib/helpers"
+
+const cancelReasons: ReasonOption[] = [
+  { value: "SCHEDULE_CHANGED", label: "Lịch học không còn phù hợp" },
+  { value: "FOUND_ANOTHER_TUTOR", label: "Đã chọn gia sư khác" },
+  { value: "NO_LONGER_NEEDED", label: "Không còn nhu cầu học thử" },
+  { value: "OTHER", label: "Lý do khác" },
+]
 
 export default function StudentBookingsPage() {
   const { user } = useAuthContext()
   const router = useRouter()
-  const { bookings, refresh } = useBookings({ userId: user?.id, role: "student" })
+  const { bookings, isLoading, error, refresh } = useBookings({ userId: user?.id, role: "student" })
 
-  const cancel = async (id: string) => {
-    const result = await bookingService.updateBookingStatus(id, "cancelled")
+  const cancel = async (id: string, reason: string, note: string) => {
+    const finalReason = reason === "OTHER" ? note : `${reason}${note ? `: ${note}` : ""}`
+    const result = await bookingService.updateBookingStatus(id, "cancelled", finalReason)
     if (result.success) {
       toast.success("Đã hủy booking học thử")
       refresh()
@@ -34,6 +44,9 @@ export default function StudentBookingsPage() {
       toast.error(error instanceof Error ? error.message : "Không thể mở hội thoại")
     }
   }
+
+  if (isLoading) return <LoadingSkeleton label="Đang tải booking học thử..." />
+  if (error) return <ErrorState message="Không tải được booking học thử." onRetry={() => refresh()} />
 
   return (
     <div className="space-y-6">
@@ -76,10 +89,17 @@ export default function StudentBookingsPage() {
                       <MessageSquare className="size-4" />Nhắn tin
                     </Button>
                   )}
-                  {["pending", "assigned", "accepted"].includes(booking.status) && (
-                    <Button size="sm" variant="outline" onClick={() => cancel(booking.id)}>
-                      Hủy
-                    </Button>
+                  {canCancelBooking(booking.status) && (
+                    <ConfirmReasonDialog
+                      confirmLabel="Hủy booking"
+                      description={`Booking đang ở trạng thái ${getNormalizedBookingStatusLabel(booking.status)}. Hủy booking có thể ảnh hưởng lịch học và thanh toán liên quan.`}
+                      onConfirm={(reason, note) => cancel(booking.id, reason, note)}
+                      reasonLabel="Lý do hủy"
+                      reasons={cancelReasons}
+                      requireReason
+                      title="Xác nhận hủy booking học thử"
+                      trigger={<Button size="sm" variant="outline">Hủy</Button>}
+                    />
                   )}
                 </>
               )}

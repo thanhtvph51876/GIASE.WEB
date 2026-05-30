@@ -1,4 +1,4 @@
-import type { BookingStatus, TrialBooking, TrialBookingFormData } from "@/types"
+import type { BookingStatus, PublicTrialBookingRequestResult, TrialBooking, TrialBookingFormData } from "@/types"
 import { bookingApi } from "@/lib/api/booking-api"
 
 class BookingService {
@@ -13,6 +13,21 @@ class BookingService {
       return { success: true, booking }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể tạo booking" }
+    }
+  }
+
+  async createPublicTrialBookingRequest(
+    tutorId: string,
+    data: TrialBookingFormData
+  ): Promise<{ success: true; request: PublicTrialBookingRequestResult } | { success: false; error: string }> {
+    try {
+      const request = await bookingApi.createPublicTrialRequest(tutorId, data)
+      return { success: true, request }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Không thể gửi yêu cầu học thử",
+      }
     }
   }
 

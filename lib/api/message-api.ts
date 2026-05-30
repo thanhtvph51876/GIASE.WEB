@@ -14,6 +14,9 @@ export const messageApi = {
   async conversations() {
     return mapList(await apiRequest<Conversation[]>("/conversations"), mapConversation)
   },
+  async adminConversations() {
+    return mapList(await apiRequest<Conversation[]>("/admin/conversations"), mapConversation)
+  },
   async createConversation(data: CreateConversationData) {
     return mapConversation(await apiRequest<Conversation>("/conversations", { method: "POST", body: data }))
   },

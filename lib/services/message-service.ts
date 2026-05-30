@@ -13,6 +13,10 @@ class MessageService {
     return messageApi.conversations()
   }
 
+  async getAdminConversations(): Promise<Conversation[]> {
+    return messageApi.adminConversations()
+  }
+
   async createConversation(data: CreateConversationData): Promise<Conversation> {
     return messageApi.createConversation(data)
   }

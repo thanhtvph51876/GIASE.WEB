@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { BookOpenCheck, CalendarDays, CheckCircle2, GraduationCap, TimerReset } from "lucide-react"
 import { toast } from "sonner"
+import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Textarea } from "@/components/ui/textarea"
 import { DashboardMetricCard, EmptyState, EntityCard, PageHero } from "@/components/platform/operational-components"
+import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useAdminOperations } from "@/lib/hooks/use-admin"
 import { useClasses } from "@/lib/hooks/use-classes"
@@ -85,6 +87,7 @@ export default function AdminClassesPage() {
 
       {classes.length ? classes.map((item) => {
         const classSessions = sessions.filter((session) => session.classId === item.id)
+        const trialResultAvailability = getAdminActionAvailability(user, "class", "learningRequest.update", item.status, item)
         return (
           <EntityCard
             key={item.id}
@@ -102,7 +105,7 @@ export default function AdminClassesPage() {
             actions={item.status === "trial" && (
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button>Xác nhận kết quả học thử</Button>
+                      <AdminActionButton availability={trialResultAvailability}>Xác nhận kết quả học thử</AdminActionButton>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>

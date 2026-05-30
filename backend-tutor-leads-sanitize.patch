@@ -1,0 +1,14 @@
+diff --git a/src/main/java/com/example/tutorplatform/proposal/TutorProposalService.java b/src/main/java/com/example/tutorplatform/proposal/TutorProposalService.java
+--- a/src/main/java/com/example/tutorplatform/proposal/TutorProposalService.java
++++ b/src/main/java/com/example/tutorplatform/proposal/TutorProposalService.java
+@@
+-    return jdbc.query("""
+-        select lr.*, s.name subject_name, gl.name grade_name,
+-          tp.status proposal_status, tp.id proposal_id
++    return jdbc.query("""
++        select lr.id, lr.request_code, lr.subject_id, lr.grade_level_id, lr.learning_mode,
++          lr.province, lr.district, lr.budget_min, lr.budget_max, lr.preferred_schedule,
++          lr.status, lr.public_visible, lr.created_at, lr.updated_at,
++          s.name subject_name, gl.name grade_name,
++          tp.status proposal_status, tp.id proposal_id
+         from learning_requests lr

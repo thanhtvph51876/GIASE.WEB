@@ -1,33 +1,30 @@
 "use client"
 
-import { useState } from "react"
 import { TutorApprovalEligibilityPanel } from "@/components/admin/tutor-approval-eligibility"
-import { Button } from "@/components/ui/button"
+import { AdminActionButton } from "@/components/admin/admin-action-button"
+import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { Textarea } from "@/components/ui/textarea"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { usePendingTutors, useTutorApprovalActions } from "@/lib/hooks/use-admin"
 import { useTutorApprovalEligibilityMap } from "@/lib/hooks/use-tutor-approval-eligibility"
 import { adminService } from "@/lib/services"
+import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
 
 export default function AdminTutorApprovalsPage() {
   const { user } = useAuthContext()
   const { tutors, refresh } = usePendingTutors()
   const { eligibilityByTutorId, isLoading: eligibilityLoading, refresh: refreshEligibility } = useTutorApprovalEligibilityMap(tutors.map((tutor) => tutor.id))
   const { approveTutor, rejectTutor } = useTutorApprovalActions(user, refresh)
-  const [reason, setReason] = useState("")
   const approve = async (id: string) => {
     await approveTutor(id)
     refreshEligibility()
   }
-  const reject = async (id: string) => {
-    const ok = await rejectTutor(id, reason || "Hồ sơ chưa đủ thông tin xác minh")
-    if (ok) setReason("")
+  const reject = async (id: string, reason: string) => {
+    await rejectTutor(id, reason)
   }
-  const requestMoreDocuments = async (id: string) => {
-    await adminService.requestTutorUpdate(id, "Vui lòng bổ sung hoặc xác thực lại giấy tờ bắt buộc.", user)
+  const requestMoreDocuments = async (id: string, reason: string) => {
+    await adminService.requestTutorUpdate(id, reason, user)
     refresh()
     refreshEligibility()
   }
@@ -48,7 +45,9 @@ export default function AdminTutorApprovalsPage() {
         <CardContent className="space-y-3">
           {tutors.map((tutor) => {
             const eligibility = eligibilityByTutorId[tutor.id]
-            const canApprove = Boolean(eligibility?.eligibleForApproval) && !eligibilityLoading
+            const approveAvailability = getAdminActionAvailability(user, "tutor", "tutor.approve", tutor.approvalStatus, tutor, { eligibility })
+            const updateAvailability = getAdminActionAvailability(user, "tutor", "tutor.requestUpdate", tutor.approvalStatus, tutor)
+            const rejectAvailability = getAdminActionAvailability(user, "tutor", "tutor.reject", tutor.approvalStatus, tutor)
             return (
               <div key={tutor.id} className="item-row grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div>
@@ -65,26 +64,42 @@ export default function AdminTutorApprovalsPage() {
                   <TutorApprovalEligibilityPanel eligibility={eligibility} loading={eligibilityLoading} />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button disabled={!canApprove} title={canApprove ? undefined : "Backend báo hồ sơ chưa đủ điều kiện duyệt"} onClick={() => approve(tutor.id)}>
-                    Duyệt hồ sơ
-                  </Button>
-                  <Button variant="outline" onClick={() => requestMoreDocuments(tutor.id)}>Yêu cầu bổ sung</Button>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">Từ chối</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Lý do từ chối</DialogTitle>
-                      </DialogHeader>
-                      <Textarea
-                        value={reason}
-                        onChange={(event) => setReason(event.target.value)}
-                        placeholder="Nhập lý do để gia sư biết cần bổ sung gì..."
-                      />
-                      <Button onClick={() => reject(tutor.id)}>Xác nhận từ chối</Button>
-                    </DialogContent>
-                  </Dialog>
+                  <ConfirmReasonDialog
+                    trigger={<AdminActionButton availability={approveAvailability} disabled={eligibilityLoading}>Duyệt hồ sơ</AdminActionButton>}
+                    title="Duyệt hồ sơ gia sư"
+                    description="Checklist phải đạt đủ điều kiện trước khi duyệt."
+                    actionName="Duyệt hồ sơ"
+                    severity="warning"
+                    requireReason={false}
+                    onConfirm={() => approve(tutor.id)}
+                  />
+                  <ConfirmReasonDialog
+                    trigger={<AdminActionButton variant="outline" availability={updateAvailability}>Yêu cầu bổ sung</AdminActionButton>}
+                    title="Yêu cầu bổ sung hồ sơ"
+                    description="Ghi rõ giấy tờ hoặc thông tin cần bổ sung."
+                    actionName="Gửi yêu cầu"
+                    severity="warning"
+                    reasonOptions={[
+                      { value: "MISSING_IDENTITY", label: "Thiếu giấy tờ danh tính" },
+                      { value: "MISSING_CERTIFICATE", label: "Thiếu bằng cấp/chứng chỉ" },
+                      { value: "MISSING_COMMITMENT", label: "Chưa ký cam kết" },
+                      { value: "OTHER", label: "Lý do khác" },
+                    ]}
+                    onConfirm={(reason, note) => requestMoreDocuments(tutor.id, note || reason)}
+                  />
+                  <ConfirmReasonDialog
+                    trigger={<AdminActionButton variant="outline" availability={rejectAvailability}>Từ chối</AdminActionButton>}
+                    title="Từ chối hồ sơ"
+                    description="Lý do sẽ được gửi cho gia sư và lưu audit."
+                    actionName="Từ chối"
+                    severity="danger"
+                    reasonOptions={[
+                      { value: "INVALID_DOCUMENT", label: "Giấy tờ không hợp lệ" },
+                      { value: "RISK_TOO_HIGH", label: "Risk score quá cao" },
+                      { value: "OTHER", label: "Lý do khác" },
+                    ]}
+                    onConfirm={(reason, note) => reject(tutor.id, note || reason)}
+                  />
                 </div>
               </div>
             )

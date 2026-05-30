@@ -62,6 +62,11 @@ export default function LoginPage() {
   }
 
   const redirectByCurrentUser = () => {
+    const requestedRedirect = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("redirect")
+    if (requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")) {
+      router.push(requestedRedirect)
+      return
+    }
     const currentUser = authService.getCurrentUser()
     if (isAdminRole(currentUser?.role)) router.push("/admin")
     else if (currentUser?.role === "tutor") router.push("/dashboard/tutor")

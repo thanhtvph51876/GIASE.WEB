@@ -1,4 +1,5 @@
 import { apiRequest } from "@/lib/api/client"
+import type { TutorLead, TutorProposal } from "@/types"
 
 export interface TutorProposalPayload {
   proposedFee: number
@@ -17,45 +18,45 @@ export interface TutorProposalPayload {
 
 class TutorProposalService {
   getTutorLeads(params?: Record<string, unknown>) {
-    return apiRequest<Record<string, unknown>[]>("/tutor/leads", { params })
+    return apiRequest<TutorLead[]>("/tutor/leads", { params })
   }
 
   getTutorLead(requestId: string) {
-    return apiRequest<Record<string, unknown>>(`/tutor/leads/${requestId}`)
+    return apiRequest<TutorLead>(`/tutor/leads/${requestId}`)
   }
 
   createProposal(requestId: string, payload: TutorProposalPayload) {
-    return apiRequest<Record<string, unknown>>(`/tutor/leads/${requestId}/proposals`, {
+    return apiRequest<TutorProposal>(`/tutor/leads/${requestId}/proposals`, {
       method: "POST",
       body: payload,
     })
   }
 
   getTutorProposals() {
-    return apiRequest<Record<string, unknown>[]>("/tutor/proposals")
+    return apiRequest<TutorProposal[]>("/tutor/proposals")
   }
 
   updateProposal(proposalId: string, payload: Partial<TutorProposalPayload>) {
-    return apiRequest<Record<string, unknown>>(`/tutor/proposals/${proposalId}`, { method: "PATCH", body: payload })
+    return apiRequest<TutorProposal>(`/tutor/proposals/${proposalId}`, { method: "PATCH", body: payload })
   }
 
   withdrawProposal(proposalId: string, note?: string) {
-    return apiRequest<Record<string, unknown>>(`/tutor/proposals/${proposalId}/withdraw`, {
+    return apiRequest<TutorProposal>(`/tutor/proposals/${proposalId}/withdraw`, {
       method: "POST",
       body: { note },
     })
   }
 
   getParentProposals() {
-    return apiRequest<Record<string, unknown>[]>("/parent/proposals")
+    return apiRequest<TutorProposal[]>("/parent/proposals")
   }
 
   acceptProposal(proposalId: string) {
-    return apiRequest<Record<string, unknown>>(`/parent/proposals/${proposalId}/accept`, { method: "POST" })
+    return apiRequest<TutorProposal>(`/parent/proposals/${proposalId}/accept`, { method: "POST" })
   }
 
   rejectProposal(proposalId: string, reason?: string) {
-    return apiRequest<Record<string, unknown>>(`/parent/proposals/${proposalId}/reject`, {
+    return apiRequest<TutorProposal>(`/parent/proposals/${proposalId}/reject`, {
       method: "POST",
       body: { reason },
     })

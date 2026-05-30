@@ -100,8 +100,8 @@ export const paymentApi = {
   markPaid(id: string, reason = "Admin đối soát thủ công từ dashboard") {
     return apiRequest<Payment>(`/admin/payments/${id}/mark-paid`, { method: "POST", body: { reason } }).then(mapPayment)
   },
-  markFailed(id: string) {
-    return apiRequest<Payment>(`/admin/payments/${id}/mark-failed`, { method: "POST" }).then(mapPayment)
+  markFailed(id: string, reason?: string) {
+    return apiRequest<Payment>(`/admin/payments/${id}/mark-failed`, { method: "POST", body: { reason } }).then(mapPayment)
   },
   refund(id: string, data?: { amount?: number; reason?: string }) {
     return apiRequest<Payment>(`/admin/payments/${id}/refund`, {
@@ -121,8 +121,8 @@ export const paymentApi = {
   requestPayout(data: Partial<Payout>) {
     return apiRequest<Payout>("/tutor/payouts", { method: "POST", body: data }).then(mapPayout)
   },
-  approvePayout(id: string) {
-    return apiRequest<Payout>(`/admin/payouts/${id}/approve`, { method: "POST" }).then(mapPayout)
+  approvePayout(id: string, reason?: string) {
+    return apiRequest<Payout>(`/admin/payouts/${id}/approve`, { method: "POST", body: { reason } }).then(mapPayout)
   },
   rejectPayout(id: string, reason: string) {
     return apiRequest<Payout>(`/admin/payouts/${id}/reject`, { method: "POST", body: { reason } }).then(mapPayout)

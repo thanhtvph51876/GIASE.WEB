@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Grid2X2, List, Search, SlidersHorizontal, X } from "lucide-react"
 import { Header, Footer } from "@/components/layout"
+import { LoginRequiredDialog } from "@/components/auth/login-required-dialog"
 import { TutorCard } from "@/components/tutor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -58,6 +59,7 @@ function TutorsContent() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [compareIds, setCompareIds] = useState<string[]>([])
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false)
 
   const price = useMemo(() => [filters.maxPrice || 500000], [filters.maxPrice])
   const activeFilters = [
@@ -78,6 +80,15 @@ function TutorsContent() {
       if (current.length >= 3) return current
       return [...current, id]
     })
+  }
+
+  const handleFavorite = (tutorId: string) => {
+    if (!user) {
+      setLoginPromptOpen(true)
+      return
+    }
+    if (user.role !== "student" && user.role !== "parent") return
+    toggleFavorite(tutorId)
   }
 
   const filterPanel = (
@@ -396,10 +407,10 @@ function TutorsContent() {
                         type="button"
                         variant={isFavorite(tutor.id) ? "default" : "outline"}
                         size="sm"
-                        className="absolute right-4 top-4 shadow-sm"
-                        onClick={() => toggleFavorite(tutor.id)}
+                        className="absolute right-4 top-4 max-w-[150px] whitespace-normal text-xs shadow-sm"
+                        onClick={() => handleFavorite(tutor.id)}
                       >
-                        {isFavorite(tutor.id) ? "Đã lưu" : "Lưu"}
+                        {isFavorite(tutor.id) ? "Đã lưu" : user ? "Lưu" : "Lưu - cần đăng nhập"}
                       </Button>
                       <Button
                         type="button"
@@ -432,6 +443,13 @@ function TutorsContent() {
           </div>
         </section>
       </main>
+      <LoginRequiredDialog
+        open={loginPromptOpen}
+        onOpenChange={setLoginPromptOpen}
+        title="Đăng nhập để lưu gia sư"
+        description="Đăng nhập để lưu gia sư yêu thích và xem lại sau trong dashboard."
+        redirectTo="/tutors"
+      />
       <Footer />
     </div>
   )

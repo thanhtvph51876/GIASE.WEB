@@ -2,7 +2,7 @@
 
 import { useCallback } from "react"
 import useSWR from "swr"
-import type { TrialBooking, TrialBookingFormData, Tutor, User } from "@/types"
+import type { PublicTrialBookingRequestResult, TrialBooking, TrialBookingFormData, Tutor, User } from "@/types"
 import { bookingService, workflowService } from "@/lib/services"
 import type { TrialScheduleInput } from "@/lib/services/workflowService"
 import { useToast } from "@/hooks/use-toast"
@@ -87,6 +87,40 @@ export function useBookings(options: UseBookingsOptions = {}) {
     [userId, mutate, toast]
   )
 
+  const createPublicTrialBookingRequest = useCallback(
+    async (
+      targetTutorId: string,
+      data: TrialBookingFormData
+    ): Promise<PublicTrialBookingRequestResult | null> => {
+      try {
+        const result = await bookingService.createPublicTrialBookingRequest(targetTutorId, data)
+
+        if (result.success) {
+          toast({
+            title: "Đã gửi yêu cầu học thử",
+            description: "Tư vấn viên sẽ liên hệ để xác nhận lịch học.",
+          })
+          return result.request
+        }
+
+        toast({
+          title: "Không thể gửi yêu cầu",
+          description: result.error,
+          variant: "destructive",
+        })
+        return null
+      } catch {
+        toast({
+          title: "Lỗi",
+          description: "Có lỗi xảy ra, vui lòng thử lại",
+          variant: "destructive",
+        })
+        return null
+      }
+    },
+    [toast]
+  )
+
   // Accept booking (for tutor)
   const acceptBooking = useCallback(
     async (id: string, schedule: TrialScheduleInput): Promise<boolean> => {
@@ -146,6 +180,7 @@ export function useBookings(options: UseBookingsOptions = {}) {
     isLoading,
     error,
     createBooking,
+    createPublicTrialBookingRequest,
     acceptBooking,
     rejectBooking,
     refresh: mutate,

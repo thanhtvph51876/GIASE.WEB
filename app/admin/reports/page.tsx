@@ -1,15 +1,50 @@
 "use client"
 
+import { useMemo, useState } from "react"
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { Download } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAdminDashboard } from "@/lib/hooks/use-admin"
 
+const reportModules = ["all", "revenue", "bookings", "tutors", "students", "requests", "payments", "payouts"] as const
+
 export default function AdminReportsPage() {
+  const [fromDate, setFromDate] = useState("")
+  const [toDate, setToDate] = useState("")
+  const [moduleFilter, setModuleFilter] = useState<(typeof reportModules)[number]>("all")
   const { data } = useAdminDashboard()
   const reports = data?.reports
   const topSubject = reports?.subjectDistribution?.[0]
   const totalRequests = reports?.conversionFunnel?.reduce((sum, item) => sum + item.count, 0) || 0
   const approvedTutors = reports?.tutorStatusDistribution?.find((item) => item.status === "Đã duyệt")?.count || 0
+  const exportRows = useMemo(() => {
+    const rows: Array<Record<string, string | number>> = []
+    reports?.subjectDistribution?.forEach((item) => rows.push({ module: "requests", metric: "subject", name: item.subject, count: item.count }))
+    reports?.conversionFunnel?.forEach((item) => rows.push({ module: "requests", metric: "funnel", name: item.stage, count: item.count }))
+    reports?.tutorStatusDistribution?.forEach((item) => rows.push({ module: "tutors", metric: "status", name: item.status, count: item.count }))
+    return moduleFilter === "all" ? rows : rows.filter((row) => row.module === moduleFilter)
+  }, [moduleFilter, reports])
+
+  const exportCsv = () => {
+    const header = ["module", "metric", "name", "count", "fromDate", "toDate"]
+    const lines = [
+      header.join(","),
+      ...exportRows.map((row) =>
+        header.map((key) => JSON.stringify(key === "fromDate" ? fromDate : key === "toDate" ? toDate : row[key] ?? "")).join(",")
+      ),
+    ]
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `admin-report-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-5">
@@ -17,6 +52,34 @@ export default function AdminReportsPage() {
         <h1 className="text-2xl font-bold text-slate-950">Báo cáo</h1>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">Top môn học, trạng thái gia sư và tỷ lệ chuyển đổi.</p>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Bộ lọc và export</CardTitle>
+          <CardDescription>CSV hoạt động ở frontend; XLSX/PDF sẽ bật khi backend có endpoint export tương ứng.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 lg:grid-cols-[160px_160px_220px_auto_auto_auto] lg:items-end">
+          <div className="grid gap-2">
+            <Label>Từ ngày</Label>
+            <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          </div>
+          <div className="grid gap-2">
+            <Label>Đến ngày</Label>
+            <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          </div>
+          <div className="grid gap-2">
+            <Label>Module</Label>
+            <Select value={moduleFilter} onValueChange={(value) => setModuleFilter(value as (typeof reportModules)[number])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {reportModules.map((item) => <SelectItem key={item} value={item}>{item === "all" ? "Tất cả" : item}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={exportCsv} disabled={!exportRows.length}><Download className="h-4 w-4" />CSV</Button>
+          <Button variant="outline" disabled>XLSX</Button>
+          <Button variant="outline" disabled>PDF</Button>
+        </CardContent>
+      </Card>
       <div className="grid gap-3 md:grid-cols-3">
         <Metric label="Tổng yêu cầu trong phễu" value={totalRequests} />
         <Metric label="Môn được hỏi nhiều nhất" value={topSubject ? `${topSubject.subject} (${topSubject.count})` : "Chưa có"} />

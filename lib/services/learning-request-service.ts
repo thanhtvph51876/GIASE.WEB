@@ -76,6 +76,10 @@ class LearningRequestService {
     }
   }
 
+  async getMatchingTutors(requestId: string) {
+    return learningRequestApi.matchingTutors(requestId)
+  }
+
   async getRequestsByTutor(_tutorId: string): Promise<LearningRequest[]> {
     return learningRequestApi.list()
   }
@@ -85,9 +89,9 @@ class LearningRequestService {
     return requests.filter((request) => request.status === "new").length
   }
 
-  async cancelRequest(id: string) {
+  async cancelRequest(id: string, reason?: string) {
     try {
-      await learningRequestApi.cancel(id)
+      await learningRequestApi.cancel(id, reason)
       return { success: true }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể hủy yêu cầu" }

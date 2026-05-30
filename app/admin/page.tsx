@@ -7,22 +7,33 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { StatusBadge } from "@/components/ui/status-badge"
 import { formatCurrency, formatDateTime } from "@/lib/helpers"
 import { useAdminDashboard } from "@/lib/hooks/use-admin"
+import { useAuthContext } from "@/lib/contexts/auth-context"
+import { hasAdminPermission } from "@/lib/admin/admin-permissions"
 
 export default function AdminDashboardPage() {
-  const { data } = useAdminDashboard()
+  const { user } = useAuthContext()
+  const { data } = useAdminDashboard(user)
   const stats = data?.stats
   const reports = data?.reports
+  const canReadTutors = hasAdminPermission(user, "tutors.read")
+  const canReadRequests = hasAdminPermission(user, "learning_requests.read")
+  const canReadBookings = hasAdminPermission(user, "bookings.read")
+  const canReadClasses = hasAdminPermission(user, "classes.read")
+  const canReadSessions = hasAdminPermission(user, "sessions.read")
+  const canReadReviews = hasAdminPermission(user, "reviews.read")
+  const canReadPayments = hasAdminPermission(user, "payments.read")
+  const canReadReports = hasAdminPermission(user, "reports.read")
   const pendingTutors = data?.pendingTutors || []
   const requests = data?.requests || []
   const sessions = data?.sessions || []
   const bookings = data?.bookings || []
   const reviews = data?.reviews || []
   const tasks = [
-    ...pendingTutors.map((tutor) => ({ id: tutor.id, title: `Duyệt hồ sơ ${tutor.fullName}`, meta: tutor.university, badge: "Hồ sơ", priority: 1 })),
-    ...requests.filter((request) => request.status === "new" || !request.assignedTutorId).map((request) => ({ id: request.id, title: `Gán gia sư cho ${request.subject} · ${request.grade}`, meta: `${request.studentName} · ${request.phone}`, badge: "Yêu cầu", priority: 2 })),
-    ...bookings.filter((booking) => booking.status === "rejected").map((booking) => ({ id: booking.id, title: `Booking bị từ chối: ${booking.studentName}`, meta: booking.rejectReason || booking.subject, badge: "Cần gán lại", priority: 3 })),
-    ...sessions.filter((session) => session.isTrial && session.status === "completed").map((session) => ({ id: session.id, title: `Xác nhận kết quả học thử ${session.subject}`, meta: `${session.studentName} · ${formatDateTime(session.startTime)}`, badge: "Học thử", priority: 4 })),
-    ...reviews.filter((review) => review.rating <= 3).map((review) => ({ id: review.id, title: `Review thấp từ ${review.studentName}`, meta: `${review.rating} sao · ${review.content}`, badge: "Chất lượng", priority: 5 })),
+    ...(canReadTutors ? pendingTutors.map((tutor) => ({ id: tutor.id, title: `Duyệt hồ sơ ${tutor.fullName}`, meta: tutor.university, badge: "Hồ sơ", priority: 1 })) : []),
+    ...(canReadRequests ? requests.filter((request) => request.status === "new" || !request.assignedTutorId).map((request) => ({ id: request.id, title: `Gán gia sư cho ${request.subject} · ${request.grade}`, meta: `${request.studentName} · ${request.phone}`, badge: "Yêu cầu", priority: 2 })) : []),
+    ...(canReadBookings ? bookings.filter((booking) => booking.status === "rejected").map((booking) => ({ id: booking.id, title: `Booking bị từ chối: ${booking.studentName}`, meta: booking.rejectReason || booking.subject, badge: "Cần gán lại", priority: 3 })) : []),
+    ...(canReadSessions ? sessions.filter((session) => session.isTrial && session.status === "completed").map((session) => ({ id: session.id, title: `Xác nhận kết quả học thử ${session.subject}`, meta: `${session.studentName} · ${formatDateTime(session.startTime)}`, badge: "Học thử", priority: 4 })) : []),
+    ...(canReadReviews ? reviews.filter((review) => review.rating <= 3).map((review) => ({ id: review.id, title: `Review thấp từ ${review.studentName}`, meta: `${review.rating} sao · ${review.content}`, badge: "Chất lượng", priority: 5 })) : []),
   ].sort((a, b) => a.priority - b.priority)
 
   return (
@@ -32,19 +43,19 @@ export default function AdminDashboardPage() {
         <p className="mt-1 text-sm leading-6 text-muted-foreground">Theo dõi yêu cầu học, duyệt hồ sơ và kết nối gia sư phù hợp.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-7">
-        <Stat title="Chờ duyệt" value={stats?.pendingTutors || 0} icon={GraduationCap} />
-        <Stat title="Yêu cầu mới" value={stats?.newRequests || 0} icon={BookOpen} />
-        <Stat title="Cần gán" value={stats?.pendingAssignments || 0} icon={AlertTriangle} />
-        <Stat title="Booking chờ" value={stats?.pendingBookings || 0} icon={CalendarDays} />
-        <Stat title="Học thử sắp tới" value={stats?.upcomingTrialSessions || 0} icon={CalendarDays} />
-        <Stat title="Lớp đang học" value={stats?.activeClasses || 0} icon={Users} />
-        <Stat title="Review mới" value={stats?.newReviews || 0} icon={Star} />
+        {canReadTutors && <Stat title="Chờ duyệt" value={stats?.pendingTutors || pendingTutors.length} icon={GraduationCap} />}
+        {canReadRequests && <Stat title="Yêu cầu mới" value={stats?.newRequests || 0} icon={BookOpen} />}
+        {canReadRequests && <Stat title="Cần gán" value={stats?.pendingAssignments || 0} icon={AlertTriangle} />}
+        {canReadBookings && <Stat title="Booking chờ" value={stats?.pendingBookings || 0} icon={CalendarDays} />}
+        {canReadSessions && <Stat title="Học thử sắp tới" value={stats?.upcomingTrialSessions || 0} icon={CalendarDays} />}
+        {canReadClasses && <Stat title="Lớp đang học" value={stats?.activeClasses || 0} icon={Users} />}
+        {canReadReviews && <Stat title="Review mới" value={stats?.newReviews || 0} icon={Star} />}
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat title="Tổng gia sư" value={stats?.totalTutors || 0} icon={GraduationCap} />
-        <Stat title="Học sinh" value={stats?.totalStudents || 0} icon={Users} />
-        <Stat title="Lớp học thử" value={stats?.trialClasses || 0} icon={CalendarDays} />
-        <Stat title="Doanh thu" value={formatCurrency(stats?.totalRevenue || 0)} icon={Wallet} />
+        {canReadTutors && <Stat title="Tổng gia sư" value={stats?.totalTutors || 0} icon={GraduationCap} />}
+        {hasAdminPermission(user, "users.read") && <Stat title="Học sinh" value={stats?.totalStudents || 0} icon={Users} />}
+        {canReadClasses && <Stat title="Lớp học thử" value={stats?.trialClasses || 0} icon={CalendarDays} />}
+        {canReadPayments && <Stat title="Doanh thu" value={formatCurrency(stats?.totalRevenue || 0)} icon={Wallet} />}
       </div>
       <Card>
         <CardHeader>
@@ -57,7 +68,7 @@ export default function AdminDashboardPage() {
           )) : <p className="soft-panel border-dashed p-6 text-center text-sm text-muted-foreground">Hôm nay chưa có việc cần xử lý.</p>}
         </CardContent>
       </Card>
-      <div className="grid gap-6 xl:grid-cols-2">
+      {canReadReports && <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Số yêu cầu học theo tháng</CardTitle>
@@ -91,17 +102,17 @@ export default function AdminDashboardPage() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
+      </div>}
       <div className="grid gap-6 xl:grid-cols-3">
-        <Panel title="Hồ sơ gia sư chờ duyệt" description="Các hồ sơ pending mới nhất">
+        {canReadTutors && <Panel title="Hồ sơ gia sư chờ duyệt" description="Các hồ sơ pending mới nhất">
           {pendingTutors.slice(0, 5).map((tutor) => <Row key={tutor.id} title={tutor.fullName} meta={`${tutor.subjects.join(", ")} · ${tutor.university}`} badge={tutor.approvalStatus} badgeKind="approval" />)}
-        </Panel>
-        <Panel title="Yêu cầu học mới" description="Lead cần tư vấn">
+        </Panel>}
+        {canReadRequests && <Panel title="Yêu cầu học mới" description="Lead cần tư vấn">
           {requests.filter((r) => r.status === "new").slice(0, 5).map((request) => <Row key={request.id} title={`${request.subject} · ${request.grade}`} meta={`${request.studentName} · ${request.phone}`} badge={request.status} badgeKind="learningRequest" />)}
-        </Panel>
-        <Panel title="Lớp học sắp tới" description="Các session upcoming">
+        </Panel>}
+        {canReadSessions && <Panel title="Lớp học sắp tới" description="Các session upcoming">
           {sessions.filter((s) => s.status === "upcoming").slice(0, 5).map((session) => <Row key={session.id} title={`${session.subject} · ${session.studentName}`} meta={formatDateTime(session.startTime)} badge={session.mode} badgeKind="teachingMode" />)}
-        </Panel>
+        </Panel>}
       </div>
     </div>
   )

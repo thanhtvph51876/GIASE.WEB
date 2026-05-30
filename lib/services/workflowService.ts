@@ -80,7 +80,14 @@ class WorkflowService {
     input: TrialResultInput,
     actor?: User | null
   ): Promise<{ request: LearningRequest; class?: LearningClass | null }> {
-    if (input.result === "active") return this.activateLearningRequest(requestId, actor)
+    if (input.result === "active") {
+      const { request } = await this.activateLearningRequest(requestId, actor)
+      const classPayload: Partial<LearningClass> = { status: "active" }
+      if (input.feePerSession !== undefined) classPayload.feePerSession = input.feePerSession
+      const classResult = await classService.updateClass(classId, classPayload)
+      if (!classResult.success) throw new Error(classResult.error || "Không thể chuyển lớp học thử thành lớp chính thức.")
+      return { request, class: classResult.class || null }
+    }
     const requestStatus = input.result === "cancelled" ? "cancelled" : "consulting"
     const [requestResult, classResult] = await Promise.all([
       learningRequestService.updateRequestStatus(requestId, requestStatus),

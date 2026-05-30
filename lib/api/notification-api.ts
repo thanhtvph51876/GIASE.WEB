@@ -6,6 +6,9 @@ export const notificationApi = {
   async list() {
     return mapList(await apiRequest<Notification[]>("/notifications"), mapNotification)
   },
+  async adminList() {
+    return mapList(await apiRequest<Notification[]>("/admin/notifications"), mapNotification)
+  },
   async unreadCount() {
     const data = await apiRequest<{ count: number }>("/notifications/unread-count")
     return data.count

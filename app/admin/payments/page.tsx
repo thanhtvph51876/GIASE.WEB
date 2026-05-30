@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { AlertTriangle, CheckCircle2, CreditCard, History, ReceiptText, RefreshCw, ShieldAlert, WalletCards } from "lucide-react"
 import { toast } from "sonner"
+import { AdminActionButton } from "@/components/admin/admin-action-button"
+import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DashboardMetricCard, EmptyState, EntityCard, LoadingSkeleton, PageHero, PaymentStatusBadge } from "@/components/platform/operational-components"
@@ -12,6 +14,7 @@ import { paymentService } from "@/lib/services"
 import { formatCurrency, formatDate } from "@/lib/helpers"
 import type { Payment } from "@/types"
 import type { PaymentRefund, PaymentSettings, PaymentTransaction, PaymentWebhookEvent } from "@/lib/api/payment-api"
+import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
 
 type FinanceTab = "payments" | "transactions" | "webhooks" | "refunds"
 
@@ -51,19 +54,22 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => { load() }, [])
 
-  const update = async (id: string, action: "paid" | "failed" | "refunded") => {
+  const update = async (id: string, action: "paid" | "failed" | "refunded", reason?: string) => {
     setBusyId(id)
-    const result =
-      action === "paid"
-        ? await paymentService.markAsPaid(id, user)
-        : action === "failed"
-          ? await paymentService.markAsFailed(id, user)
-          : await paymentService.refundPayment(id, user)
-    setBusyId(null)
-    if (result.success) {
-      toast.success("Đã cập nhật thanh toán")
-      load()
-    } else toast.error(result.error || "Không thể cập nhật")
+    try {
+      const result =
+        action === "paid"
+          ? await paymentService.markAsPaid(id, user, reason)
+          : action === "failed"
+            ? await paymentService.markAsFailed(id, user, reason)
+            : await paymentService.refundPayment(id, user, reason)
+      if (result.success) {
+        toast.success("Đã cập nhật thanh toán")
+        load()
+      } else toast.error(result.error || "Không thể cập nhật")
+    } finally {
+      setBusyId(null)
+    }
   }
 
   const gatewayOptions = useMemo(() => {
@@ -127,6 +133,11 @@ export default function AdminPaymentsPage() {
         visiblePayments.length ? (
           <div className="space-y-3">
             {visiblePayments.map((payment) => (
+              (() => {
+                const markPaidAvailability = getAdminActionAvailability(user, "payment", "payment.markPaid", payment.status, payment)
+                const markFailedAvailability = getAdminActionAvailability(user, "payment", "payment.markFailed", payment.status, payment)
+                const refundAvailability = getAdminActionAvailability(user, "payment", "payment.refund", payment.status, payment)
+                return (
               <EntityCard
                 key={payment.id}
                 title={formatCurrency(payment.amount)}
@@ -137,12 +148,51 @@ export default function AdminPaymentsPage() {
                 badge={<PaymentStatusBadge status={payment.status} />}
                 actions={(
                   <>
-                    <Button size="sm" disabled={busyId === payment.id} onClick={() => update(payment.id, "paid")}>Đối soát paid</Button>
-                    <Button size="sm" variant="outline" disabled={busyId === payment.id} onClick={() => update(payment.id, "failed")}>Báo lỗi</Button>
-                    <Button size="sm" variant="outline" disabled={busyId === payment.id} onClick={() => update(payment.id, "refunded")}>Hoàn tiền</Button>
+                    <ConfirmReasonDialog
+                      trigger={<AdminActionButton size="sm" disabled={busyId === payment.id} availability={markPaidAvailability}>Đối soát paid</AdminActionButton>}
+                      title="Ghi nhận thanh toán thủ công"
+                      description="Chỉ thực hiện sau khi đã đối soát order, amount và currency với gateway hoặc sao kê."
+                      actionName="Ghi nhận paid"
+                      severity="warning"
+                      reasonOptions={[
+                        { value: "BANK_RECONCILED", label: "Đã đối soát sao kê ngân hàng" },
+                        { value: "GATEWAY_CONFIRMED", label: "Gateway xác nhận ngoài webhook" },
+                        { value: "OTHER", label: "Lý do khác" },
+                      ]}
+                      onConfirm={(reason, note) => update(payment.id, "paid", note || reason)}
+                    />
+                    <ConfirmReasonDialog
+                      trigger={<AdminActionButton size="sm" variant="outline" disabled={busyId === payment.id} availability={markFailedAvailability}>Báo lỗi</AdminActionButton>}
+                      title="Ghi nhận thanh toán thất bại"
+                      description="Người dùng sẽ thấy trạng thái thất bại và có thể tạo phiên thanh toán mới."
+                      actionName="Báo lỗi"
+                      severity="warning"
+                      reasonOptions={[
+                        { value: "GATEWAY_FAILED", label: "Gateway báo thất bại" },
+                        { value: "EXPIRED_RECONCILIATION", label: "Quá hạn đối soát" },
+                        { value: "OTHER", label: "Lý do khác" },
+                      ]}
+                      onConfirm={(reason, note) => update(payment.id, "failed", note || reason)}
+                    />
+                    <ConfirmReasonDialog
+                      trigger={<AdminActionButton size="sm" variant="outline" disabled={busyId === payment.id} availability={refundAvailability}>Hoàn tiền</AdminActionButton>}
+                      title="Hoàn tiền giao dịch"
+                      description={`Mặc định hoàn toàn bộ ${formatCurrency(payment.amount)}. Backend sẽ chặn nếu vượt refundable amount.`}
+                      actionName="Hoàn tiền"
+                      severity="danger"
+                      requireTypedConfirmation="HOAN TIEN"
+                      reasonOptions={[
+                        { value: "CLASS_CANCELLED", label: "Lớp/buổi học bị hủy" },
+                        { value: "CUSTOMER_REQUEST", label: "Khách hàng yêu cầu hoàn tiền" },
+                        { value: "OTHER", label: "Lý do khác" },
+                      ]}
+                      onConfirm={(reason, note) => update(payment.id, "refunded", note || reason)}
+                    />
                   </>
                 )}
               />
+                )
+              })()
             ))}
           </div>
         ) : (

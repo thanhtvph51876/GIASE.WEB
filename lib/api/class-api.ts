@@ -41,8 +41,10 @@ export const classApi = {
     const path = admin ? `/admin/sessions/${id}/complete` : `/tutor/sessions/${id}/complete`
     return mapSession(await apiRequest<ClassSession>(path, { method: "POST", body: { note } }))
   },
-  async cancelSession(id: string, admin = false) {
-    const path = admin ? `/admin/sessions/${id}/cancel` : `/tutor/sessions/${id}/cancel`
-    return mapSession(await apiRequest<ClassSession>(path, { method: "POST" }))
+  async cancelSession(id: string, reasonOrAdmin?: string | boolean, admin = false) {
+    const reason = typeof reasonOrAdmin === "string" ? reasonOrAdmin : undefined
+    const isAdmin = typeof reasonOrAdmin === "boolean" ? reasonOrAdmin : admin
+    const path = isAdmin ? `/admin/sessions/${id}/cancel` : `/tutor/sessions/${id}/cancel`
+    return mapSession(await apiRequest<ClassSession>(path, { method: "POST", body: { reason } }))
   },
 }

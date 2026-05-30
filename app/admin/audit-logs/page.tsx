@@ -1,14 +1,17 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAuditLogs } from "@/lib/hooks/use-admin"
 import { formatDateTime, getAuditActionLabel, getAuditEntityLabel, getRoleLabel } from "@/lib/helpers"
 import { isAdminRole } from "@/lib/permissions"
+import type { AuditLog } from "@/types"
 
 export default function AdminAuditLogsPage() {
   const { logs } = useAuditLogs()
@@ -16,6 +19,7 @@ export default function AdminAuditLogsPage() {
   const [action, setAction] = useState("all")
   const [entityType, setEntityType] = useState("all")
   const [actorRole, setActorRole] = useState("all")
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
 
   const actions = Array.from(new Set(logs.map((log) => log.action)))
   const entityTypes = Array.from(new Set(logs.map((log) => log.entityType)))
@@ -73,6 +77,7 @@ export default function AdminAuditLogsPage() {
                 <TableHead>Hành động</TableHead>
                 <TableHead>Đối tượng</TableHead>
                 <TableHead>Ghi chú</TableHead>
+                <TableHead className="text-right">Chi tiết</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -93,15 +98,76 @@ export default function AdminAuditLogsPage() {
                     </div>
                   </TableCell>
                   <TableCell>{log.note || "-"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="outline" onClick={() => setSelectedLog(log)}>Mở</Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">Chưa có log phù hợp.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Chưa có log phù hợp.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+      <AuditLogDetailDialog log={selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)} />
+    </div>
+  )
+}
+
+function AuditLogDetailDialog({ log, onOpenChange }: { log: AuditLog | null; onOpenChange: (open: boolean) => void }) {
+  const metadata = log?.metadata || {}
+  const requestId = String(metadata.requestId || metadata.request_id || "-")
+  const ip = String(metadata.ip || metadata.ipAddress || metadata.remoteAddress || "-")
+  const userAgent = String(metadata.userAgent || metadata.user_agent || "-")
+
+  return (
+    <Dialog open={!!log} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Chi tiết audit</DialogTitle>
+          <DialogDescription>Metadata phục vụ điều tra sự cố, đối soát action nhạy cảm và truy vết request.</DialogDescription>
+        </DialogHeader>
+        {log && (
+          <div className="space-y-4">
+            <div className="grid gap-3 text-sm md:grid-cols-2">
+              <Info label="Actor" value={`${log.actorName} · ${getRoleLabel(log.actorRole)}`} />
+              <Info label="Action" value={getAuditActionLabel(log.action)} />
+              <Info label="Entity" value={`${getAuditEntityLabel(log.entityType)} · ${log.entityName || log.entityId}`} />
+              <Info label="Thời gian" value={formatDateTime(log.createdAt)} />
+              <Info label="Request ID" value={requestId} />
+              <Info label="IP" value={ip} />
+              <Info label="User agent" value={userAgent} className="md:col-span-2" />
+              <Info label="Ghi chú" value={log.note || log.description || "-"} className="md:col-span-2" />
+            </div>
+            <JsonBlock title="Metadata" value={metadata} />
+            <div className="grid gap-3 md:grid-cols-2">
+              <JsonBlock title="Before" value={log.before} />
+              <JsonBlock title="After" value={log.after} />
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function Info({ label, value, className }: { label: string; value: string; className?: string }) {
+  return (
+    <div className={`rounded-lg border border-slate-200 bg-slate-50 p-3 ${className || ""}`}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 break-words text-slate-900">{value}</p>
+    </div>
+  )
+}
+
+function JsonBlock({ title, value }: { title: string; value: unknown }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-950 p-3 text-slate-100">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</p>
+      <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">
+        {value === undefined ? "-" : JSON.stringify(value, null, 2)}
+      </pre>
     </div>
   )
 }

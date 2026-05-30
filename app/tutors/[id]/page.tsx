@@ -5,7 +5,8 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
-import { Award, BookOpen, Calendar, CheckCircle2, Clock, GraduationCap, Heart, MapPin, MessageSquare, ShieldCheck, Star, Users } from "lucide-react"
+import { Award, BookOpen, CheckCircle2, Clock, GraduationCap, Heart, MapPin, MessageSquare, ShieldCheck, Star, Users } from "lucide-react"
+import { LoginRequiredDialog } from "@/components/auth/login-required-dialog"
 import { Header, Footer } from "@/components/layout"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -28,11 +29,13 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
   const { user } = useAuthContext()
   const { tutor, isLoading } = useTutorDetail(id)
   const { reviews } = useReviews(id)
-  const { createBooking } = useBookings({ userId: user?.id })
+  const { createPublicTrialBookingRequest } = useBookings({ userId: user?.id })
   const { toggleFavorite, isFavorite } = useFavorites(
     user?.role === "student" || user?.role === "parent" ? user.id : undefined
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [requestCode, setRequestCode] = useState<string | null>(null)
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false)
 
   const {
     register,
@@ -93,17 +96,39 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
 
   const onSubmit = async (values: TrialBookingValues) => {
     setIsSubmitting(true)
-    const booking = await createBooking(tutor.id, values)
+    const request = await createPublicTrialBookingRequest(tutor.id, values)
     setIsSubmitting(false)
 
-    if (booking) {
+    if (request) {
+      setRequestCode(request.requestCode)
       toast.success("Gửi yêu cầu học thử thành công", {
-        description: "Gia sư hoặc đội ngũ tư vấn sẽ liên hệ trong thời gian sớm nhất.",
+        description: `Mã yêu cầu: ${request.requestCode}. Tư vấn viên sẽ liên hệ để xác nhận lịch học.`,
       })
       reset()
     } else {
       toast.error("Không thể gửi yêu cầu")
     }
+  }
+
+  const officialBookingHref = `/tutors/${tutor.id}/booking?type=official`
+  const handleOfficialBooking = () => {
+    if (!user) {
+      setLoginPromptOpen(true)
+      return
+    }
+    window.location.href = officialBookingHref
+  }
+
+  const handleFavorite = () => {
+    if (!user) {
+      setLoginPromptOpen(true)
+      return
+    }
+    if (user.role !== "student" && user.role !== "parent") {
+      toast.info("Chức năng lưu gia sư dành cho học sinh hoặc phụ huynh.")
+      return
+    }
+    toggleFavorite(tutor.id)
   }
 
   return (
@@ -160,17 +185,24 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                   <p className="text-sm text-muted-foreground">Học phí tham khảo</p>
                   <p className="text-3xl font-bold text-primary">{formatCurrency(tutor.pricePerHour)}/giờ</p>
                   <div className="mt-4 grid gap-2">
-                    <Button asChild size="lg">
-                      <a href="#booking">Đăng ký học thử</a>
+                    <Button asChild size="lg" className="h-auto whitespace-normal py-3">
+                      <a href="#booking">Đăng ký học thử - không cần đăng nhập</a>
+                    </Button>
+                    <Button type="button" variant="outline" size="lg" className="h-auto whitespace-normal py-3" onClick={handleOfficialBooking}>
+                      Đặt lịch chính thức - cần đăng nhập
                     </Button>
                     <Button
                       variant={isFavorite(tutor.id) ? "default" : "outline"}
-                      onClick={() => toggleFavorite(tutor.id)}
+                      className="h-auto whitespace-normal py-2"
+                      onClick={handleFavorite}
                     >
                       <Heart className="mr-2 h-4 w-4" />
-                      {isFavorite(tutor.id) ? "Đã lưu gia sư" : "Lưu gia sư"}
+                      {isFavorite(tutor.id) ? "Đã lưu gia sư" : user ? "Lưu gia sư" : "Lưu gia sư - cần đăng nhập"}
                     </Button>
                   </div>
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    Gia sư chỉ được nhận lớp sau khi được kiểm duyệt hồ sơ và ký cam kết trách nhiệm.
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -195,6 +227,27 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                   </CardHeader>
                   <CardContent className="leading-7 text-muted-foreground">{tutor.bio}</CardContent>
                 </Card>
+                <Card className="border-emerald-200 bg-emerald-50/60">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-emerald-900">
+                      <ShieldCheck className="h-5 w-5" />
+                      Hồ sơ tin cậy
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 text-sm text-emerald-900 sm:grid-cols-2">
+                    {[
+                      "Đã xác thực danh tính",
+                      "Đã xác thực bằng cấp/chứng chỉ",
+                      "Đã ký cam kết gia sư",
+                      "Được nền tảng duyệt trước khi nhận lớp",
+                    ].map((item) => (
+                      <div key={item} className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
                 <div className="grid gap-4 md:grid-cols-2">
                   <InfoCard icon={BookOpen} title="Môn có thể dạy" value={tutor.subjects.join(", ")} />
                   <InfoCard icon={GraduationCap} title="Lớp có thể dạy" value={tutor.grades.join(", ")} />
@@ -212,7 +265,6 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                     <p>
                       <b>{tutor.university}</b> · {tutor.faculty} · {tutor.major}
                     </p>
-                    <p className="text-sm text-muted-foreground">Mã sinh viên: {tutor.studentCode}</p>
                     <List title="Thành tích" items={tutor.achievements || []} icon={Award} />
                     <List title="Chứng chỉ" items={tutor.certificates || []} icon={ShieldCheck} />
                   </CardContent>
@@ -246,11 +298,11 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                         <div className="flex items-start gap-3">
                           <Avatar>
                             <AvatarImage src={review.avatar} />
-                            <AvatarFallback>{review.studentName.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{maskReviewerName(review.studentName).charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                              <b>{review.studentName}</b>
+                              <b>{maskReviewerName(review.studentName)}</b>
                               <Rating value={review.rating} />
                             </div>
                             <p className="mt-2 text-muted-foreground">{review.content}</p>
@@ -290,7 +342,30 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                 <CardTitle>Đăng ký học thử nhanh</CardTitle>
               </CardHeader>
               <CardContent>
+                {requestCode ? (
+                  <div className="space-y-4 text-center">
+                    <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-950">Đã gửi yêu cầu học thử</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">Mã yêu cầu: <b>{requestCode}</b></p>
+                    </div>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      Tư vấn viên sẽ liên hệ để xác nhận lịch học và thông tin phù hợp.
+                    </p>
+                    <div className="grid gap-2">
+                      <Button asChild>
+                        <Link href={`/register?role=student&redirect=%2Fdashboard%2Fstudent`}>Tạo tài khoản để theo dõi</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href="/tutors">Tiếp tục tìm gia sư</Link>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
+                    Không cần đăng nhập. Thông tin này chỉ dùng để tư vấn viên liên hệ xác nhận lịch học thử.
+                  </p>
                   <Field label="Họ tên học sinh" error={errors.studentName?.message}>
                     <Input {...register("studentName")} placeholder="Nguyễn Minh Anh" />
                   </Field>
@@ -337,11 +412,19 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                     {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu học thử"}
                   </Button>
                 </form>
+                )}
               </CardContent>
             </Card>
           </aside>
         </section>
       </main>
+      <LoginRequiredDialog
+        open={loginPromptOpen}
+        onOpenChange={setLoginPromptOpen}
+        title="Đăng nhập để tiếp tục"
+        description="Đặt lịch chính thức hoặc lưu gia sư cần đăng nhập để hệ thống xác nhận và theo dõi trạng thái."
+        redirectTo={officialBookingHref}
+      />
       <Footer />
     </div>
   )
@@ -394,6 +477,14 @@ function Rating({ value }: { value: number }) {
       ))}
     </div>
   )
+}
+
+function maskReviewerName(name: string) {
+  const clean = name.trim()
+  if (!clean) return "Phụ huynh đã xác thực"
+  const parts = clean.split(/\s+/)
+  const initials = parts.map((part) => part[0]?.toUpperCase()).filter(Boolean).join(".")
+  return `Phụ huynh ${initials || clean[0]?.toUpperCase() || ""}`
 }
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {

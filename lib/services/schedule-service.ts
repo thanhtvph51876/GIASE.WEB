@@ -70,7 +70,7 @@ class ScheduleService {
         status === "completed"
           ? await classApi.completeSession(id, note, true)
           : status === "cancelled"
-            ? await classApi.cancelSession(id, true)
+            ? await classApi.cancelSession(id, note, true)
             : mapSession(
                 await apiRequest(`/admin/sessions/${id}`, {
                   method: "PATCH",
@@ -100,18 +100,18 @@ class ScheduleService {
     return this.completeSession(id, note)
   }
 
-  async markStudentAbsent(id: string, _note?: string) {
+  async markStudentAbsent(id: string, note?: string) {
     try {
-      const session = mapSession(await apiRequest(`/admin/sessions/${id}/mark-student-absent`, { method: "POST" }))
+      const session = mapSession(await apiRequest(`/admin/sessions/${id}/mark-student-absent`, { method: "POST", body: { note } }))
       return { success: true, session }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật vắng học viên" }
     }
   }
 
-  async markTutorAbsent(id: string, _note?: string) {
+  async markTutorAbsent(id: string, note?: string) {
     try {
-      const session = mapSession(await apiRequest(`/admin/sessions/${id}/mark-tutor-absent`, { method: "POST" }))
+      const session = mapSession(await apiRequest(`/admin/sessions/${id}/mark-tutor-absent`, { method: "POST", body: { note } }))
       return { success: true, session }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật vắng gia sư" }

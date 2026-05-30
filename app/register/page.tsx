@@ -36,6 +36,7 @@ function RegisterContent() {
   const [showPassword, setShowPassword] = useState(false)
 
   const roleParam = searchParams.get("role")
+  const redirectParam = searchParams.get("redirect")
   const defaultRole = roleParam === "student" || roleParam === "parent" || roleParam === "tutor" ? roleParam : "student"
 
   const {
@@ -63,11 +64,11 @@ function RegisterContent() {
     })
 
     if (ok) {
-      if (data.role === "tutor") {
-        router.push("/register-tutor")
-      } else {
-        router.push("/dashboard/student")
-      }
+      const safeRedirect = redirectParam?.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : null
+      if (safeRedirect) router.push(safeRedirect)
+      else if (data.role === "tutor") router.push("/dashboard/tutor/profile")
+      else if (data.role === "parent") router.push("/dashboard/parent")
+      else router.push("/dashboard/student")
     } else {
       toast.error("Đăng ký thất bại. Vui lòng thử lại.")
     }

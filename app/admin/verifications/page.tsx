@@ -2,6 +2,8 @@
 
 import { type ReactNode, useMemo, useState } from "react"
 import { Eye, Loader2, ShieldCheck, XCircle } from "lucide-react"
+import { AdminActionButton } from "@/components/admin/admin-action-button"
+import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,17 +11,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { Textarea } from "@/components/ui/textarea"
 import { fileApi } from "@/lib/api/file-api"
 import { useAdminVerifications } from "@/lib/hooks/use-verifications"
 import { formatDateTime } from "@/lib/helpers"
 import type { UserVerification, VerificationStatus, VerificationType } from "@/types"
+import { useAuthContext } from "@/lib/contexts/auth-context"
+import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
 
 export default function AdminVerificationsPage() {
+  const { user } = useAuthContext()
   const [status, setStatus] = useState<VerificationStatus | "all">("pending_review")
   const [type, setType] = useState<VerificationType | "all">("all")
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [reason, setReason] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { verifications, isLoading, approve, reject, needMoreInfo } = useAdminVerifications({ status, type })
@@ -29,22 +32,31 @@ export default function AdminVerificationsPage() {
     [selectedId, verifications]
   )
 
-  const run = async (action: "approve" | "reject" | "need_more_info") => {
+  const run = async (action: "approve" | "reject" | "need_more_info", reason?: string) => {
     if (!selected) return
-    if (action !== "approve" && !reason.trim()) return setError("Vui lòng nhập lý do.")
+    if (action !== "approve" && !reason?.trim()) return setError("Vui lòng nhập lý do.")
     setBusy(true)
     setError(null)
     try {
       if (action === "approve") await approve(selected.id)
-      if (action === "reject") await reject(selected.id, reason)
-      if (action === "need_more_info") await needMoreInfo(selected.id, reason)
-      setReason("")
+      if (action === "reject") await reject(selected.id, reason || "")
+      if (action === "need_more_info") await needMoreInfo(selected.id, reason || "")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể cập nhật xác thực.")
     } finally {
       setBusy(false)
     }
   }
+
+  const approveAvailability = selected
+    ? getAdminActionAvailability(user, "verification", "verification.approve", selected.status, selected)
+    : { key: "verification.approve" as const, allowed: false, reason: "Chọn hồ sơ xác thực trước." }
+  const rejectAvailability = selected
+    ? getAdminActionAvailability(user, "verification", "verification.reject", selected.status, selected)
+    : { key: "verification.reject" as const, allowed: false, reason: "Chọn hồ sơ xác thực trước." }
+  const needMoreInfoAvailability = selected
+    ? getAdminActionAvailability(user, "verification", "verification.needMoreInfo", selected.status, selected)
+    : { key: "verification.needMoreInfo" as const, allowed: false, reason: "Chọn hồ sơ xác thực trước." }
 
   return (
     <div className="space-y-6">
@@ -147,21 +159,42 @@ export default function AdminVerificationsPage() {
                   {(selected.documentFileId || selected.documentFileUrl) && <Button variant="outline" onClick={() => openPrivateFile(selected.documentFileId || selected.documentFileUrl!).catch((err) => setError(err instanceof Error ? err.message : "Không thể mở file."))}><Eye className="mr-2 h-4 w-4" />Giấy tờ</Button>}
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Lý do từ chối hoặc yêu cầu bổ sung</Label>
-                  <Textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} />
-                </div>
-
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <Button disabled={busy} onClick={() => run("approve")}>
-                    {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                    Duyệt
-                  </Button>
-                  <Button disabled={busy} variant="outline" onClick={() => run("need_more_info")}>Cần bổ sung</Button>
-                  <Button disabled={busy} variant="destructive" onClick={() => run("reject")}>
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Từ chối
-                  </Button>
+                  <ConfirmReasonDialog
+                    trigger={<AdminActionButton disabled={busy} availability={approveAvailability}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Duyệt</AdminActionButton>}
+                    title="Duyệt xác thực"
+                    description="Backend sẽ chặn nếu file bị đánh dấu trùng hoặc trạng thái không hợp lệ."
+                    actionName="Duyệt"
+                    severity="warning"
+                    requireReason={false}
+                    onConfirm={() => run("approve")}
+                  />
+                  <ConfirmReasonDialog
+                    trigger={<AdminActionButton disabled={busy} variant="outline" availability={needMoreInfoAvailability}>Cần bổ sung</AdminActionButton>}
+                    title="Yêu cầu bổ sung xác thực"
+                    description="Lý do sẽ được gửi cho người dùng."
+                    actionName="Gửi yêu cầu"
+                    severity="warning"
+                    reasonOptions={[
+                      { value: "FILE_BLURRY", label: "File mờ hoặc thiếu góc" },
+                      { value: "INFO_MISMATCH", label: "Thông tin không khớp" },
+                      { value: "OTHER", label: "Lý do khác" },
+                    ]}
+                    onConfirm={(reason, note) => run("need_more_info", note || reason)}
+                  />
+                  <ConfirmReasonDialog
+                    trigger={<AdminActionButton disabled={busy} variant="destructive" availability={rejectAvailability}><XCircle className="mr-2 h-4 w-4" />Từ chối</AdminActionButton>}
+                    title="Từ chối xác thực"
+                    description="Chỉ từ chối khi có căn cứ rõ ràng. Lý do sẽ được lưu audit."
+                    actionName="Từ chối"
+                    severity="danger"
+                    reasonOptions={[
+                      { value: "INVALID_DOCUMENT", label: "Giấy tờ không hợp lệ" },
+                      { value: "DUPLICATE_DOCUMENT", label: "Giấy tờ trùng lặp" },
+                      { value: "OTHER", label: "Lý do khác" },
+                    ]}
+                    onConfirm={(reason, note) => run("reject", note || reason)}
+                  />
                 </div>
               </div>
             ) : (
