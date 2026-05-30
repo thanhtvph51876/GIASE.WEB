@@ -53,6 +53,8 @@ export const storage = {
 export const STORAGE_KEYS = {
   // Auth
   AUTH_TOKEN: "giasusp_auth_token",
+  AUTH_REFRESH_TOKEN: "giasusp_refresh_token",
+  AUTH_USER: "giasusp_auth_user",
 
   // User preferences
   THEME: "giasusp_theme",

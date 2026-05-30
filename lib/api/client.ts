@@ -29,9 +29,20 @@ interface RequestOptions {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api/v1"
-const PERSIST_BROWSER_TOKENS = process.env.NODE_ENV !== "production"
+const TOKEN_STORAGE_MODE = process.env.NEXT_PUBLIC_AUTH_TOKEN_STORAGE || "local"
+const PERSIST_BROWSER_TOKENS = TOKEN_STORAGE_MODE !== "memory"
+const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS || 15000)
+export const AUTH_EXPIRED_EVENT = "giasusp:auth-expired"
+export const API_ERROR_EVENT = "giasusp:api-error"
 let memoryAccessToken: string | null = null
 let memoryRefreshToken: string | null = null
+let refreshPromise: Promise<boolean> | null = null
+
+if (process.env.NODE_ENV !== "production" && !process.env.NEXT_PUBLIC_API_BASE_URL) {
+  console.warn(
+    "NEXT_PUBLIC_API_BASE_URL is not configured. Falling back to http://localhost:8080/api/v1."
+  )
+}
 
 export const tokenStore = {
   get accessToken() {
@@ -52,17 +63,17 @@ export const tokenStore = {
   get refreshToken() {
     if (typeof window === "undefined") return null
     if (!PERSIST_BROWSER_TOKENS) return memoryRefreshToken
-    return localStorage.getItem("giasusp_refresh_token")
+    return localStorage.getItem(STORAGE_KEYS.AUTH_REFRESH_TOKEN)
   },
   set refreshToken(token: string | null) {
     if (typeof window === "undefined") return
     memoryRefreshToken = token
     if (!PERSIST_BROWSER_TOKENS) {
-      localStorage.removeItem("giasusp_refresh_token")
+      localStorage.removeItem(STORAGE_KEYS.AUTH_REFRESH_TOKEN)
       return
     }
-    if (token) localStorage.setItem("giasusp_refresh_token", token)
-    else localStorage.removeItem("giasusp_refresh_token")
+    if (token) localStorage.setItem(STORAGE_KEYS.AUTH_REFRESH_TOKEN, token)
+    else localStorage.removeItem(STORAGE_KEYS.AUTH_REFRESH_TOKEN)
   },
   clear() {
     this.accessToken = null
@@ -93,14 +104,78 @@ function buildUrl(path: string, params?: Record<string, unknown>) {
   return url.toString()
 }
 
+export function getApiBaseUrl() {
+  return API_BASE_URL
+}
+
+export function isAuthApiError(error: unknown) {
+  return error instanceof ApiClientError && (error.status === 401 || error.status === 403)
+}
+
+export function isTransientApiError(error: unknown) {
+  return error instanceof ApiClientError && (error.status === 0 || error.status >= 500)
+}
+
+function emitAuthExpired() {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT))
+}
+
+function emitApiError(error: ApiClientError, path: string) {
+  if (typeof window === "undefined") return
+  if (![0, 403].includes(error.status) && error.status < 500) return
+  window.dispatchEvent(
+    new CustomEvent(API_ERROR_EVENT, {
+      detail: {
+        code: error.code,
+        status: error.status,
+        message: error.message,
+        path,
+      },
+    })
+  )
+}
+
+function toNetworkError(error: unknown) {
+  const aborted = error instanceof Error && error.name === "AbortError"
+  return new ApiClientError(
+    aborted
+      ? "Backend phản hồi quá lâu. Vui lòng thử lại sau."
+      : "Không thể kết nối tới backend. Vui lòng kiểm tra API server hoặc thử lại sau.",
+    aborted ? "API_TIMEOUT" : "NETWORK_ERROR",
+    0,
+    { apiBaseUrl: API_BASE_URL }
+  )
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS)
+  try {
+    return await fetch(url, { credentials: "include", ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 async function refreshAccessToken() {
+  if (refreshPromise) return refreshPromise
+  refreshPromise = doRefreshAccessToken().finally(() => {
+    refreshPromise = null
+  })
+  return refreshPromise
+}
+
+async function doRefreshAccessToken() {
   const refreshToken = tokenStore.refreshToken
-  if (!refreshToken) return false
+  const headers = new Headers()
+  headers.set("Content-Type", "application/json")
   try {
     const response = await fetch(buildUrl("/auth/refresh"), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
+      credentials: "include",
+      headers,
+      body: refreshToken ? JSON.stringify({ refreshToken }) : JSON.stringify({}),
     })
     if (!response.ok) return false
     const envelope = (await response.json()) as ApiEnvelope<{
@@ -148,16 +223,51 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
           : JSON.stringify(options.body),
   }
 
-  let response = await fetch(buildUrl(path, options.params), requestInit)
-  if (response.status === 401 && options.auth !== false && (await refreshAccessToken())) {
-    headers.set("Authorization", `Bearer ${tokenStore.accessToken}`)
-    response = await fetch(buildUrl(path, options.params), requestInit)
+  const url = buildUrl(path, options.params)
+  let response: Response
+  try {
+    response = await fetchWithTimeout(url, requestInit)
+  } catch (error) {
+    const apiError = toNetworkError(error)
+    emitApiError(apiError, path)
+    throw apiError
   }
 
-  const envelope = await parseEnvelope<T>(response)
+  if (response.status === 401 && options.auth !== false && (await refreshAccessToken())) {
+    headers.set("Authorization", `Bearer ${tokenStore.accessToken}`)
+    try {
+      response = await fetchWithTimeout(url, requestInit)
+    } catch (error) {
+      const apiError = toNetworkError(error)
+      emitApiError(apiError, path)
+      throw apiError
+    }
+  }
+
+  let envelope: ApiEnvelope<T>
+  try {
+    envelope = await parseEnvelope<T>(response)
+  } catch (error) {
+    const apiError = new ApiClientError(
+      "Backend trả về phản hồi không hợp lệ.",
+      "INVALID_API_RESPONSE",
+      response.status || 500,
+      { apiBaseUrl: API_BASE_URL }
+    )
+    emitApiError(apiError, path)
+    throw apiError
+  }
+
   if (!response.ok || !envelope.success) {
     const message = envelope.error?.message || "Không thể kết nối tới backend"
-    throw new ApiClientError(message, envelope.error?.code, response.status, envelope.error?.details)
+    const apiError = new ApiClientError(message, envelope.error?.code, response.status, envelope.error?.details)
+    if (response.status === 401 && options.auth !== false) {
+      tokenStore.clear()
+      emitAuthExpired()
+    } else {
+      emitApiError(apiError, path)
+    }
+    throw apiError
   }
   return envelope.data as T
 }

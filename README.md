@@ -2,6 +2,8 @@
 
 Next.js frontend + Java Spring Boot backend + PostgreSQL.
 
+> Repo frontend hiện nằm ở `H:\website-clone`; backend Spring Boot đang là repo sibling ở `H:\backend`.
+
 ## Run
 
 ```bash
@@ -26,6 +28,8 @@ npm run dev
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_API_TIMEOUT_MS=15000
+NEXT_PUBLIC_AUTH_TOKEN_STORAGE=local
 ```
 
 Kiểm tra frontend:
@@ -38,14 +42,14 @@ npm run build
 ## Local Backend
 
 ```bash
-cd backend
+cd ..\backend
 mvn spring-boot:run
 ```
 
 Trên Windows:
 
 ```powershell
-cd backend
+cd H:\backend
 mvn spring-boot:run
 ```
 
@@ -56,7 +60,25 @@ mvn test
 mvn -DskipTests package
 ```
 
-Xem thêm [backend/README.md](backend/README.md) và [backend/API_CONTRACT.md](backend/API_CONTRACT.md). Private uploads đi qua `/api/v1/files/{fileId}`, không publish `/uploads/**`.
+Xem thêm `H:\backend\README.md` và `H:\backend\API_CONTRACT.md`. Private uploads đi qua `/api/v1/files/{fileId}`, không publish `/uploads/**`.
+
+## Demo Seed Data
+
+Docker compose bật seed demo bằng biến `SEED_DATA_ENABLED=true` mặc định cho local demo. Tắt seed khi dùng dữ liệu thật:
+
+```bash
+SEED_DATA_ENABLED=false docker compose up --build
+```
+
+Tài khoản demo do backend seeder tạo:
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@example.com` | `Admin123!` |
+| Student | `student@example.com` | `Student123!` |
+| Parent | `parent@example.com` | `Parent123!` |
+| Tutor approved | `tutor@example.com` | `Tutor123!` |
+| Tutor pending | `tutor_pending@example.com` | `Tutor123!` |
 
 ## Real Data Mode
 

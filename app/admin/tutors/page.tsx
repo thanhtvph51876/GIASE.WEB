@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/ui/status-badge"
+import { ErrorState, LoadingSkeleton } from "@/components/platform/operational-components"
 import { formatCurrency } from "@/lib/helpers"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useTutorApprovalActions } from "@/lib/hooks/use-admin"
@@ -16,7 +17,7 @@ import { adminService, tutorService } from "@/lib/services"
 
 export default function AdminTutorsPage() {
   const { user } = useAuthContext()
-  const { tutors, refresh } = useAllTutors()
+  const { tutors, isLoading, error, refresh } = useAllTutors()
   const { eligibilityByTutorId, isLoading: eligibilityLoading, refresh: refreshEligibility } = useTutorApprovalEligibilityMap(tutors.map((tutor) => tutor.id))
   const { approveTutor, rejectTutor } = useTutorApprovalActions(user, refresh)
   const [keyword, setKeyword] = useState("")
@@ -51,10 +52,14 @@ export default function AdminTutorsPage() {
   const pendingCount = tutors.filter((tutor) => tutor.approvalStatus === "pending").length
   return (
     <div className="space-y-5">
-      <div className="surface-panel border-l-4 border-l-primary p-6">
-        <h1 className="text-2xl font-bold text-slate-950">Quản lý gia sư</h1>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">Tìm kiếm, duyệt, từ chối và theo dõi trạng thái hồ sơ gia sư.</p>
-      </div>
+      <AdminTutorsHeader />
+
+      {error ? (
+        <ErrorState message="Không tải được danh sách gia sư từ backend." onRetry={() => refresh()} />
+      ) : isLoading ? (
+        <LoadingSkeleton label="Đang tải danh sách gia sư..." />
+      ) : (
+        <>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Metric label="Tổng gia sư" value={tutors.length} />
@@ -116,6 +121,17 @@ export default function AdminTutorsPage() {
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
+    </div>
+  )
+}
+
+function AdminTutorsHeader() {
+  return (
+    <div className="surface-panel border-l-4 border-l-primary p-6">
+      <h1 className="text-2xl font-bold text-slate-950">Quản lý gia sư</h1>
+      <p className="mt-1 text-sm leading-6 text-muted-foreground">Tìm kiếm, duyệt, từ chối và theo dõi trạng thái hồ sơ gia sư.</p>
     </div>
   )
 }

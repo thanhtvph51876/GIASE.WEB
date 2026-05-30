@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import type { User, LoginFormData, RegisterFormData } from "@/types"
 import { authService } from "@/lib/services"
+import { API_ERROR_EVENT, AUTH_EXPIRED_EVENT } from "@/lib/api/client"
 import { toast } from "sonner"
 
 // ============================================
@@ -29,13 +30,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Load user on mount
   useEffect(() => {
     let active = true
-    authService.loadCurrentUser().then((currentUser) => {
-      if (!active) return
-      setUser(currentUser)
-      setIsLoading(false)
-    })
+    authService
+      .loadCurrentUser()
+      .then((currentUser) => {
+        if (!active) return
+        setUser(currentUser)
+      })
+      .catch(() => {
+        if (!active) return
+        setUser(null)
+      })
+      .finally(() => {
+        if (!active) return
+        setIsLoading(false)
+      })
     return () => {
       active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let lastToastKey = ""
+    let lastToastAt = 0
+
+    const showApiToast = (event: Event) => {
+      const detail = (event as CustomEvent<{ code?: string; status?: number; message?: string; path?: string }>).detail
+      const key = `${detail?.status || 0}:${detail?.code || ""}:${detail?.path || ""}`
+      const now = Date.now()
+      if (key === lastToastKey && now - lastToastAt < 3000) return
+      lastToastKey = key
+      lastToastAt = now
+      toast.error(detail?.status === 403 ? "Không có quyền truy cập" : "Backend/API đang gặp lỗi", {
+        description: detail?.message || "Vui lòng thử lại sau.",
+      })
+    }
+
+    const handleAuthExpired = () => {
+      authService.clearLocalSession()
+      setUser(null)
+      setIsLoading(false)
+      toast.error("Phiên đăng nhập đã hết hạn", {
+        description: "Vui lòng đăng nhập lại để tiếp tục.",
+      })
+    }
+
+    window.addEventListener(API_ERROR_EVENT, showApiToast)
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired)
+    return () => {
+      window.removeEventListener(API_ERROR_EVENT, showApiToast)
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired)
     }
   }, [])
 

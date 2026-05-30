@@ -14,13 +14,22 @@ const footerLinks = {
     { href: "/register-student", label: "Đăng ký học" },
     { href: "/register-tutor", label: "Làm gia sư" },
   ],
+  legal: [
+    { href: "/terms", label: "Điều khoản sử dụng" },
+    { href: "/privacy", label: "Chính sách bảo mật" },
+    { href: "/refund-policy", label: "Chính sách hoàn tiền" },
+    { href: "/tutor-agreement", label: "Cam kết gia sư" },
+    { href: "/student-parent-policy", label: "Chính sách học viên/phụ huynh" },
+    { href: "/complaint-policy", label: "Khiếu nại" },
+    { href: "/safety", label: "An toàn và niềm tin" },
+  ],
 }
 
 export function Footer() {
   return (
     <footer className="border-t border-slate-200/80 bg-white/90">
       <div className="app-container py-12">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
@@ -68,6 +77,23 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold">Hỗ trợ</h3>
             <ul className="space-y-2">
               {footerLinks.support.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h3 className="mb-4 text-sm font-semibold">Pháp lý</h3>
+            <ul className="space-y-2">
+              {footerLinks.legal.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
