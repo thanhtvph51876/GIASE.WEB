@@ -89,10 +89,10 @@ export default function RegisterStudentPage() {
 
   if (successCode) {
     return (
-      <div className="flex min-h-screen flex-col bg-slate-50">
+      <div className="premium-page-bg flex min-h-screen flex-col">
         <Header />
         <main className="container mx-auto flex flex-1 items-center justify-center px-4 py-12">
-          <Card className="max-w-2xl text-center shadow-lg">
+          <Card className="glass-card-strong max-w-2xl rounded-2xl text-center">
             <CardContent className="p-10">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
                 <CheckCircle2 className="h-9 w-9 text-emerald-600" />
@@ -120,13 +120,13 @@ export default function RegisterStudentPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="premium-page-bg flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section className="page-band py-10">
+        <section className="gradient-mesh py-12">
           <div className="app-container text-center">
-            <Badge className="mb-3 bg-blue-100 text-blue-700 hover:bg-blue-100">Đăng ký học</Badge>
-            <h1 className="text-3xl font-bold md:text-5xl">Cho chúng tôi biết nhu cầu học tập của bạn</h1>
+            <Badge className="premium-badge mb-3">Đăng ký học</Badge>
+            <h1 className="font-heading text-3xl font-bold md:text-5xl">Cho chúng tôi biết nhu cầu học tập của bạn</h1>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
               Đội ngũ tư vấn sẽ hỗ trợ tìm gia sư phù hợp nhất theo mục tiêu, khu vực và ngân sách.
             </p>
@@ -139,7 +139,7 @@ export default function RegisterStudentPage() {
           ) : masterDataLoading ? (
             <LoadingSkeleton label="Đang tải danh mục từ backend..." />
           ) : (
-          <Card>
+          <Card className="glass-card-strong rounded-2xl">
             <CardHeader>
               <CardTitle>Tạo yêu cầu tìm gia sư</CardTitle>
               <CardDescription>Hoàn tất 3 bước để gửi yêu cầu. Trạng thái sẽ được đồng bộ trong dashboard.</CardDescription>
@@ -254,7 +254,7 @@ export default function RegisterStudentPage() {
 
                 {step === 2 && (
                   <div className="space-y-5">
-                    <div className="soft-panel grid gap-3 p-5 sm:grid-cols-2">
+                    <div className="soft-panel grid gap-3 rounded-2xl p-5 sm:grid-cols-2">
                       <Summary label="Học sinh" value={values.studentName} />
                       <Summary label="Phụ huynh" value={values.parentName || "Không nhập"} />
                       <Summary label="Liên hệ" value={`${values.phone} · ${values.email || "Chưa có email"}`} />
@@ -290,6 +290,9 @@ export default function RegisterStudentPage() {
                     </Button>
                   )}
                 </div>
+                <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+                  Thông tin của bạn chỉ dùng để tư vấn và xếp lớp. Chúng tôi không công khai số điện thoại của bạn.
+                </p>
               </form>
             </CardContent>
           </Card>

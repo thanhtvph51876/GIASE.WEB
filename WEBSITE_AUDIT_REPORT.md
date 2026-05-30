@@ -463,3 +463,23 @@ Validation lượt này:
 | Payout | Payout approve chỉ mark earning đã lock trong payout đó; reject release đúng earning |
 | Audit | Mọi action nhạy cảm có actor, role, entity, before/after hoặc note, timestamp, metadata điều tra |
 | Error UX | API 401 logout/redirect; 403 hiện không có quyền; 5xx/network giữ session và hiện retry |
+
+## Cập nhật UI Premium Warm Light Glassmorphism
+
+| Hạng mục | File chính | Kết quả |
+|---|---|---|
+| Design tokens/font | `app/globals.css`, `app/layout.tsx` | Thêm palette cream/mint/lavender/emerald/blue/dark-emerald/sand; dùng Inter cho body, Outfit cho heading |
+| Utility CSS | `app/globals.css` | Thêm `premium-page-bg`, `glass-card`, `glass-card-strong`, `floating-glass-header`, `premium-hover-lift`, `gradient-border-hover`, `premium-search-capsule` và reduced-motion |
+| Header | `components/layout/header.tsx` | Floating glass header desktop/mobile, active nav emerald, CTA register nổi bật |
+| Homepage | `app/page.tsx` | Hero mesh gradient, search capsule, trust badges, stats glass, why cards, popular subjects, featured tutors, dark emerald tutor CTA |
+| Tutor cards | `components/tutor/tutor-card.tsx` | Glass card, avatar viền trắng/emerald, badge xác thực, CTA "Xem hồ sơ"/"Đăng ký học thử" |
+| Public pages/forms | `app/tutors/*`, `app/register-student/page.tsx`, `app/register-tutor/page.tsx`, `app/learning-requests/page.tsx`, `app/contact/page.tsx`, `app/how-it-works/page.tsx`, `app/about/page.tsx`, `components/legal/legal-page.tsx` | Áp mesh/glass/form microcopy bảo mật, giữ nguyên API/hook |
+| Dashboard/Admin | `app/dashboard/*/layout.tsx`, `app/admin/layout.tsx` | Dashboard premium nhẹ, admin warm minimal không tăng blur/bớt ưu tiên vận hành |
+
+Validation UI:
+
+| Command | Kết quả |
+|---|---|
+| `npm run lint` | Pass |
+| `npx tsc --noEmit` | Pass |
+| `Invoke-WebRequest http://localhost:3000` | HTTP 200, Next compile homepage thành công |

@@ -25,23 +25,23 @@ const principles = [
 
 export default function AboutPage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="premium-page-bg flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section className="page-band py-12">
+        <section className="gradient-mesh py-14">
           <div className="app-container max-w-4xl text-center">
-            <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-100">Về Gia Sư Sư Phạm</Badge>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
+            <Badge className="premium-badge mb-4">Về Gia Sư Sư Phạm</Badge>
+            <h1 className="font-heading text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
               Nền tảng kết nối học viên, phụ huynh với gia sư đã được kiểm duyệt
             </h1>
             <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-slate-600">
               Gia Sư Sư Phạm được xây dựng để giúp phụ huynh tìm gia sư phù hợp, giúp gia sư có quy trình nhận lớp minh bạch và giúp đội ngũ vận hành quản lý chất lượng có kiểm soát.
             </p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg">
+                <Button asChild size="lg" className="rounded-full">
                 <Link href="/register-student">Tạo yêu cầu học</Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
+              <Button asChild size="lg" variant="outline" className="rounded-full bg-white/75">
                 <Link href="/register-tutor">Ứng tuyển gia sư</Link>
               </Button>
             </div>
@@ -51,7 +51,7 @@ export default function AboutPage() {
         <section className="app-container py-10">
           <div className="grid gap-5 md:grid-cols-3">
             {principles.map((item) => (
-              <Card key={item.title} className="shadow-sm">
+              <Card key={item.title} className="glass-card gradient-border-hover premium-hover-lift rounded-2xl">
                 <CardContent className="p-5">
                   <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <item.icon className="h-5 w-5" />
@@ -64,7 +64,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="bg-white py-10">
+        <section className="gradient-mesh bg-white/45 py-10">
           <div className="app-container grid gap-8 lg:grid-cols-[380px_1fr]">
             <div>
               <Badge variant="secondary" className="mb-3">Cách nền tảng vận hành</Badge>
@@ -82,7 +82,7 @@ export default function AboutPage() {
                 "Lớp học, thanh toán, đánh giá và hỗ trợ được theo dõi trong dashboard.",
                 "Khi có khiếu nại, hệ thống lưu lại lịch sử xử lý và audit action quan trọng.",
               ].map((item) => (
-                <div key={item} className="surface-panel flex items-start gap-2 p-4 text-sm text-slate-700">
+                <div key={item} className="glass-card flex items-start gap-2 rounded-2xl p-4 text-sm text-slate-700">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                   <span>{item}</span>
                 </div>
@@ -93,7 +93,7 @@ export default function AboutPage() {
 
         <section className="app-container py-10">
           <div className="grid gap-6 lg:grid-cols-3">
-            <Card>
+            <Card className="glass-card-strong rounded-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileCheck2 className="h-5 w-5 text-primary" />
@@ -105,7 +105,7 @@ export default function AboutPage() {
                 <p>Public chỉ hiển thị badge tin cậy, không hiển thị file gốc hoặc thông tin định danh.</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="glass-card-strong rounded-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <HeartHandshake className="h-5 w-5 text-primary" />
@@ -119,7 +119,7 @@ export default function AboutPage() {
                 </Button>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="glass-card-strong rounded-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />

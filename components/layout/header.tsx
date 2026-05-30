@@ -67,14 +67,14 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200/70 bg-white/85 shadow-sm shadow-slate-950/5 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
-      <div className="app-container flex h-16 items-center justify-between">
+    <header className="sticky top-3 z-50 w-full px-3 sm:px-4">
+      <div className="floating-glass-header premium-container flex h-16 items-center justify-between rounded-2xl">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/25">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm shadow-primary/25">
             <GraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="hidden text-lg font-bold text-slate-950 sm:inline-block">
+          <span className="hidden font-heading text-lg font-bold text-slate-950 sm:inline-block">
             Gia Sư Sư Phạm
           </span>
         </Link>
@@ -86,9 +86,9 @@ export function Header() {
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-primary/10 hover:text-primary",
+                "rounded-full px-3.5 py-2 text-sm font-semibold premium-transition hover:bg-emerald-50 hover:text-primary",
                 pathname === item.href
-                  ? "bg-primary/10 text-primary shadow-sm"
+                  ? "bg-emerald-50 text-primary shadow-sm"
                   : "text-slate-600"
               )}
             >
@@ -106,8 +106,8 @@ export function Header() {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 px-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20">
+                  <Button variant="ghost" className="gap-2 rounded-full px-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20">
                       {user.fullName.charAt(0).toUpperCase()}
                     </div>
                     <div className="hidden text-left lg:block">
@@ -150,10 +150,10 @@ export function Header() {
             </>
           ) : (
             <>
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" className="rounded-full" asChild>
                 <Link href="/login">Đăng nhập</Link>
               </Button>
-              <Button asChild>
+              <Button className="rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 shadow-emerald-700/20 hover:from-emerald-700 hover:to-emerald-600" asChild>
                 <Link href="/register">Đăng ký</Link>
               </Button>
             </>
@@ -164,7 +164,7 @@ export function Header() {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="rounded-full md:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -176,23 +176,23 @@ export function Header() {
       <div
         aria-hidden={!mobileMenuOpen}
         className={cn(
-          "overflow-hidden border-t border-slate-200 bg-white/95 shadow-lg shadow-slate-950/5 backdrop-blur-xl transition-[max-height,opacity,transform] duration-300 ease-out md:hidden",
+          "mx-auto mt-2 max-w-7xl overflow-hidden rounded-2xl glass-card-strong transition-[max-height,opacity,transform] duration-300 ease-out md:hidden",
           mobileMenuOpen
             ? "max-h-[540px] translate-y-0 opacity-100"
             : "pointer-events-none max-h-0 -translate-y-2 opacity-0",
         )}
       >
-        <nav className="app-container flex flex-col gap-1 py-4">
+        <nav className="flex flex-col gap-1 p-4">
           {publicNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setMobileMenuOpen(false)}
               className={cn(
-                "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                "rounded-xl px-3 py-2.5 text-sm font-semibold premium-transition",
                 pathname === item.href
-                  ? "bg-primary/10 text-primary"
-                  : "text-slate-600 hover:bg-primary/10 hover:text-primary"
+                  ? "bg-emerald-50 text-primary"
+                  : "text-slate-600 hover:bg-emerald-50 hover:text-primary"
               )}
             >
               {item.label}
@@ -204,20 +204,20 @@ export function Header() {
               <Link
                 href={getDashboardLink()}
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
+                className="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-emerald-50 hover:text-primary"
               >
                 Dashboard
               </Link>
               <Link
                 href="/profile"
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
+                className="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-emerald-50 hover:text-primary"
               >
                 Hồ sơ cá nhân
               </Link>
               <button
                 onClick={handleLogout}
-                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-destructive hover:bg-destructive/10"
+                className="rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-destructive hover:bg-destructive/10"
               >
                 Đăng xuất
               </button>
@@ -227,14 +227,14 @@ export function Header() {
               <Link
                 href="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-primary/10 hover:text-primary"
+                className="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-emerald-50 hover:text-primary"
               >
                 Đăng nhập
               </Link>
               <Link
                 href="/register"
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20"
+                className="rounded-full bg-primary px-3 py-2.5 text-center text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20"
               >
                 Đăng ký
               </Link>

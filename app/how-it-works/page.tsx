@@ -11,15 +11,15 @@ const steps = [
 
 export default function HowItWorksPage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="premium-page-bg flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section className="page-band py-16 text-center">
-          <h1 className="text-4xl font-bold text-slate-950">Học đúng người, đúng mục tiêu, đúng lộ trình</h1>
+        <section className="gradient-mesh py-16 text-center">
+          <h1 className="mx-auto max-w-4xl font-heading text-4xl font-bold text-slate-950 md:text-5xl">Học đúng người, đúng mục tiêu, đúng lộ trình</h1>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">Quy trình kết nối được thiết kế để phụ huynh dễ lựa chọn và gia sư dễ bắt đầu lớp học.</p>
         </section>
         <section className="app-container grid gap-5 py-10 md:grid-cols-4">
-          {steps.map((step) => <Card key={step.title}><CardContent className="p-5"><div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary"><step.icon className="h-6 w-6" /></div><h2 className="mt-4 font-semibold text-slate-950">{step.title}</h2><p className="mt-2 text-sm text-muted-foreground">{step.text}</p><CheckCircle2 className="mt-4 h-5 w-5 text-emerald-600" /></CardContent></Card>)}
+          {steps.map((step) => <Card key={step.title} className="glass-card gradient-border-hover premium-hover-lift rounded-2xl"><CardContent className="p-5"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"><step.icon className="h-6 w-6" /></div><h2 className="mt-4 font-heading font-semibold text-slate-950">{step.title}</h2><p className="mt-2 text-sm text-muted-foreground">{step.text}</p><CheckCircle2 className="mt-4 h-5 w-5 text-emerald-600" /></CardContent></Card>)}
         </section>
       </main>
       <Footer />

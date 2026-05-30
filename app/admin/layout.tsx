@@ -54,11 +54,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     if (!isLoading && !user) router.replace("/login")
   }, [isLoading, router, user])
 
-  if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 p-10 text-center text-sm font-medium text-slate-600">Đang kiểm tra quyền truy cập...</div>
+  if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-[#fdfbf7] p-10 text-center text-sm font-medium text-slate-600">Đang kiểm tra quyền truy cập...</div>
   if (!user) return null
   if (!canAccessAdmin(user)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#fdfbf7] p-6 text-center">
         <div className="surface-panel max-w-md p-8">
           <h1 className="text-2xl font-bold">Không có quyền truy cập</h1>
           <p className="mt-2 text-muted-foreground">Khu vực này chỉ dành cho quản trị viên.</p>
@@ -75,7 +75,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const Sidebar = (
     <div className="flex h-full flex-col bg-white">
       <Link href="/" className="flex h-16 items-center gap-2.5 border-b border-slate-200/80 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/25"><ShieldCheck className="h-5 w-5" /></div>
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/25"><ShieldCheck className="h-5 w-5" /></div>
         <span className="font-bold text-slate-950">Admin Gia Sư</span>
       </Link>
       <nav className="flex-1 space-y-1 p-4">
@@ -107,10 +107,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   )
 
   return (
-    <div className="min-h-screen bg-slate-100/70">
+    <div className="min-h-screen bg-[#fdfbf7]">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-slate-200/80 bg-white shadow-sm lg:block">{Sidebar}</aside>
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/85 px-4 shadow-sm shadow-slate-950/5 backdrop-blur-xl lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 shadow-sm shadow-slate-950/5 lg:px-6">
           <Sheet><SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden"><Menu className="h-5 w-5" /></Button></SheetTrigger><SheetContent side="left" className="w-72 p-0">{Sidebar}</SheetContent></Sheet>
           <div><p className="font-bold text-slate-950">Quản lý hệ thống gia sư tập trung</p><p className="hidden text-sm text-muted-foreground sm:block">Theo dõi yêu cầu học, duyệt hồ sơ và kết nối gia sư phù hợp</p></div>
           <div className="flex items-center gap-2">

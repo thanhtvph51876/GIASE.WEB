@@ -44,35 +44,35 @@ const requirements = [
 
 export default function RegisterTutorPage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="premium-page-bg flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section className="page-band py-12">
+        <section className="gradient-mesh py-14">
           <div className="app-container grid gap-8 lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
-              <Badge className="mb-4 bg-orange-100 text-orange-700 hover:bg-orange-100">
+              <Badge className="premium-badge mb-4">
                 Ứng tuyển gia sư cần tạo tài khoản
               </Badge>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
+              <h1 className="font-heading text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
                 Trở thành gia sư được kiểm duyệt trên Gia Sư Sư Phạm
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
                 Trang này là phần giới thiệu quy trình. Để nộp hồ sơ thật, bạn cần tạo tài khoản gia sư rồi hoàn thiện hồ sơ, upload giấy tờ và ký cam kết trong dashboard bảo mật.
               </p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <Button size="lg" asChild>
+                <Button size="lg" className="rounded-full" asChild>
                   <Link href="/register?role=tutor&redirect=%2Fdashboard%2Ftutor%2Fprofile">
                     Tạo tài khoản gia sư
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild>
+                <Button size="lg" variant="outline" className="rounded-full bg-white/75" asChild>
                   <Link href="/tutor-agreement">Tìm hiểu quy trình xác thực</Link>
                 </Button>
               </div>
             </div>
 
-            <Card className="border-emerald-200 bg-emerald-50/70">
+            <Card className="glass-card-strong rounded-2xl border-emerald-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-emerald-900">
                   <ShieldCheck className="h-5 w-5" />
@@ -94,7 +94,7 @@ export default function RegisterTutorPage() {
         <section className="app-container py-10">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {benefits.map((item) => (
-              <Card key={item.title} className="shadow-sm">
+              <Card key={item.title} className="glass-card gradient-border-hover premium-hover-lift rounded-2xl">
                 <CardContent className="p-5">
                   <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <item.icon className="h-5 w-5" />
@@ -107,7 +107,7 @@ export default function RegisterTutorPage() {
           </div>
         </section>
 
-        <section className="bg-white py-10">
+        <section className="gradient-mesh bg-white/45 py-10">
           <div className="app-container grid gap-8 lg:grid-cols-[360px_1fr]">
             <div>
               <Badge variant="secondary" className="mb-3">Quy trình 6 bước</Badge>
@@ -118,7 +118,7 @@ export default function RegisterTutorPage() {
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {steps.map((step, index) => (
-                <div key={step} className="surface-panel flex items-start gap-3 p-4">
+                <div key={step} className="glass-card flex items-start gap-3 rounded-2xl p-4">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
                     {index + 1}
                   </div>
@@ -141,7 +141,7 @@ export default function RegisterTutorPage() {
 
         <section className="app-container py-10">
           <div className="grid gap-6 lg:grid-cols-3">
-            <Card>
+            <Card className="glass-card-strong rounded-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileCheck2 className="h-5 w-5 text-primary" />
@@ -158,7 +158,7 @@ export default function RegisterTutorPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="glass-card-strong rounded-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <UploadCloud className="h-5 w-5 text-primary" />
@@ -171,7 +171,7 @@ export default function RegisterTutorPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-primary/30 bg-primary/5">
+            <Card className="glass-card-strong rounded-2xl border-primary/30 bg-primary/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />

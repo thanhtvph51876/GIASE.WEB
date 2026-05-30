@@ -37,11 +37,11 @@ export default function TutorDashboardLayout({ children }: { children: ReactNode
     if (!isLoading && !user) router.replace("/login")
   }, [isLoading, router, user])
 
-  if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 p-10 text-center text-sm font-medium text-slate-600">Đang kiểm tra phiên đăng nhập...</div>
+  if (isLoading) return <div className="premium-page-bg flex min-h-screen items-center justify-center p-10 text-center text-sm font-medium text-slate-600">Đang kiểm tra phiên đăng nhập...</div>
   if (!user) return null
   if (user.role !== "tutor") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-center">
+      <div className="premium-page-bg flex min-h-screen items-center justify-center p-6 text-center">
         <div className="surface-panel max-w-md p-8">
           <h1 className="text-2xl font-bold">Không có quyền truy cập</h1>
           <p className="mt-2 text-muted-foreground">Khu vực này chỉ dành cho gia sư.</p>
@@ -52,9 +52,9 @@ export default function TutorDashboardLayout({ children }: { children: ReactNode
   }
 
   const Sidebar = (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-white/95">
       <Link href="/" className="flex h-16 items-center gap-2.5 border-b border-slate-200/80 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/25">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/25">
           <GraduationCap className="h-5 w-5" />
         </div>
         <span className="font-bold text-slate-950">Gia Sư Sư Phạm</span>
@@ -81,10 +81,10 @@ export default function TutorDashboardLayout({ children }: { children: ReactNode
   )
 
   return (
-    <div className="min-h-screen bg-slate-100/70">
+    <div className="min-h-screen bg-[#fdfbf7] bg-[radial-gradient(circle_at_8%_8%,rgba(240,253,244,0.75),transparent_28%),radial-gradient(circle_at_92%_12%,rgba(250,245,255,0.62),transparent_30%)]">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-slate-200/80 bg-white shadow-sm lg:block">{Sidebar}</aside>
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/85 px-4 shadow-sm shadow-slate-950/5 backdrop-blur-xl lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/70 bg-white/90 px-4 shadow-sm shadow-slate-950/5 backdrop-blur-xl lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden"><Menu className="h-5 w-5" /></Button>

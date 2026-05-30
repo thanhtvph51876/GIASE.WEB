@@ -12,17 +12,17 @@ interface LegalPageProps {
 
 export function LegalPage({ content }: LegalPageProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="premium-page-bg min-h-screen">
       <Header />
       <main>
-        <section className="border-b border-slate-200/80 bg-white">
+        <section className="gradient-mesh border-b border-white/60 bg-white/45">
           <div className="app-container py-12 sm:py-16">
             <div className="max-w-3xl">
-              <Badge variant="outline" className="mb-4 gap-2">
+              <Badge variant="outline" className="premium-badge mb-4 gap-2">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Chính sách nền tảng
               </Badge>
-              <h1 className="text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">
+              <h1 className="font-heading text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">
                 {content.title}
               </h1>
               <p className="mt-4 text-base leading-7 text-muted-foreground">{content.description}</p>
@@ -37,7 +37,7 @@ export function LegalPage({ content }: LegalPageProps) {
               {content.sections.map((section) => (
                 <section
                   key={section.heading}
-                  className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+                  className="glass-card-strong rounded-2xl p-5"
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -59,7 +59,7 @@ export function LegalPage({ content }: LegalPageProps) {
               ))}
             </article>
 
-            <aside className="h-fit rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <aside className="glass-card-strong h-fit rounded-2xl p-5">
               <h2 className="text-sm font-semibold uppercase text-slate-500">Cần hỗ trợ?</h2>
               <p className="mt-3 text-sm leading-6 text-slate-700">
                 Nếu bạn cần làm rõ chính sách, khiếu nại hoặc yêu cầu hỗ trợ dữ liệu, hãy gửi thông tin qua

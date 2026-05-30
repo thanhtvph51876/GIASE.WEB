@@ -1,9 +1,22 @@
 import type { Metadata, Viewport } from "next"
+import { Inter, Outfit } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/lib/contexts/auth-context"
 import { ScrollRevealProvider } from "@/components/layout/scroll-reveal-provider"
 import "./globals.css"
+
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-inter",
+  display: "swap",
+})
+
+const outfit = Outfit({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-outfit",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: {
@@ -40,8 +53,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#fdfbf7" },
+    { media: "(prefers-color-scheme: dark)", color: "#064e3b" },
   ],
 }
 
@@ -52,7 +65,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className="app-gradient-bg bg-background font-sans antialiased">
+      <body className={`${inter.variable} ${outfit.variable} app-gradient-bg bg-background font-sans antialiased`}>
         <AuthProvider>
           <ScrollRevealProvider>{children}</ScrollRevealProvider>
           <Toaster position="top-right" richColors />

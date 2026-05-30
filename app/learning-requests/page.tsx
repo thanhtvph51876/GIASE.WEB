@@ -70,13 +70,13 @@ export default function LearningRequestsPage() {
   }, [keyword, subject, grade, location, openRequests])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="premium-page-bg flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section className="page-band py-10">
+        <section className="gradient-mesh py-12">
           <div className="app-container text-center">
-            <Badge className="mb-3 bg-blue-100 text-blue-700 hover:bg-blue-100">Dành cho gia sư</Badge>
-            <h1 className="text-3xl font-bold md:text-5xl">Yêu cầu tìm gia sư đang mở</h1>
+            <Badge className="premium-badge mb-3">Dành cho gia sư</Badge>
+            <h1 className="font-heading text-3xl font-bold md:text-5xl">Yêu cầu tìm gia sư đang mở</h1>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
               Gia sư có thể xem nhu cầu học tập thật từ phụ huynh, sau đó đăng nhập để nhận lớp phù hợp.
             </p>
@@ -84,7 +84,7 @@ export default function LearningRequestsPage() {
         </section>
 
         <section className="app-container py-8">
-          <Card className="mb-6">
+          <Card className="glass-card-strong mb-6 rounded-2xl">
             <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr_180px_180px_180px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -153,7 +153,7 @@ export default function LearningRequestsPage() {
             <p className="text-sm text-muted-foreground">
               Tìm thấy <b className="text-foreground">{requests.length}</b> yêu cầu phù hợp
             </p>
-            <Button asChild>
+            <Button className="rounded-full" asChild>
               <Link href="/register-student">Tạo yêu cầu học</Link>
             </Button>
           </div>
@@ -161,7 +161,7 @@ export default function LearningRequestsPage() {
           {requests.length ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {requests.map((request) => (
-                <Card key={request.id} className="transition-colors hover:border-primary/30">
+                <Card key={request.id} className="glass-card gradient-border-hover premium-hover-lift rounded-2xl transition-colors hover:border-primary/30">
                   <CardHeader>
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -185,7 +185,7 @@ export default function LearningRequestsPage() {
                       {request.expectedFee ? `${formatCurrency(request.expectedFee)}/giờ` : "Trao đổi sau tư vấn"}
                     </div>
                     <p className="line-clamp-3 text-muted-foreground">Thông tin liên hệ và địa chỉ cụ thể được ẩn cho đến khi admin xử lý.</p>
-                    <Button className="w-full" asChild>
+                    <Button className="w-full rounded-full" asChild>
                       <Link href="/login">Đăng nhập để nhận lớp</Link>
                     </Button>
                   </CardContent>
@@ -193,7 +193,7 @@ export default function LearningRequestsPage() {
               ))}
             </div>
           ) : (
-            <Card>
+            <Card className="glass-card-strong rounded-2xl">
               <CardContent className="py-14 text-center">
                 <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h2 className="mt-4 text-xl font-semibold">Chưa có yêu cầu phù hợp</h2>

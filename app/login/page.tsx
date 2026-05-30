@@ -76,11 +76,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 px-4 py-8">
+    <div className="premium-page-bg min-h-screen px-4 py-8">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-center">
-        <section className="hidden rounded-lg border border-slate-200 bg-white p-8 shadow-sm lg:block">
+        <section className="glass-card-strong hidden rounded-2xl p-8 lg:block">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/25">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-sm shadow-primary/25">
               <GraduationCap className="h-6 w-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-slate-950">Gia Sư Sư Phạm</span>
@@ -88,7 +88,7 @@ export default function LoginPage() {
 
           <div className="mt-14 max-w-xl">
             <p className="text-sm font-semibold uppercase text-primary">Cổng truy cập</p>
-            <h1 className="mt-3 text-4xl font-bold text-slate-950">
+            <h1 className="mt-3 font-heading text-4xl font-bold text-slate-950">
               Quản lý học tập, lịch học và thanh toán trong một tài khoản.
             </h1>
             <p className="mt-5 text-base leading-7 text-slate-600">
@@ -110,13 +110,13 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <Card className="w-full border-slate-200 bg-white shadow-sm">
+        <Card className="glass-card-strong w-full rounded-2xl">
           <CardHeader>
             <Link href="/" className="mb-2 inline-flex w-fit items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary lg:hidden">
               <ArrowLeft className="h-4 w-4" />
               Trang chủ
             </Link>
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <KeyRound className="h-6 w-6" />
             </div>
             <CardTitle className="text-2xl">Đăng nhập</CardTitle>
@@ -207,7 +207,7 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Đăng nhập
             </Button>

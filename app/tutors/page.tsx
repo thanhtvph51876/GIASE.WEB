@@ -258,18 +258,18 @@ function TutorsContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="premium-page-bg flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section className="page-band py-10">
+        <section className="gradient-mesh py-12">
           <div className="app-container">
             <div className="mx-auto max-w-3xl text-center">
-              <Badge className="mb-3 bg-blue-100 text-blue-700 hover:bg-blue-100">Hồ sơ gia sư minh bạch</Badge>
-              <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
+              <Badge className="premium-badge mb-3">Hồ sơ gia sư minh bạch</Badge>
+              <h1 className="font-heading text-3xl font-bold tracking-tight md:text-5xl">
                 Tìm gia sư phù hợp chỉ trong vài phút
               </h1>
               <p className="mt-4 text-muted-foreground">
-                Xem kinh nghiệm, học phí, lịch rảnh và đánh giá trước khi đăng ký học thử.
+                Xem kinh nghiệm, học phí, lịch rảnh và đánh giá trước khi đăng ký học thử. Số điện thoại và giấy tờ nhạy cảm không hiển thị công khai.
               </p>
             </div>
           </div>
@@ -278,13 +278,13 @@ function TutorsContent() {
         <section className="app-container py-8">
           <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
             <aside className="hidden lg:block">
-              <Card className="sticky top-24 shadow-sm">
+              <Card className="glass-card-strong sticky top-24 rounded-2xl">
                 <CardContent className="p-5">{filterPanel}</CardContent>
               </Card>
             </aside>
 
             <div className="space-y-5">
-                <div className="surface-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="glass-card-strong flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-semibold">{isLoading ? "Đang tải..." : `${tutors.length} gia sư phù hợp`}</p>
                   <p className="text-sm text-muted-foreground">Dữ liệu được đồng bộ qua service và lưu lại trong trình duyệt.</p>
@@ -347,7 +347,7 @@ function TutorsContent() {
                     </SelectContent>
                   </Select>
 
-                  <div className="hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm sm:flex">
+                  <div className="hidden rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm sm:flex">
                     <Button
                       variant={viewMode === "grid" ? "default" : "ghost"}
                       size="icon"
@@ -395,7 +395,7 @@ function TutorsContent() {
               ) : isLoading || masterDataLoading ? (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, index) => (
-                    <Skeleton key={index} className="h-80 rounded-lg" />
+                    <Skeleton key={index} className="h-80 rounded-2xl" />
                   ))}
                 </div>
               ) : tutors.length > 0 ? (
@@ -426,7 +426,7 @@ function TutorsContent() {
                   ))}
                 </div>
               ) : (
-                <Card>
+                <Card className="glass-card-strong rounded-2xl">
                   <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                     <Search className="h-12 w-12 text-muted-foreground" />
                     <h2 className="mt-4 text-xl font-semibold">Không tìm thấy gia sư phù hợp</h2>

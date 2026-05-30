@@ -27,7 +27,7 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
   const getVerificationBadge = () => {
     if (tutor.verified && tutor.approvalStatus === "approved") {
       return (
-        <Badge variant="secondary" className="gap-1 bg-green-100 text-green-700">
+        <Badge variant="secondary" className="gap-1 rounded-full bg-emerald-100 text-emerald-700">
           <CheckCircle className="h-3 w-3" />
           Đã xác minh
         </Badge>
@@ -35,7 +35,7 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
     }
     if (tutor.approvalStatus === "pending") {
       return (
-        <Badge variant="secondary" className="gap-1">
+        <Badge variant="secondary" className="gap-1 rounded-full">
           <Clock className="h-3 w-3" />
           Chờ xác minh
         </Badge>
@@ -46,10 +46,10 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
 
   if (variant === "compact") {
     return (
-      <Card className="reveal hover-lift overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+      <Card className="reveal glass-card gradient-border-hover premium-hover-lift overflow-hidden rounded-2xl">
         <CardContent className="p-4">
           <div className="flex gap-3">
-            <Avatar className="h-12 w-12 ring-2 ring-primary/10">
+            <Avatar className="h-12 w-12 border-2 border-white ring-2 ring-emerald-100">
               <AvatarImage src={tutor.avatar} alt={tutor.fullName} />
               <AvatarFallback>{getInitials(tutor.fullName)}</AvatarFallback>
             </Avatar>
@@ -80,18 +80,18 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
   }
 
   return (
-    <Card className="reveal hover-lift group overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
-      <div className="h-1 bg-primary" />
+    <Card className="reveal glass-card gradient-border-hover premium-hover-lift group overflow-hidden rounded-2xl">
+      <div className="h-1 bg-gradient-to-r from-emerald-500 via-blue-600 to-emerald-500" />
       <CardContent className="p-5">
         <div className="flex gap-4">
-          <Avatar className="icon-float h-20 w-20 shrink-0 ring-4 ring-primary/10">
+          <Avatar className="icon-float h-20 w-20 shrink-0 border-4 border-white shadow-sm ring-2 ring-emerald-100">
             <AvatarImage src={tutor.avatar} alt={tutor.fullName} />
             <AvatarFallback className="text-lg">{getInitials(tutor.fullName)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex flex-wrap items-center gap-2">
               <Link href={`/tutors/${tutor.id}`}>
-                <h3 className="text-lg font-semibold hover:text-primary">{tutor.fullName}</h3>
+                <h3 className="font-heading text-lg font-semibold hover:text-primary">{tutor.fullName}</h3>
               </Link>
               {getVerificationBadge()}
             </div>
@@ -115,7 +115,7 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
 
             <div className="flex flex-wrap gap-1.5">
               {tutor.subjects.slice(0, 4).map((subject) => (
-                <Badge key={subject} variant="secondary" className="text-xs">
+                  <Badge key={subject} variant="secondary" className="rounded-full bg-emerald-50 text-xs text-emerald-800">
                   {subject}
                 </Badge>
               ))}
@@ -128,7 +128,7 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/60 pt-4">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -155,12 +155,12 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter className="gap-2 border-t border-slate-200/80 bg-slate-50/80 p-4">
-        <Button variant="outline" className="flex-1" asChild>
-          <Link href={`/tutors/${tutor.id}`}>Xem chi tiết</Link>
+      <CardFooter className="gap-2 border-t border-white/60 bg-white/50 p-4">
+        <Button variant="outline" className="flex-1 rounded-full" asChild>
+          <Link href={`/tutors/${tutor.id}`}>Xem hồ sơ</Link>
         </Button>
-        <Button className="flex-1 whitespace-normal px-2 text-xs sm:text-sm" asChild>
-          <Link href={`/tutors/${tutor.id}/booking`}>Học thử không cần đăng nhập</Link>
+        <Button className="flex-1 rounded-full whitespace-normal px-2 text-xs sm:text-sm" asChild>
+          <Link href={`/tutors/${tutor.id}/booking`}>Đăng ký học thử</Link>
         </Button>
       </CardFooter>
     </Card>

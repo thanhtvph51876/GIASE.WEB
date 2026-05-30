@@ -9,3 +9,4 @@
 ✓ Ready in 2.0s
 Creating turbopack project { dir: 'H:\\website-clone', testMode: true }
 
+ GET / 200 in 3.7s (next.js: 2.8s, application-code: 858ms)

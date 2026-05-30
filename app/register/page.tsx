@@ -75,16 +75,16 @@ function RegisterContent() {
   }
 
   return (
-    <div className="page-shell page-enter gradient-mesh flex min-h-screen items-center justify-center bg-slate-100/70 px-4 py-8">
-      <Card className="reveal soft-glow w-full max-w-md">
+    <div className="page-shell page-enter premium-page-bg gradient-mesh flex min-h-screen items-center justify-center px-4 py-8">
+      <Card className="reveal glass-card-strong w-full max-w-md rounded-2xl">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto mb-4 flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/25">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-sm shadow-primary/25">
               <GraduationCap className="h-6 w-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-slate-950">Gia Sư Sư Phạm</span>
           </Link>
-          <CardTitle className="text-2xl">Đăng ký tài khoản</CardTitle>
+          <CardTitle className="font-heading text-2xl">Đăng ký tài khoản</CardTitle>
           <CardDescription>
             Tạo tài khoản để bắt đầu sử dụng dịch vụ
           </CardDescription>
@@ -217,7 +217,11 @@ function RegisterContent() {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+              Thông tin của bạn chỉ dùng để tư vấn và xếp lớp. Chúng tôi không công khai số điện thoại của bạn.
+            </p>
+
+            <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Đăng ký
             </Button>

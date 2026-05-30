@@ -132,20 +132,20 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="premium-page-bg flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section className="page-band py-8">
+        <section className="gradient-mesh py-10">
           <div className="app-container">
             <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
               <div className="flex flex-col gap-5 md:flex-row">
-                <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
+                <Avatar className="h-32 w-32 border-4 border-white shadow-xl ring-2 ring-emerald-100">
                   <AvatarImage src={tutor.avatar} alt={tutor.fullName} />
                   <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold text-slate-950">{tutor.fullName}</h1>
+                    <h1 className="font-heading text-3xl font-bold text-slate-950">{tutor.fullName}</h1>
                     {tutor.verified && (
                       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                         <CheckCircle2 className="mr-1 h-3 w-3" />
@@ -157,15 +157,15 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                     {tutor.university} · {tutor.faculty} · {tutor.major}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3 text-sm">
-                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1 shadow-sm">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/80 px-3 py-1 shadow-sm">
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                       <b>{tutor.rating.toFixed(1)}</b> ({tutor.reviewCount} đánh giá)
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1 shadow-sm">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/80 px-3 py-1 shadow-sm">
                       <Users className="h-4 w-4 text-blue-600" />
                       {tutor.totalStudents} học sinh
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1 shadow-sm">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/80 px-3 py-1 shadow-sm">
                       <Clock className="h-4 w-4 text-blue-600" />
                       {tutor.experienceYears} năm kinh nghiệm
                     </span>
@@ -180,20 +180,20 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
 
-              <Card>
+              <Card className="glass-card-strong rounded-2xl">
                 <CardContent className="p-5">
                   <p className="text-sm text-muted-foreground">Học phí tham khảo</p>
                   <p className="text-3xl font-bold text-primary">{formatCurrency(tutor.pricePerHour)}/giờ</p>
                   <div className="mt-4 grid gap-2">
-                    <Button asChild size="lg" className="h-auto whitespace-normal py-3">
+                    <Button asChild size="lg" className="h-auto rounded-full whitespace-normal py-3">
                       <a href="#booking">Đăng ký học thử - không cần đăng nhập</a>
                     </Button>
-                    <Button type="button" variant="outline" size="lg" className="h-auto whitespace-normal py-3" onClick={handleOfficialBooking}>
+                    <Button type="button" variant="outline" size="lg" className="h-auto rounded-full whitespace-normal py-3" onClick={handleOfficialBooking}>
                       Đặt lịch chính thức - cần đăng nhập
                     </Button>
                     <Button
                       variant={isFavorite(tutor.id) ? "default" : "outline"}
-                      className="h-auto whitespace-normal py-2"
+                      className="h-auto rounded-full whitespace-normal py-2"
                       onClick={handleFavorite}
                     >
                       <Heart className="mr-2 h-4 w-4" />
@@ -221,13 +221,13 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
               </TabsList>
 
               <TabsContent value="overview" className="space-y-5">
-                <Card>
+                <Card className="glass-card-strong rounded-2xl">
                   <CardHeader>
                     <CardTitle>Giới thiệu bản thân</CardTitle>
                   </CardHeader>
                   <CardContent className="leading-7 text-muted-foreground">{tutor.bio}</CardContent>
                 </Card>
-                <Card className="border-emerald-200 bg-emerald-50/60">
+                <Card className="rounded-2xl border-emerald-200 bg-emerald-50/80">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-emerald-900">
                       <ShieldCheck className="h-5 w-5" />
@@ -257,7 +257,7 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
               </TabsContent>
 
               <TabsContent value="experience" className="space-y-5">
-                <Card>
+                <Card className="glass-card-strong rounded-2xl">
                   <CardHeader>
                     <CardTitle>Học vấn và năng lực</CardTitle>
                   </CardHeader>
@@ -293,7 +293,7 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
               <TabsContent value="reviews" className="space-y-4">
                 {reviews.length ? (
                   reviews.map((review) => (
-                    <Card key={review.id}>
+                    <Card key={review.id} className="glass-card rounded-2xl">
                       <CardContent className="p-5">
                         <div className="flex items-start gap-3">
                           <Avatar>
@@ -315,7 +315,7 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                     </Card>
                   ))
                 ) : (
-                  <Card>
+                  <Card className="glass-card rounded-2xl">
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <MessageSquare className="mx-auto mb-3 h-10 w-10" />
                       <p className="font-medium text-slate-800">Chưa có đánh giá nào.</p>
@@ -326,7 +326,7 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
               </TabsContent>
 
               <TabsContent value="method">
-                <Card>
+                <Card className="glass-card-strong rounded-2xl">
                   <CardHeader>
                     <CardTitle>Phương pháp giảng dạy</CardTitle>
                   </CardHeader>
@@ -337,7 +337,7 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <aside id="booking" className="lg:sticky lg:top-24 lg:self-start">
-            <Card>
+            <Card className="glass-card-strong rounded-2xl">
               <CardHeader>
                 <CardTitle>Đăng ký học thử nhanh</CardTitle>
               </CardHeader>
@@ -363,7 +363,7 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
                 ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
+                  <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">
                     Không cần đăng nhập. Thông tin này chỉ dùng để tư vấn viên liên hệ xác nhận lịch học thử.
                   </p>
                   <Field label="Họ tên học sinh" error={errors.studentName?.message}>
@@ -408,7 +408,7 @@ export default function TutorDetailPage({ params }: { params: Promise<{ id: stri
                   <Field label="Ghi chú" error={errors.message?.message}>
                     <Textarea {...register("message")} rows={3} placeholder="Mục tiêu học, tình trạng hiện tại..." />
                   </Field>
-                  <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full rounded-full" size="lg" disabled={isSubmitting}>
                     {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu học thử"}
                   </Button>
                 </form>
