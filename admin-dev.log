@@ -10,3 +10,8 @@
 Creating turbopack project { dir: 'H:\\website-clone', testMode: true }
 
  GET / 200 in 3.7s (next.js: 2.8s, application-code: 858ms)
+○ Compiling /register-student ...
+ GET /contact 200 in 4.6s (next.js: 2.1s, application-code: 2.5s)
+ GET /how-it-works 200 in 4.6s (next.js: 2.7s, application-code: 1869ms)
+ GET /tutors 200 in 4.9s (next.js: 3.7s, application-code: 1118ms)
+ GET /register-student 200 in 4.9s (next.js: 4.0s, application-code: 927ms)
