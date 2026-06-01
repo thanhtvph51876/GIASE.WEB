@@ -116,7 +116,7 @@ class BookingService {
   async convertToClass(id: string) {
     try {
       const createdClass = await bookingApi.convertToClass(id)
-      const booking = await bookingApi.get(id)
+      const booking = await bookingApi.adminGet(id)
       return { success: true, booking: { ...booking, classId: (createdClass as any).id } }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể chuyển thành lớp" }
@@ -125,6 +125,50 @@ class BookingService {
 
   async getAllBookings(): Promise<TrialBooking[]> {
     return bookingApi.adminList()
+  }
+
+  async getAdminBookingById(id: string): Promise<TrialBooking | null> {
+    try {
+      return await bookingApi.adminGet(id)
+    } catch {
+      return null
+    }
+  }
+
+  async assignTutorByAdmin(id: string, tutorId: string) {
+    try {
+      const booking = await bookingApi.adminAssignTutor(id, tutorId)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể gán lại gia sư cho booking" }
+    }
+  }
+
+  async cancelBookingByAdmin(id: string, reason?: string) {
+    try {
+      const booking = await bookingApi.adminCancel(id, reason)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể hủy booking bằng quyền admin" }
+    }
+  }
+
+  async markStudentNoShow(id: string, note?: string) {
+    try {
+      const booking = await bookingApi.adminMarkNoShowStudent(id, note)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể ghi nhận học viên no-show" }
+    }
+  }
+
+  async markTutorNoShow(id: string, note?: string) {
+    try {
+      const booking = await bookingApi.adminMarkNoShowTutor(id, note)
+      return { success: true, booking }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể ghi nhận gia sư no-show" }
+    }
   }
 
   async getPendingCount(tutorId: string): Promise<number> {

@@ -29,6 +29,9 @@ export const learningRequestApi = {
   async adminList() {
     return mapList(await apiRequest<LearningRequest[]>("/admin/learning-requests"), mapLearningRequest)
   },
+  async adminGet(id: string) {
+    return mapLearningRequest(await apiRequest<LearningRequest>(`/admin/learning-requests/${id}`))
+  },
   async get(id: string) {
     return mapLearningRequest(await apiRequest<LearningRequest>(`/learning-requests/${id}`))
   },
@@ -61,6 +64,12 @@ export const learningRequestApi = {
   },
   async cancel(id: string, reason?: string) {
     return mapLearningRequest(await apiRequest<LearningRequest>(`/learning-requests/${id}/cancel`, { method: "POST", body: reason ? { reason } : undefined }))
+  },
+  async adminCancel(id: string, reason?: string) {
+    return mapLearningRequest(await apiRequest<LearningRequest>(`/admin/learning-requests/${id}/cancel`, { method: "POST", body: reason ? { reason } : undefined }))
+  },
+  async rematch(id: string, reason?: string) {
+    return mapLearningRequest(await apiRequest<LearningRequest>(`/admin/learning-requests/${id}/rematch`, { method: "POST", body: reason ? { reason } : undefined }))
   },
   matchingTutors(id: string) {
     return apiRequest(`/admin/learning-requests/${id}/matching-tutors`)

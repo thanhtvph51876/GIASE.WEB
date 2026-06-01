@@ -12,6 +12,7 @@ import type {
 import { apiRequest } from "./client"
 
 type MasterDataParams = Record<string, string | boolean | undefined>
+type AdminMasterDataKind = "subjects" | "locations" | "certificates"
 
 function normalizeTeachingMode(item: TeachingModeOption): TeachingModeOption {
   const code = (item.code || item.name || "").toUpperCase()
@@ -51,5 +52,14 @@ export const masterDataApi = {
   },
   cancellationPolicies(params?: MasterDataParams) {
     return apiRequest<CancellationPolicy[]>("/master-data/cancellation-policies", { params, auth: false })
+  },
+  adminCreate(kind: AdminMasterDataKind, data: unknown) {
+    return apiRequest(`/admin/master-data/${kind}`, { method: "POST", body: data })
+  },
+  adminUpdate(kind: AdminMasterDataKind, id: string, data: unknown) {
+    return apiRequest(`/admin/master-data/${kind}/${id}`, { method: "PATCH", body: data })
+  },
+  adminDelete(kind: AdminMasterDataKind, id: string) {
+    return apiRequest(`/admin/master-data/${kind}/${id}`, { method: "DELETE" })
   },
 }

@@ -27,7 +27,10 @@ class ContactService {
 
   async updateStatus(id: string, status: ContactRequestStatus, _actor?: User | null): Promise<{ success: boolean; request?: ContactRequest; error?: string }> {
     try {
-      const request = (await contactApi.updateStatus(id, status)) as ContactRequest
+      const request = (await contactApi.updateStatus(id, status, {
+        handledBy: _actor?.fullName,
+        handledById: _actor?.id,
+      })) as ContactRequest
       return { success: true, request }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật liên hệ" }

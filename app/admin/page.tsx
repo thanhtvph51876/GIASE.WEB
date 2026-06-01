@@ -1,8 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { AlertTriangle, BookOpen, CalendarDays, GraduationCap, Star, Users, Wallet } from "lucide-react"
+import { AlertTriangle, ArrowRight, BookOpen, CalendarDays, GraduationCap, ShieldCheck, Star, Users, Wallet } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { formatCurrency, formatDateTime } from "@/lib/helpers"
@@ -29,12 +31,16 @@ export default function AdminDashboardPage() {
   const bookings = data?.bookings || []
   const reviews = data?.reviews || []
   const tasks = [
-    ...(canReadTutors ? pendingTutors.map((tutor) => ({ id: tutor.id, title: `Duyệt hồ sơ ${tutor.fullName}`, meta: tutor.university, badge: "Hồ sơ", priority: 1 })) : []),
-    ...(canReadRequests ? requests.filter((request) => request.status === "new" || !request.assignedTutorId).map((request) => ({ id: request.id, title: `Gán gia sư cho ${request.subject} · ${request.grade}`, meta: `${request.studentName} · ${request.phone}`, badge: "Yêu cầu", priority: 2 })) : []),
-    ...(canReadBookings ? bookings.filter((booking) => booking.status === "rejected").map((booking) => ({ id: booking.id, title: `Booking bị từ chối: ${booking.studentName}`, meta: booking.rejectReason || booking.subject, badge: "Cần gán lại", priority: 3 })) : []),
-    ...(canReadSessions ? sessions.filter((session) => session.isTrial && session.status === "completed").map((session) => ({ id: session.id, title: `Xác nhận kết quả học thử ${session.subject}`, meta: `${session.studentName} · ${formatDateTime(session.startTime)}`, badge: "Học thử", priority: 4 })) : []),
-    ...(canReadReviews ? reviews.filter((review) => review.rating <= 3).map((review) => ({ id: review.id, title: `Review thấp từ ${review.studentName}`, meta: `${review.rating} sao · ${review.content}`, badge: "Chất lượng", priority: 5 })) : []),
+    ...(canReadTutors ? pendingTutors.map((tutor) => ({ id: tutor.id, title: `Duyệt hồ sơ ${tutor.fullName}`, meta: tutor.university, badge: "Hồ sơ", priority: 1, href: `/admin/tutors/${tutor.id}` })) : []),
+    ...(canReadRequests ? requests.filter((request) => request.status === "new" || !request.assignedTutorId).map((request) => ({ id: request.id, title: `Gán gia sư cho ${request.subject} · ${request.grade}`, meta: `${request.studentName} · ${request.phone}`, badge: "Yêu cầu", priority: 2, href: `/admin/learning-requests?id=${request.id}` })) : []),
+    ...(canReadBookings ? bookings.filter((booking) => booking.status === "rejected" || booking.status === "pending").map((booking) => ({ id: booking.id, title: `Booking cần xử lý: ${booking.studentName}`, meta: booking.rejectReason || booking.subject, badge: booking.status, priority: 3, href: `/admin/bookings?id=${booking.id}` })) : []),
+    ...(canReadSessions ? sessions.filter((session) => session.isTrial && session.status === "completed").map((session) => ({ id: session.id, title: `Xác nhận kết quả học thử ${session.subject}`, meta: `${session.studentName} · ${formatDateTime(session.startTime)}`, badge: "Học thử", priority: 4, href: `/admin/classes?id=${session.classId || session.id}` })) : []),
+    ...(canReadReviews ? reviews.filter((review) => review.rating <= 3).map((review) => ({ id: review.id, title: `Review thấp từ ${review.studentName}`, meta: `${review.rating} sao · ${review.content}`, badge: "Chất lượng", priority: 5, href: `/admin/reviews?tutorId=${review.tutorId}` })) : []),
   ].sort((a, b) => a.priority - b.priority)
+  const unmatchedRequests = requests.filter((request) => !request.assignedTutorId && !["cancelled", "closed", "completed"].includes(request.status)).length
+  const riskyBookings = bookings.filter((booking) => ["rejected", "cancelled", "no_show_student", "no_show_tutor"].includes(booking.status)).length
+  const sessionExceptions = sessions.filter((session) => ["cancelled", "student_absent", "tutor_absent"].includes(session.status)).length
+  const lowReviews = reviews.filter((review) => review.rating <= 3).length
 
   return (
     <div className="space-y-6">
@@ -57,6 +63,11 @@ export default function AdminDashboardPage() {
         {canReadClasses && <Stat title="Lớp học thử" value={stats?.trialClasses || 0} icon={CalendarDays} />}
         {canReadPayments && <Stat title="Doanh thu" value={formatCurrency(stats?.totalRevenue || 0)} icon={Wallet} />}
       </div>
+      <div className="grid gap-4 xl:grid-cols-3">
+        <ActionPanel title="Matching cần quyết định" value={unmatchedRequests} description="Yêu cầu chưa có gia sư hoặc đang ở đầu phễu cần admin chốt hướng xử lý." href="/admin/learning-requests" icon={BookOpen} />
+        <ActionPanel title="Học thử rủi ro" value={riskyBookings + sessionExceptions} description="Booking bị từ chối/no-show và session hủy/vắng cần đối soát để tránh lệch thanh toán." href="/admin/operations" icon={ShieldCheck} />
+        <ActionPanel title="Chất lượng cần theo dõi" value={lowReviews} description="Review thấp cần xem theo gia sư, lớp và phiên học để có hành động tiếp theo." href="/admin/reviews" icon={Star} />
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Việc cần xử lý</CardTitle>
@@ -64,7 +75,7 @@ export default function AdminDashboardPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {tasks.slice(0, 8).length ? tasks.slice(0, 8).map((task) => (
-            <Row key={`${task.badge}-${task.id}`} title={task.title} meta={task.meta} badge={task.badge} />
+            <Row key={`${task.badge}-${task.id}`} title={task.title} meta={task.meta} badge={task.badge} href={task.href} />
           )) : <p className="soft-panel border-dashed p-6 text-center text-sm text-muted-foreground">Hôm nay chưa có việc cần xử lý.</p>}
         </CardContent>
       </Card>
@@ -144,6 +155,30 @@ function Panel({ title, description, children }: { title: string; description: s
   )
 }
 
-function Row({ title, meta, badge, badgeKind }: { title: string; meta: string; badge: string; badgeKind?: React.ComponentProps<typeof StatusBadge>["kind"] }) {
-  return <div className="item-row p-3"><div className="flex items-center justify-between gap-2"><p className="font-semibold text-slate-800">{title}</p>{badgeKind ? <StatusBadge kind={badgeKind} status={badge} /> : <Badge variant="secondary">{badge}</Badge>}</div><p className="mt-1 text-sm text-muted-foreground">{meta}</p></div>
+function Row({ title, meta, badge, badgeKind, href }: { title: string; meta: string; badge: string; badgeKind?: React.ComponentProps<typeof StatusBadge>["kind"]; href?: string }) {
+  const content = <><div className="flex items-center justify-between gap-2"><p className="font-semibold text-slate-800">{title}</p>{badgeKind ? <StatusBadge kind={badgeKind} status={badge} /> : <Badge variant="secondary">{badge}</Badge>}</div><p className="mt-1 text-sm text-muted-foreground">{meta}</p></>
+  return href ? <Link href={href} className="item-row block p-3 transition hover:border-primary/40">{content}</Link> : <div className="item-row p-3">{content}</div>
+}
+
+function ActionPanel({ title, value, description, href, icon: Icon }: { title: string; value: number; description: string; href: string; icon: typeof BookOpen }) {
+  return (
+    <Card>
+      <CardContent className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+        <div>
+          <div className="flex items-center gap-2">
+            <Icon className="h-5 w-5 text-primary" />
+            <p className="font-semibold text-slate-950">{title}</p>
+          </div>
+          <p className="mt-2 text-3xl font-bold text-slate-950">{value}</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href={href}>
+            Xử lý
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  )
 }

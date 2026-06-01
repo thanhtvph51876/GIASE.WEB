@@ -7,4 +7,13 @@ export const settingsApi = {
   update(data: unknown) {
     return apiRequest("/admin/settings", { method: "PATCH", body: data })
   },
+  systemList() {
+    return apiRequest<Array<Record<string, unknown>>>("/admin/system-settings")
+  },
+  systemCreate(data: unknown) {
+    return apiRequest<Record<string, unknown>>("/admin/system-settings", { method: "POST", body: data })
+  },
+  systemUpdate(key: string, data: unknown) {
+    return apiRequest<Record<string, unknown>>(`/admin/system-settings/${encodeURIComponent(key)}`, { method: "PATCH", body: data })
+  },
 }

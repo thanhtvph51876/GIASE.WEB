@@ -1,20 +1,22 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { MatchingScoreBadge } from "@/components/platform/operational-components"
+import { MatchingScoreBadge, RequestStatusTimeline } from "@/components/platform/operational-components"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useAdminLearningRequests } from "@/lib/hooks/use-learning-requests"
 import { learningRequestService } from "@/lib/services"
-import { formatCurrency, getStatusLabel } from "@/lib/helpers"
-import type { LearningRequestStatus, Tutor } from "@/types"
+import { formatCurrency, formatDateTime, getStatusLabel } from "@/lib/helpers"
+import type { LearningRequest, LearningRequestStatus, Tutor } from "@/types"
 import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
 
 type BackendTutorMatch = {
@@ -32,12 +34,27 @@ const quickStatuses: Array<{ status: LearningRequestStatus; label: string }> = [
 
 export default function AdminLearningRequestsPage() {
   const { user } = useAuthContext()
+  const activeId = useSearchParams().get("id")
   const { requests, updateStatus, assignTutor, refresh } = useAdminLearningRequests(user)
   const [selectedTutor, setSelectedTutor] = useState("")
   const [matchesByRequest, setMatchesByRequest] = useState<Record<string, BackendTutorMatch[]>>({})
   const [loadingMatches, setLoadingMatches] = useState<Record<string, boolean>>({})
   const update = async (id: string, status: LearningRequestStatus) => { const ok = await updateStatus(id, status); if (ok) { toast.success("Cập nhật trạng thái thành công"); refresh() } }
   const assign = async (requestId: string) => { if (!selectedTutor) return; const ok = await assignTutor(requestId, selectedTutor); if (ok) { toast.success("Admin gán gia sư thành công"); setSelectedTutor(""); refresh() } }
+  const rematch = async (requestId: string, reason: string) => {
+    const result = await learningRequestService.rematchRequest(requestId, reason)
+    if (result.success) {
+      toast.success("Đã đưa yêu cầu vào luồng rematch")
+      refresh()
+    } else toast.error(result.error)
+  }
+  const cancel = async (requestId: string, reason: string) => {
+    const result = await learningRequestService.cancelRequestByAdmin(requestId, reason)
+    if (result.success) {
+      toast.success("Đã hủy yêu cầu học")
+      refresh()
+    } else toast.error(result.error)
+  }
   const loadMatches = async (requestId: string) => {
     if (matchesByRequest[requestId] || loadingMatches[requestId]) return
     setLoadingMatches((current) => ({ ...current, [requestId]: true }))
@@ -73,11 +90,12 @@ export default function AdminLearningRequestsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {requests.map((request) => (
-            <div key={request.id} className="item-row grid gap-4 xl:grid-cols-[1fr_auto] xl:items-center">
+            <div key={request.id} className={`item-row grid gap-4 xl:grid-cols-[1fr_auto] xl:items-center ${activeId === request.id ? "border-primary/60 bg-primary/5" : ""}`}>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-slate-900">{request.requestCode} · {request.subject} · {request.grade}</p>
                   <StatusBadge kind="learningRequest" status={request.status} />
+                  {!request.assignedTutorId && <Badge variant="outline">Cần matching</Badge>}
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {request.studentName} · {request.phone} · {request.location || "Online"} · {request.expectedFee ? formatCurrency(request.expectedFee) : "Chưa nhập học phí"}
@@ -85,6 +103,7 @@ export default function AdminLearningRequestsPage() {
                 {request.assignedTutorId && <p className="mt-1 text-sm font-medium text-primary">Gia sư được gán: {request.assignedTutorId}</p>}
               </div>
               <div className="flex flex-wrap gap-2">
+                <RequestDetailDialog request={request} />
                 <Dialog onOpenChange={(open) => { if (open) loadMatches(request.id) }}>
                   <DialogTrigger asChild>
                     <AdminActionButton size="sm" availability={getAdminActionAvailability(user, "learning_request", "learningRequest.assign", request.status, request)}>Gán gia sư</AdminActionButton>
@@ -148,9 +167,23 @@ export default function AdminLearningRequestsPage() {
                   </AdminActionButton>
                 ))}
                 <ConfirmReasonDialog
+                  trigger={<AdminActionButton size="sm" variant="outline" availability={getAdminActionAvailability(user, "learning_request", "learningRequest.rematch", request.status, request)}>Rematch</AdminActionButton>}
+                  title="Đưa yêu cầu vào luồng rematch"
+                  description="Dùng khi gia sư hiện tại không phù hợp, booking học thử thất bại hoặc phụ huynh muốn đổi gia sư."
+                  actionName="Rematch"
+                  severity="warning"
+                  reasonOptions={[
+                    { value: "TRIAL_NOT_FIT", label: "Học thử chưa phù hợp" },
+                    { value: "TUTOR_UNAVAILABLE", label: "Gia sư không còn lịch" },
+                    { value: "PARENT_REQUEST", label: "Phụ huynh yêu cầu đổi" },
+                    { value: "OTHER", label: "Lý do khác" },
+                  ]}
+                  onConfirm={(reason, note) => rematch(request.id, note || reason)}
+                />
+                <ConfirmReasonDialog
                   trigger={<AdminActionButton size="sm" variant="outline" availability={getAdminActionAvailability(user, "learning_request", "learningRequest.cancel", request.status, request)}>Hủy</AdminActionButton>}
                   title="Hủy yêu cầu học"
-                  description="Yêu cầu sẽ chuyển sang trạng thái hủy nếu backend cho phép."
+                  description="Yêu cầu sẽ được hủy bằng endpoint admin và lưu lý do vào audit backend."
                   actionName="Hủy yêu cầu"
                   severity="danger"
                   reasonOptions={[
@@ -158,7 +191,7 @@ export default function AdminLearningRequestsPage() {
                     { value: "NO_RESPONSE", label: "Không liên hệ được" },
                     { value: "OTHER", label: "Lý do khác" },
                   ]}
-                  onConfirm={() => update(request.id, "cancelled")}
+                  onConfirm={(reason, note) => cancel(request.id, note || reason)}
                 />
               </div>
             </div>
@@ -166,6 +199,48 @@ export default function AdminLearningRequestsPage() {
           {!requests.length && <div className="soft-panel border-dashed p-10 text-center text-sm text-muted-foreground">Chưa có yêu cầu học nào.</div>}
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function RequestDetailDialog({ request }: { request: LearningRequest }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">Chi tiết</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{request.requestCode} · {request.subject}</DialogTitle>
+          <DialogDescription>Thông tin tư vấn, matching và trạng thái xử lý yêu cầu học.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <RequestStatusTimeline status={request.status} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <Info label="Học viên" value={request.studentName} />
+            <Info label="Phụ huynh" value={request.parentName || "Không nhập"} />
+            <Info label="Liên hệ" value={[request.phone, request.email].filter(Boolean).join(" · ")} />
+            <Info label="Khu vực" value={[request.province, request.district, request.location].filter(Boolean).join(" · ") || "Online"} />
+            <Info label="Ngân sách" value={request.expectedFee ? formatCurrency(request.expectedFee) : `${request.budgetMin || 0} - ${request.budgetMax || 0}`} />
+            <Info label="Lịch mong muốn" value={request.preferredSchedule || "Chưa nhập"} />
+            <Info label="Gia sư được gán" value={request.assignedTutorId || "Chưa gán"} />
+            <Info label="Tạo lúc" value={formatDateTime(request.createdAt)} />
+          </div>
+          <div className="soft-panel bg-white p-4">
+            <p className="text-sm font-semibold text-slate-900">Mục tiêu / ghi chú</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">{request.note || request.goal || "Chưa có ghi chú"}</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border bg-slate-50 p-3">
+      <p className="text-xs font-medium uppercase text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-slate-900">{value}</p>
     </div>
   )
 }

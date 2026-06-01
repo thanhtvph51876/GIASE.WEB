@@ -22,6 +22,9 @@ export const bookingApi = {
   async adminList() {
     return mapList(await apiRequest<TrialBooking[]>("/admin/bookings"), mapBooking)
   },
+  async adminGet(id: string) {
+    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}`))
+  },
   async get(id: string) {
     return mapBooking(await apiRequest<TrialBooking>(`/bookings/${id}`))
   },
@@ -64,10 +67,22 @@ export const bookingApi = {
   async schedule(id: string, data: unknown) {
     return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/schedule`, { method: "POST", body: bookingSchedulePayload(data) }))
   },
+  async adminAssignTutor(id: string, tutorId: string) {
+    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/assign-tutor`, { method: "POST", body: { tutorId } }))
+  },
   async complete(id: string, resultNote?: string) {
     return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/complete`, { method: "POST", body: { resultNote } }))
   },
+  async adminMarkNoShowStudent(id: string, note?: string) {
+    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/mark-no-show-student`, { method: "POST", body: { note } }))
+  },
+  async adminMarkNoShowTutor(id: string, note?: string) {
+    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/mark-no-show-tutor`, { method: "POST", body: { note } }))
+  },
   async convertToClass(id: string, data?: unknown) {
     return apiRequest(`/admin/bookings/${id}/convert-to-class`, { method: "POST", body: data || {} })
+  },
+  async adminCancel(id: string, reason?: string) {
+    return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}/cancel`, { method: "POST", body: { reason } }))
   },
 }

@@ -70,6 +70,9 @@ export const paymentApi = {
   async adminList() {
     return mapList(await apiRequest<Payment[]>("/admin/payments"), mapPayment)
   },
+  async adminGet(id: string) {
+    return mapPayment(await apiRequest<Payment>(`/admin/payments/${id}`))
+  },
   async tutorList() {
     return mapList(await apiRequest<Payment[]>("/tutor/payments"), mapPayment)
   },
@@ -78,6 +81,9 @@ export const paymentApi = {
   },
   async adminPayouts() {
     return mapList(await apiRequest<Payout[]>("/admin/payouts"), mapPayout)
+  },
+  async adminPayout(id: string) {
+    return mapPayout(await apiRequest<Payout>(`/admin/payouts/${id}`))
   },
   createCheckout(id: string, data: { gateway?: string; returnUrl?: string; cancelUrl?: string }) {
     return apiRequest<PaymentCheckout>(`/payments/${id}/create-checkout`, { method: "POST", body: data }).then((checkout) => ({

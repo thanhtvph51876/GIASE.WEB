@@ -80,6 +80,23 @@ class LearningRequestService {
     return learningRequestApi.matchingTutors(requestId)
   }
 
+  async getAdminRequestById(id: string): Promise<LearningRequest | null> {
+    try {
+      return await learningRequestApi.adminGet(id)
+    } catch {
+      return null
+    }
+  }
+
+  async rematchRequest(id: string, reason?: string) {
+    try {
+      const request = await learningRequestApi.rematch(id, reason)
+      return { success: true, request }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể đưa yêu cầu vào luồng rematch" }
+    }
+  }
+
   async getRequestsByTutor(_tutorId: string): Promise<LearningRequest[]> {
     return learningRequestApi.list()
   }
@@ -91,10 +108,19 @@ class LearningRequestService {
 
   async cancelRequest(id: string, reason?: string) {
     try {
-      await learningRequestApi.cancel(id, reason)
-      return { success: true }
+      const request = await learningRequestApi.cancel(id, reason)
+      return { success: true, request }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Không thể hủy yêu cầu" }
+    }
+  }
+
+  async cancelRequestByAdmin(id: string, reason?: string) {
+    try {
+      const request = await learningRequestApi.adminCancel(id, reason)
+      return { success: true, request }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể hủy yêu cầu bằng quyền admin" }
     }
   }
 }

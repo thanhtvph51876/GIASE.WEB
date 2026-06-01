@@ -62,6 +62,24 @@ class ReviewService {
       return { success: false, error: error instanceof Error ? error.message : "Không thể ẩn đánh giá" }
     }
   }
+
+  async showReview(id: string) {
+    try {
+      const review = await reviewApi.status(id, "show")
+      return { success: true, review }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể hiện đánh giá" }
+    }
+  }
+
+  async flagReview(id: string) {
+    try {
+      const review = await reviewApi.status(id, "flag")
+      return { success: true, review }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể gắn cờ đánh giá" }
+    }
+  }
 }
 
 export const reviewService = new ReviewService()

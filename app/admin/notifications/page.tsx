@@ -14,9 +14,9 @@ import { DashboardMetricCard, EmptyState, PageHero } from "@/components/platform
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { hasAdminPermission } from "@/lib/admin/admin-permissions"
-import { notificationService } from "@/lib/services"
+import { adminService, notificationService } from "@/lib/services"
 import { formatDateTime } from "@/lib/helpers"
-import type { Notification, NotificationType, UserRole } from "@/types"
+import type { Notification, NotificationType, User, UserRole } from "@/types"
 
 const roles: Array<UserRole | "all"> = ["all", "student", "parent", "tutor", "admin"]
 const types: NotificationType[] = ["info", "success", "warning", "error"]
@@ -25,6 +25,7 @@ export default function AdminNotificationsPage() {
   const { user } = useAuthContext()
   const canSend = hasAdminPermission(user, "notifications.send")
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [targetRole, setTargetRole] = useState<UserRole | "all">("all")
   const [userId, setUserId] = useState("")
   const [type, setType] = useState<NotificationType>("info")
@@ -34,40 +35,51 @@ export default function AdminNotificationsPage() {
   const [loading, setLoading] = useState(false)
 
   const load = async () => setNotifications(await notificationService.getAdminNotifications())
-  useEffect(() => { load().catch(() => toast.error("Không tải được notification admin")) }, [])
+  useEffect(() => {
+    load().catch(() => toast.error("Không tải được notification admin"))
+    adminService.getAllUsers().then(setUsers).catch(() => setUsers([]))
+  }, [])
 
   const unreadCount = useMemo(() => notifications.filter((item) => !item.read).length, [notifications])
+  const recipients = useMemo(() => {
+    const filtered = targetRole === "all" ? users : users.filter((item) => item.role === targetRole)
+    return filtered.filter((item) => item.status === "active")
+  }, [targetRole, users])
 
   const send = async (_reason: string, note: string) => {
     if (!title.trim() || !content.trim()) {
       toast.error("Vui lòng nhập tiêu đề và nội dung")
       return
     }
-    if (!userId.trim()) {
-      toast.error("Backend hiện yêu cầu User ID cụ thể khi gửi notification admin")
+    const targetUsers = userId.trim() ? users.filter((item) => item.id === userId.trim()) : recipients
+    if (!targetUsers.length) {
+      toast.error("Vui lòng chọn người nhận hoặc role có user active")
       return
     }
     setLoading(true)
-    const result = await notificationService.sendAdminNotification({
-      userId: userId.trim(),
-      targetRole: targetRole === "all" ? undefined : targetRole,
-      type,
-      title,
-      content,
-      message: content,
-      link: link.trim() || undefined,
-      actionUrl: link.trim() || undefined,
-    })
+    const results = await Promise.all(targetUsers.map((target) =>
+      notificationService.sendAdminNotification({
+        userId: target.id,
+        targetRole: targetRole === "all" ? undefined : targetRole,
+        type,
+        title,
+        content,
+        message: content,
+        link: link.trim() || undefined,
+        actionUrl: link.trim() || undefined,
+      })
+    ))
     setLoading(false)
-    if (result.success) {
-      toast.success("Đã gửi thông báo")
+    const failed = results.filter((result) => !result.success)
+    if (!failed.length) {
+      toast.success(`Đã gửi ${results.length} thông báo`)
       setTitle("")
       setContent("")
       setLink("")
       setUserId("")
       await load()
     } else {
-      toast.error(result.error || "Không thể gửi thông báo", { description: note })
+      toast.error(`Không gửi được ${failed.length}/${results.length} thông báo`, { description: failed[0]?.error || note })
     }
   }
 
@@ -95,7 +107,7 @@ export default function AdminNotificationsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Gửi thông báo</CardTitle>
-          <CardDescription>Thông báo admin đi qua endpoint `/admin/notifications/send`; backend hiện nhận User ID cụ thể.</CardDescription>
+          <CardDescription>FE hỗ trợ gửi theo user hoặc theo role bằng cách gọi endpoint admin cho từng user active.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -106,8 +118,14 @@ export default function AdminNotificationsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>User ID cụ thể</Label>
-              <Input value={userId} onChange={(event) => setUserId(event.target.value)} placeholder="Bắt buộc theo backend hiện tại" />
+              <Label>Người nhận cụ thể</Label>
+              <Select value={userId || "role"} onValueChange={(value) => setUserId(value === "role" ? "" : value)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="role">Gửi theo role đã chọn ({recipients.length} user)</SelectItem>
+                  {recipients.map((item) => <SelectItem key={item.id} value={item.id}>{item.fullName || item.email} · {item.email}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Loại</Label>
@@ -130,9 +148,9 @@ export default function AdminNotificationsPage() {
             </div>
             <div className="md:col-span-2">
               <ConfirmReasonDialog
-                trigger={<Button disabled={loading || !title.trim() || !content.trim() || !userId.trim()}><Send className="h-4 w-4" />Gửi thông báo</Button>}
+                trigger={<Button disabled={loading || !title.trim() || !content.trim() || (!userId.trim() && !recipients.length)}><Send className="h-4 w-4" />Gửi thông báo</Button>}
                 title="Xác nhận gửi thông báo"
-                description="Thông báo sẽ được gửi tới nhóm người dùng đã chọn."
+                description={userId ? "Thông báo sẽ được gửi tới user đã chọn." : `Thông báo sẽ được gửi tới ${recipients.length} user active trong role đã chọn.`}
                 actionName="Gửi"
                 severity="warning"
                 requireReason={false}

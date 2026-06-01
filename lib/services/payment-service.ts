@@ -20,6 +20,14 @@ class PaymentService {
     return paymentApi.adminList()
   }
 
+  async getAdminPayment(paymentId: string): Promise<Payment | null> {
+    try {
+      return await paymentApi.adminGet(paymentId)
+    } catch {
+      return null
+    }
+  }
+
   async getPaymentTransactions() {
     return paymentApi.transactions()
   }
@@ -102,6 +110,14 @@ class PaymentService {
 
   async getAllPayouts(): Promise<Payout[]> {
     return paymentApi.adminPayouts()
+  }
+
+  async getAdminPayout(payoutId: string): Promise<Payout | null> {
+    try {
+      return await paymentApi.adminPayout(payoutId)
+    } catch {
+      return null
+    }
   }
 
   async requestPayout(

@@ -4,7 +4,9 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { DashboardMetricCard } from "@/components/platform/operational-components"
 import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
@@ -22,7 +24,12 @@ export default function AdminSessionsPage() {
   const update = async (id: string, status: "completed" | "student_absent" | "tutor_absent" | "cancelled", note: string) => {
     setBusyId(id)
     try {
-      const result = await scheduleService.updateSessionStatus(id, status, note)
+      const result =
+        status === "student_absent"
+          ? await scheduleService.markStudentAbsent(id, note)
+          : status === "tutor_absent"
+            ? await scheduleService.markTutorAbsent(id, note)
+            : await scheduleService.updateSessionStatus(id, status, note)
       if (result.success) { toast.success("Đã cập nhật buổi học"); load() } else toast.error(result.error)
     } finally {
       setBusyId(null)
@@ -52,6 +59,7 @@ export default function AdminSessionsPage() {
                 <p className="text-sm text-muted-foreground">{session.tutorName} · {formatDateTime(session.startTime)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
+                <SessionDetailDialog session={session} />
                 <ConfirmReasonDialog
                   trigger={<AdminActionButton size="sm" disabled={busyId === session.id} availability={completeAvailability}>Hoàn thành</AdminActionButton>}
                   title="Hoàn thành buổi học"
@@ -109,6 +117,45 @@ export default function AdminSessionsPage() {
           )
         })}
       </CardContent></Card>
+    </div>
+  )
+}
+
+function SessionDetailDialog({ session }: { session: ClassSession }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">Chi tiết</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{session.subject} · {formatDateTime(session.startTime)}</DialogTitle>
+          <DialogDescription>Thông tin điểm danh, lịch học và liên kết lớp để admin xử lý đúng payment/earning.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Info label="Session ID" value={session.id} />
+          <Info label="Class ID" value={session.classId || "Không gắn lớp"} />
+          <Info label="Trạng thái" value={session.status} />
+          <Info label="Loại buổi" value={session.isTrial ? "Học thử" : "Chính thức"} />
+          <Info label="Gia sư" value={session.tutorName} />
+          <Info label="Học viên" value={session.studentName} />
+          <Info label="Thời gian" value={`${formatDateTime(session.startTime)} - ${formatDateTime(session.endTime)}`} />
+          <Info label="Hình thức" value={`${session.mode}${session.location ? ` · ${session.location}` : ""}`} />
+          <div className="rounded-lg border bg-slate-50 p-3 md:col-span-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Ghi chú</p>
+            <p className="mt-1 text-sm leading-6 text-slate-900">{session.note || "Chưa có ghi chú"}</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border bg-slate-50 p-3">
+      <p className="text-xs font-medium uppercase text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-slate-900">{value}</p>
     </div>
   )
 }

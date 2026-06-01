@@ -47,6 +47,42 @@ class SettingsService {
     const settings = mapSettings(await settingsApi.update(data))
     return { success: true, settings }
   }
+
+  async getSystemSettings() {
+    return settingsApi.systemList()
+  }
+
+  async upsertSystemSetting(input: { key: string; value: string; description?: string; type?: string }, _actor?: User | null) {
+    const payload = {
+      key: input.key.trim(),
+      value: parseSettingValue(input.value, input.type),
+      description: input.description?.trim() || undefined,
+      valueType: input.type || "string",
+    }
+    if (!payload.key) throw new Error("Thiếu key cấu hình")
+    return settingsApi.systemCreate(payload)
+  }
+
+  async updateSystemSetting(key: string, input: { value: string; description?: string; type?: string }, _actor?: User | null) {
+    return settingsApi.systemUpdate(key, {
+      value: parseSettingValue(input.value, input.type),
+      description: input.description?.trim() || undefined,
+      valueType: input.type || "string",
+    })
+  }
 }
 
 export const settingsService = new SettingsService()
+
+function parseSettingValue(value: string, type?: string) {
+  if (type === "number") return Number(value)
+  if (type === "boolean") return value === "true"
+  if (type === "json") {
+    try {
+      return JSON.parse(value)
+    } catch {
+      return value
+    }
+  }
+  return value
+}

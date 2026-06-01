@@ -18,6 +18,10 @@ class PayoutService {
     return paymentService.getAllPayouts()
   }
 
+  getPayoutById(payoutId: string) {
+    return paymentService.getAdminPayout(payoutId)
+  }
+
   requestPayout(tutorId: string, tutorName: string, input: number | PayoutRequestInput) {
     return paymentService.requestPayout(tutorId, tutorName, input)
   }

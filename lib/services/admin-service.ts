@@ -62,6 +62,23 @@ class AdminService {
     return adminApi.users()
   }
 
+  async getUserById(id: string): Promise<User | null> {
+    try {
+      return await adminApi.user(id)
+    } catch {
+      return null
+    }
+  }
+
+  async updateUserStatus(id: string, status: User["status"], reason?: string) {
+    try {
+      const user = await adminApi.updateUserStatus(id, status, reason)
+      return { success: true, user }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể cập nhật trạng thái tài khoản" }
+    }
+  }
+
   async getStudents(): Promise<User[]> {
     const users = await this.getAllUsers()
     return users.filter((user) => user.role === "student" || user.role === "parent")

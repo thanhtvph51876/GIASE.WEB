@@ -176,6 +176,7 @@ export function EntityCard({
   badge,
   actions,
   children,
+  className,
 }: {
   title: string
   subtitle?: string
@@ -185,9 +186,10 @@ export function EntityCard({
   badge?: ReactNode
   actions?: ReactNode
   children?: ReactNode
+  className?: string
 }) {
   return (
-    <div className="item-row premium-card reveal overflow-hidden p-0">
+    <div className={cn("item-row premium-card reveal overflow-hidden p-0", className)}>
       <div className="grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
         <div className="flex min-w-0 gap-3">
           {Icon && (

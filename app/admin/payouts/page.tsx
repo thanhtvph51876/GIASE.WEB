@@ -5,6 +5,8 @@ import { CheckCircle2, Clock3, Wallet, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { DashboardMetricCard, EmptyState, EntityCard, PageHero } from "@/components/platform/operational-components"
 import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
@@ -16,6 +18,7 @@ import type { Payout } from "@/types"
 export default function AdminPayoutsPage() {
   const { user } = useAuthContext()
   const [payouts, setPayouts] = useState<Payout[]>([])
+  const [detailById, setDetailById] = useState<Record<string, Payout>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
   const load = async () => setPayouts(await payoutService.getAllPayouts())
   useEffect(() => { load() }, [])
@@ -34,6 +37,12 @@ export default function AdminPayoutsPage() {
     } finally {
       setBusyId(null)
     }
+  }
+
+  const loadDetail = async (id: string) => {
+    if (detailById[id]) return
+    const payout = await payoutService.getPayoutById(id)
+    if (payout) setDetailById((current) => ({ ...current, [id]: payout }))
   }
 
   return (
@@ -71,6 +80,7 @@ export default function AdminPayoutsPage() {
                 badge={<StatusBadge kind="payout" status={payout.status} />}
                 actions={(
                   <>
+                    <PayoutDetailDialog payout={detailById[payout.id] || payout} onOpen={() => loadDetail(payout.id)} />
                     <ConfirmReasonDialog
                       trigger={<AdminActionButton size="sm" disabled={busyId === payout.id} availability={approveAvailability}>Duyệt</AdminActionButton>}
                       title="Duyệt payout"
@@ -109,6 +119,45 @@ export default function AdminPayoutsPage() {
       ) : (
         <EmptyState title="Chưa có payout request" description="Yêu cầu rút tiền sẽ xuất hiện khi gia sư tạo từ màn thu nhập." />
       )}
+    </div>
+  )
+}
+
+function PayoutDetailDialog({ payout, onOpen }: { payout: Payout; onOpen: () => void }) {
+  return (
+    <Dialog onOpenChange={(open) => { if (open) onOpen() }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">Chi tiết</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{payout.tutorName} · {formatCurrency(payout.amount)}</DialogTitle>
+          <DialogDescription>Kiểm tra người nhận, thông tin ngân hàng, trạng thái và lý do trước khi duyệt/từ chối.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Info label="Payout ID" value={payout.id} />
+          <Info label="Tutor ID" value={payout.tutorId} />
+          <Info label="Trạng thái" value={payout.status} />
+          <Info label="Số tiền" value={formatCurrency(payout.amount)} />
+          <Info label="Ngân hàng" value={payout.bankName || "Chưa có"} />
+          <Info label="Số tài khoản" value={payout.bankAccount || "Chưa có"} />
+          <Info label="Chủ tài khoản" value={payout.accountHolder || "Chưa có"} />
+          <Info label="Ngày yêu cầu" value={formatDate(payout.requestedAt)} />
+          <div className="rounded-lg border bg-slate-50 p-3 md:col-span-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Lý do / ghi chú</p>
+            <p className="mt-1 text-sm leading-6 text-slate-900">{payout.reason || "Chưa có ghi chú"}</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border bg-slate-50 p-3">
+      <p className="text-xs font-medium uppercase text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-slate-900">{value}</p>
     </div>
   )
 }

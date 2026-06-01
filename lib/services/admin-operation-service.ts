@@ -59,6 +59,14 @@ class AdminOperationService {
   disputes() {
     return apiRequest<OperationRow[]>("/admin/disputes")
   }
+
+  dispute(id: string) {
+    return apiRequest<OperationRow>(`/admin/disputes/${id}`)
+  }
+
+  updateDispute(id: string, data: { status: "OPEN" | "IN_REVIEW" | "RESOLVED" | "REJECTED"; resolution?: string }) {
+    return apiRequest<OperationRow>(`/admin/disputes/${id}`, { method: "PATCH", body: data })
+  }
 }
 
 export const adminOperationService = new AdminOperationService()

@@ -40,6 +40,18 @@ class MasterDataService {
   getCancellationPolicies() {
     return masterDataApi.cancellationPolicies()
   }
+
+  async createAdminItem(kind: "subjects" | "locations" | "certificates", data: unknown) {
+    return masterDataApi.adminCreate(kind, data)
+  }
+
+  async updateAdminItem(kind: "subjects" | "locations" | "certificates", id: string, data: unknown) {
+    return masterDataApi.adminUpdate(kind, id, data)
+  }
+
+  async deleteAdminItem(kind: "subjects" | "locations" | "certificates", id: string) {
+    return masterDataApi.adminDelete(kind, id)
+  }
 }
 
 export const masterDataService = new MasterDataService()
