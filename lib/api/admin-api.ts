@@ -1,5 +1,5 @@
 import type { AdminStats, User } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapList, mapUser } from "./mappers"
 
 type CountRow = Record<string, string | number> & { count: number }
@@ -41,8 +41,11 @@ export const adminApi = {
       lowRatingAlerts: settledRows(lowRatingAlerts),
     }
   },
-  users() {
-    return apiRequest<User[]>("/admin/users").then((users) => mapList(users, mapUser))
+  async users(params?: PageRequestParams) {
+    return (await this.usersPage(params)).items
+  },
+  usersPage(params?: PageRequestParams) {
+    return apiPageRequest<User>("/admin/users", { params }, mapUser)
   },
   user(id: string) {
     return apiRequest<User>(`/admin/users/${id}`).then(mapUser)
@@ -50,8 +53,11 @@ export const adminApi = {
   updateUserStatus(id: string, status: User["status"], reason?: string) {
     return apiRequest<User>(`/admin/users/${id}/status`, { method: "PATCH", body: { status, reason } }).then(mapUser)
   },
-  auditLogs() {
-    return apiRequest("/admin/audit-logs")
+  auditLogs(params?: PageRequestParams) {
+    return apiRequest("/admin/audit-logs", { params })
+  },
+  auditLogsPage(params?: PageRequestParams) {
+    return apiPageRequest("/admin/audit-logs", { params })
   },
 }
 

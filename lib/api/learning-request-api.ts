@@ -1,5 +1,5 @@
 import type { LearningRequest, LearningRequestStatus, StudentRegistrationFormData, TrialBooking } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapBooking, mapLearningRequest, mapList } from "./mappers"
 
 interface AssignTutorResponse {
@@ -26,8 +26,11 @@ export const learningRequestApi = {
   async publicList() {
     return mapList(await apiRequest<LearningRequest[]>("/public/learning-requests", { auth: false }), mapLearningRequest)
   },
-  async adminList() {
-    return mapList(await apiRequest<LearningRequest[]>("/admin/learning-requests"), mapLearningRequest)
+  async adminList(params?: PageRequestParams) {
+    return (await this.adminListPage(params)).items
+  },
+  adminListPage(params?: PageRequestParams) {
+    return apiPageRequest<LearningRequest>("/admin/learning-requests", { params }, mapLearningRequest)
   },
   async adminGet(id: string) {
     return mapLearningRequest(await apiRequest<LearningRequest>(`/admin/learning-requests/${id}`))

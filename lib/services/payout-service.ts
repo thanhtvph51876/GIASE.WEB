@@ -1,4 +1,5 @@
 import type { User } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { paymentService } from "./payment-service"
 
 export interface PayoutRequestInput {
@@ -16,6 +17,10 @@ class PayoutService {
 
   getAllPayouts() {
     return paymentService.getAllPayouts()
+  }
+
+  getAllPayoutsPage(params?: PageRequestParams) {
+    return paymentService.getAllPayoutsPage(params)
   }
 
   getPayoutById(payoutId: string) {

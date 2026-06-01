@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,18 +8,32 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useAuditLogs } from "@/lib/hooks/use-admin"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
+import { auditLogService } from "@/lib/services"
 import { formatDateTime, getAuditActionLabel, getAuditEntityLabel, getRoleLabel } from "@/lib/helpers"
 import { isAdminRole } from "@/lib/permissions"
 import type { AuditLog } from "@/types"
 
 export default function AdminAuditLogsPage() {
-  const { logs } = useAuditLogs()
+  const [logs, setLogs] = useState<AuditLog[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState("")
   const [action, setAction] = useState("all")
   const [entityType, setEntityType] = useState("all")
   const [actorRole, setActorRole] = useState("all")
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    auditLogService.getAllLogsPage({ page, pageSize: ADMIN_PAGE_SIZE })
+      .then((result) => {
+        setLogs(result.items as AuditLog[])
+        setPagination(result.pagination)
+      })
+      .finally(() => setLoading(false))
+  }, [page])
 
   const actions = Array.from(new Set(logs.map((log) => log.action)))
   const entityTypes = Array.from(new Set(logs.map((log) => log.entityType)))
@@ -110,6 +124,7 @@ export default function AdminAuditLogsPage() {
           </Table>
         </CardContent>
       </Card>
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
       <AuditLogDetailDialog log={selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)} />
     </div>
   )

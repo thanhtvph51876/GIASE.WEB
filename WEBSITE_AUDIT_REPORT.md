@@ -483,3 +483,260 @@ Validation UI:
 | `npm run lint` | Pass |
 | `npx tsc --noEmit` | Pass |
 | `Invoke-WebRequest http://localhost:3000` | HTTP 200, Next compile homepage thành công |
+
+## Giao diện nền website đang dùng
+
+Phạm vi phần này: chỉ mô tả nền giao diện, màu sắc, bố cục, component UI và cách dựng lại giao diện cơ sở. Không bao gồm logic gọi API, phân quyền, xử lý form hay nghiệp vụ backend.
+
+### 1. Phong cách giao diện
+
+Website đang dùng phong cách **Premium Warm Light Glassmorphism** cho nền public và dashboard. Giao diện ưu tiên cảm giác sáng, sạch, mềm, đáng tin cậy, phù hợp nền tảng giáo dục/gia sư.
+
+| Thành phần | Đang dùng |
+|---|---|
+| Màu nền chính | Cream ấm `#fdfbf7`, chuyển nhẹ sang trắng |
+| Màu thương hiệu | Emerald `#059669` |
+| Màu phụ | Royal blue `#1d4ed8`, soft mint, soft lavender, sand |
+| Font body | Inter |
+| Font heading | Outfit |
+| Bo góc | Chủ yếu `8px`, một số header/search capsule dùng bo lớn hơn |
+| Card | Nền trắng mờ, border nhẹ, shadow mềm, backdrop blur |
+| Header | Sticky floating glass header |
+| Layout | Container giữa trang, responsive desktop/mobile |
+| Icon | Lucide React |
+| UI kit | Tailwind CSS v4 + Radix/shadcn-style components |
+
+### 2. Nền tổng thể
+
+Nền toàn website được gắn ở `app/layout.tsx` qua class:
+
+```tsx
+<body className={`${inter.variable} ${outfit.variable} app-gradient-bg bg-background font-sans antialiased`}>
+```
+
+Class nền chính nằm trong `app/globals.css`:
+
+```css
+.app-gradient-bg {
+  background-color: var(--premium-bg-cream);
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(240, 253, 244, 0.95), transparent 30%),
+    radial-gradient(circle at 88% 10%, rgba(250, 245, 255, 0.82), transparent 32%),
+    radial-gradient(circle at 68% 88%, rgba(253, 230, 138, 0.28), transparent 30%),
+    linear-gradient(180deg, #fdfbf7 0%, #fffaf0 48%, #ffffff 100%);
+}
+```
+
+Ý nghĩa: nền không phải màu phẳng, mà là nền sáng có các lớp radial gradient rất nhẹ để tạo chiều sâu nhưng vẫn giữ cảm giác sạch.
+
+### 3. Token màu nền
+
+Các token nền đang được khai báo trong `:root` của `app/globals.css`:
+
+```css
+:root {
+  --premium-bg-cream: #fdfbf7;
+  --premium-soft-mint: #f0fdf4;
+  --premium-soft-lavender: #faf5ff;
+  --premium-emerald: #059669;
+  --premium-royal-blue: #1d4ed8;
+  --premium-dark-emerald: #064e3b;
+  --premium-sand: #fde68a;
+  --background: #fdfbf7;
+  --foreground: #0f172a;
+  --primary: #059669;
+  --primary-foreground: #ffffff;
+  --muted-foreground: #475569;
+  --border: rgba(15, 23, 42, 0.12);
+}
+```
+
+Nếu dựng một trang mới, nên dùng token `bg-background`, `text-foreground`, `text-muted-foreground`, `bg-primary`, `border-border` thay vì hard-code màu quá nhiều.
+
+### 4. Khung layout nền
+
+Một trang public cơ bản nên theo cấu trúc:
+
+```tsx
+<div className="premium-page-bg min-h-screen">
+  <Header />
+
+  <main>
+    <section className="gradient-mesh border-b border-white/60 bg-white/45">
+      <div className="app-container py-12 sm:py-16">
+        <h1 className="font-heading text-3xl font-bold text-slate-950 sm:text-4xl">
+          Tiêu đề trang
+        </h1>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
+          Mô tả ngắn của trang.
+        </p>
+      </div>
+    </section>
+
+    <section className="app-container py-10 sm:py-12">
+      <div className="surface-panel p-5">
+        Nội dung giao diện
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</div>
+```
+
+Đây là nền chuẩn: có header, vùng hero nhẹ, container cố định, panel nội dung và footer.
+
+### 5. Các class UI nền nên dùng
+
+| Class | Mục đích |
+|---|---|
+| `app-container` | Container chính giữa trang, có padding responsive |
+| `premium-page-bg` | Nền cream/mint/lavender nhẹ cho trang |
+| `app-gradient-bg` | Nền global gắn ở body |
+| `gradient-mesh` | Vùng hero/banner có gradient mesh nhẹ |
+| `floating-glass-header` | Header kính mờ nổi |
+| `glass-card` | Card kính mờ nhẹ |
+| `glass-card-strong` | Card kính mờ rõ hơn |
+| `surface-panel` | Panel trắng đơn giản cho dashboard/admin |
+| `soft-panel` | Panel nhẹ hơn, ít nhấn mạnh |
+| `metric-tile` | Ô thống kê |
+| `item-row` | Dòng item/list |
+| `section-title` | Tiêu đề section |
+| `premium-button-primary` | Nút CTA chính |
+| `premium-button-secondary` | Nút phụ |
+| `premium-search-capsule` | Khung search/filter lớn |
+
+### 6. Header nền
+
+Header hiện tại dùng:
+
+```tsx
+<header className="sticky top-3 z-50 w-full px-3 sm:px-4">
+  <div className="floating-glass-header premium-container flex h-16 items-center justify-between rounded-2xl">
+    Logo + navigation + auth actions
+  </div>
+</header>
+```
+
+Đặc điểm:
+
+| Thành phần | Cách làm |
+|---|---|
+| Header nổi | `sticky top-3`, không dính sát mép trên |
+| Nền header | `floating-glass-header` |
+| Logo | Icon mũ tốt nghiệp trong nền emerald |
+| Menu desktop | Link bo tròn, active màu emerald |
+| Menu mobile | Panel `glass-card-strong`, xổ xuống dưới header |
+| CTA | Nút đăng ký màu emerald/gradient |
+
+### 7. Card và panel nền
+
+Dashboard/admin nên dùng panel rõ, ít trang trí:
+
+```tsx
+<div className="surface-panel p-5">
+  <h2 className="text-lg font-semibold text-slate-950">Tiêu đề</h2>
+  <p className="mt-1 text-sm text-muted-foreground">Mô tả ngắn</p>
+</div>
+```
+
+Trang public/marketing có thể dùng glass card:
+
+```tsx
+<div className="glass-card-strong rounded-2xl p-6">
+  <h3 className="font-heading text-xl font-bold text-slate-950">Nội dung nổi bật</h3>
+  <p className="mt-2 text-sm leading-6 text-muted-foreground">Mô tả</p>
+</div>
+```
+
+Nguyên tắc: public dùng glass/premium nhiều hơn; admin dùng `surface-panel`, `soft-panel`, table/card gọn để dễ vận hành.
+
+### 8. Footer nền
+
+Footer hiện tại là nền trắng 90%, border top nhẹ:
+
+```tsx
+<footer className="border-t border-slate-200/80 bg-white/90">
+  <div className="app-container py-12">
+    Brand + links + contact
+  </div>
+</footer>
+```
+
+Footer chia 5 cột trên desktop: brand, dịch vụ, hỗ trợ, pháp lý, liên hệ.
+
+### 9. Cách dựng một trang UI nền mới
+
+Quy trình làm một trang mới chỉ phần giao diện:
+
+| Bước | Làm gì |
+|---|---|
+| 1 | Tạo page trong `app/.../page.tsx` |
+| 2 | Bọc ngoài bằng `premium-page-bg min-h-screen` nếu là public page |
+| 3 | Thêm `<Header />` và `<Footer />` nếu là trang public |
+| 4 | Dùng `gradient-mesh` cho phần đầu trang nếu cần hero/banner |
+| 5 | Dùng `app-container` để giới hạn chiều rộng |
+| 6 | Dùng `surface-panel`, `glass-card-strong`, `metric-tile`, `item-row` cho nội dung |
+| 7 | Dùng component UI có sẵn: `Button`, `Card`, `Badge`, `Input`, `Table`, `Tabs`, `Dialog` |
+| 8 | Dùng icon từ `lucide-react` |
+| 9 | Giữ text màu `text-slate-950`, mô tả `text-muted-foreground` |
+| 10 | Mobile dùng grid một cột, desktop dùng `md:grid-cols-*` hoặc `lg:grid-cols-*` |
+
+### 10. Mẫu giao diện nền không có logic
+
+```tsx
+import { Header } from "@/components/layout/header"
+import { Footer } from "@/components/layout/footer"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { BookOpen, ShieldCheck } from "lucide-react"
+
+export default function BaseUiPage() {
+  return (
+    <div className="premium-page-bg min-h-screen">
+      <Header />
+
+      <main>
+        <section className="gradient-mesh border-b border-white/60 bg-white/45">
+          <div className="app-container py-12 sm:py-16">
+            <Badge variant="outline" className="premium-badge mb-4">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Nền tảng gia sư xác minh
+            </Badge>
+            <h1 className="font-heading text-3xl font-bold text-slate-950 sm:text-4xl">
+              Giao diện nền Gia Sư Sư Phạm
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
+              Bố cục sáng, mềm, rõ ràng, dùng nền cream và card kính mờ để tạo cảm giác tin cậy.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button className="rounded-full">
+                <BookOpen className="h-4 w-4" />
+                Hành động chính
+              </Button>
+              <Button variant="outline" className="rounded-full bg-white/80">
+                Hành động phụ
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <section className="app-container py-10 sm:py-12">
+          <div className="grid gap-4 md:grid-cols-3">
+            {["Tin cậy", "Dễ dùng", "Rõ quy trình"].map((item) => (
+              <div key={item} className="glass-card-strong rounded-2xl p-5">
+                <h2 className="font-heading text-lg font-bold text-slate-950">{item}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Nội dung mô tả ngắn cho khối giao diện nền.
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
+```

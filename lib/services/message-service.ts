@@ -1,4 +1,5 @@
 import type { Conversation, Message } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { type CreateConversationData, messageApi } from "@/lib/api/message-api"
 
 interface SendMessageData {
@@ -15,6 +16,10 @@ class MessageService {
 
   async getAdminConversations(): Promise<Conversation[]> {
     return messageApi.adminConversations()
+  }
+
+  getAdminConversationsPage(params?: PageRequestParams) {
+    return messageApi.adminConversationsPage(params)
   }
 
   async createConversation(data: CreateConversationData): Promise<Conversation> {

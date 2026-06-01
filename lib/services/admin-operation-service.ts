@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api/client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "@/lib/api/client"
 
 type OperationRow = Record<string, unknown>
 type OperationOverview = Record<string, number>
@@ -56,8 +56,12 @@ class AdminOperationService {
     return apiRequest<OperationRow[]>("/admin/operations/tutor-quality")
   }
 
-  disputes() {
-    return apiRequest<OperationRow[]>("/admin/disputes")
+  async disputes(params?: PageRequestParams) {
+    return (await this.disputesPage(params)).items
+  }
+
+  disputesPage(params?: PageRequestParams) {
+    return apiPageRequest<OperationRow>("/admin/disputes", { params })
   }
 
   dispute(id: string) {

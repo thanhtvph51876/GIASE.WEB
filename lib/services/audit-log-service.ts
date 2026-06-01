@@ -1,4 +1,5 @@
 import type { AuditLog } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { adminApi } from "@/lib/api/admin-api"
 
 export interface CreateAuditLogData {
@@ -23,6 +24,10 @@ class AuditLogService {
 
   async getAllLogs(): Promise<AuditLog[]> {
     return adminApi.auditLogs() as Promise<AuditLog[]>
+  }
+
+  getAllLogsPage(params?: PageRequestParams) {
+    return adminApi.auditLogsPage(params)
   }
 
   async getLogsByEntity(entityType: string, entityId: string): Promise<AuditLog[]> {

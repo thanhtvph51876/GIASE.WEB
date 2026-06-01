@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -18,9 +19,23 @@ import type { ClassSession } from "@/types"
 export default function AdminSessionsPage() {
   const { user } = useAuthContext()
   const [sessions, setSessions] = useState<ClassSession[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
-  const load = async () => setSessions(await scheduleService.getAllSessions())
-  useEffect(() => { load() }, [])
+  const load = async (targetPage = page) => {
+    setLoading(true)
+    try {
+      const result = await scheduleService.getAllSessionsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      setSessions(result.items)
+      setPagination(result.pagination)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không tải được buổi học")
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { load(page) }, [page])
   const update = async (id: string, status: "completed" | "student_absent" | "tutor_absent" | "cancelled", note: string) => {
     setBusyId(id)
     try {
@@ -30,7 +45,7 @@ export default function AdminSessionsPage() {
           : status === "tutor_absent"
             ? await scheduleService.markTutorAbsent(id, note)
             : await scheduleService.updateSessionStatus(id, status, note)
-      if (result.success) { toast.success("Đã cập nhật buổi học"); load() } else toast.error(result.error)
+      if (result.success) { toast.success("Đã cập nhật buổi học"); load(page) } else toast.error(result.error)
     } finally {
       setBusyId(null)
     }
@@ -39,7 +54,7 @@ export default function AdminSessionsPage() {
     <div className="space-y-5">
       <div className="surface-panel border-l-4 border-l-primary p-6"><h1 className="text-2xl font-bold">Buổi học</h1><p className="text-sm text-muted-foreground">Quản lý session toàn hệ thống.</p></div>
       <div className="grid gap-4 md:grid-cols-4">
-        <DashboardMetricCard label="Tổng buổi" value={sessions.length} />
+        <DashboardMetricCard label="Tổng buổi" value={pagination.total} />
         <DashboardMetricCard label="Sắp tới" value={sessions.filter((item) => item.status === "upcoming" || item.status === "scheduled").length} />
         <DashboardMetricCard label="Hoàn thành" value={sessions.filter((item) => item.status === "completed").length} />
         <DashboardMetricCard label="Vắng/hủy" value={sessions.filter((item) => ["cancelled", "student_absent", "tutor_absent"].includes(item.status)).length} />
@@ -117,6 +132,7 @@ export default function AdminSessionsPage() {
           )
         })}
       </CardContent></Card>
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }

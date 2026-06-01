@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, CreditCard, History, ReceiptText, RefreshC
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DashboardMetricCard, EmptyState, EntityCard, LoadingSkeleton, PageHero, PaymentStatusBadge } from "@/components/platform/operational-components"
@@ -21,6 +22,8 @@ type FinanceTab = "payments" | "transactions" | "webhooks" | "refunds"
 export default function AdminPaymentsPage() {
   const { user } = useAuthContext()
   const [payments, setPayments] = useState<Payment[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
   const [webhooks, setWebhooks] = useState<PaymentWebhookEvent[]>([])
   const [refunds, setRefunds] = useState<PaymentRefund[]>([])
@@ -34,13 +37,14 @@ export default function AdminPaymentsPage() {
     setLoading(true)
     try {
       const [paymentRows, txRows, webhookRows, refundRows, paymentSettings] = await Promise.all([
-        paymentService.getAllPayments(),
+        paymentService.getAllPaymentsPage({ page, pageSize: ADMIN_PAGE_SIZE }),
         paymentService.getPaymentTransactions(),
         paymentService.getWebhookEvents(),
         paymentService.getRefunds(),
         paymentService.getSettings(),
       ])
-      setPayments(paymentRows)
+      setPayments(paymentRows.items)
+      setPagination(paymentRows.pagination)
       setTransactions(txRows)
       setWebhooks(webhookRows)
       setRefunds(refundRows)
@@ -52,7 +56,7 @@ export default function AdminPaymentsPage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [page])
 
   const update = async (id: string, action: "paid" | "failed" | "refunded", reason?: string) => {
     setBusyId(id)
@@ -92,7 +96,7 @@ export default function AdminPaymentsPage() {
         icon={WalletCards}
         actions={<Button variant="outline" onClick={load}><RefreshCw className="h-4 w-4" />Làm mới</Button>}
         stats={[
-          { label: "Tổng giao dịch", value: payments.length },
+          { label: "Tổng giao dịch", value: pagination.total },
           { label: "Đã thanh toán", value: paid.length },
           { label: "Webhook cần xem", value: riskWebhooks.length },
           { label: "Doanh thu", value: formatCurrency(paid.reduce((sum, item) => sum + item.amount, 0)) },
@@ -102,7 +106,7 @@ export default function AdminPaymentsPage() {
       <SecurePaymentBanner mode={settings?.paymentMode} />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <DashboardMetricCard label="Tổng giao dịch" value={payments.length} icon={ReceiptText} tone="blue" />
+        <DashboardMetricCard label="Tổng giao dịch" value={pagination.total} icon={ReceiptText} tone="blue" />
         <DashboardMetricCard label="Đã thanh toán" value={paid.length} icon={CheckCircle2} tone="emerald" />
         <DashboardMetricCard label="Webhook rủi ro" value={riskWebhooks.length} icon={ShieldAlert} tone={riskWebhooks.length ? "rose" : "emerald"} />
         <DashboardMetricCard label="Doanh thu" value={formatCurrency(paid.reduce((sum, item) => sum + item.amount, 0))} icon={CreditCard} tone="slate" />
@@ -199,6 +203,7 @@ export default function AdminPaymentsPage() {
           <EmptyState title="Chưa có giao dịch" description="Thanh toán sẽ xuất hiện khi hệ thống tạo lớp hoặc buổi học có học phí." />
         )
       )}
+      {tab === "payments" && <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />}
 
       {tab === "transactions" && (
         <Card className="border-slate-200/80 bg-white/95 shadow-sm">

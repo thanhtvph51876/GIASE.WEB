@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { DashboardMetricCard, EmptyState, PageHero } from "@/components/platform/operational-components"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { hasAdminPermission } from "@/lib/admin/admin-permissions"
 import { adminService, notificationService } from "@/lib/services"
@@ -25,6 +26,8 @@ export default function AdminNotificationsPage() {
   const { user } = useAuthContext()
   const canSend = hasAdminPermission(user, "notifications.send")
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
   const [users, setUsers] = useState<User[]>([])
   const [targetRole, setTargetRole] = useState<UserRole | "all">("all")
   const [userId, setUserId] = useState("")
@@ -34,14 +37,18 @@ export default function AdminNotificationsPage() {
   const [link, setLink] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const load = async () => setNotifications(await notificationService.getAdminNotifications())
+  const load = async (targetPage = page) => {
+    const result = await notificationService.getAdminNotificationsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+    setNotifications(result.items)
+    setPagination(result.pagination)
+  }
   useEffect(() => {
-    load().catch(() => toast.error("Không tải được notification admin"))
+    load(page).catch(() => toast.error("Không tải được notification admin"))
     adminService.getAllUsers().then(setUsers).catch(() => setUsers([]))
-  }, [])
+  }, [page])
 
   const unreadCount = useMemo(() => notifications.filter((item) => !item.read).length, [notifications])
-  const recipients = useMemo(() => {
+  const selectableRecipients = useMemo(() => {
     const filtered = targetRole === "all" ? users : users.filter((item) => item.role === targetRole)
     return filtered.filter((item) => item.status === "active")
   }, [targetRole, users])
@@ -51,35 +58,41 @@ export default function AdminNotificationsPage() {
       toast.error("Vui lòng nhập tiêu đề và nội dung")
       return
     }
-    const targetUsers = userId.trim() ? users.filter((item) => item.id === userId.trim()) : recipients
-    if (!targetUsers.length) {
-      toast.error("Vui lòng chọn người nhận hoặc role có user active")
+    const selectedUserId = userId.trim()
+    if (selectedUserId && !users.some((item) => item.id === selectedUserId)) {
+      toast.error("Người nhận đã chọn không hợp lệ")
       return
     }
     setLoading(true)
-    const results = await Promise.all(targetUsers.map((target) =>
-      notificationService.sendAdminNotification({
-        userId: target.id,
-        targetRole: targetRole === "all" ? undefined : targetRole,
-        type,
-        title,
-        content,
-        message: content,
-        link: link.trim() || undefined,
-        actionUrl: link.trim() || undefined,
-      })
-    ))
+    const payload = {
+      type,
+      title,
+      content,
+      message: content,
+      link: link.trim() || undefined,
+      actionUrl: link.trim() || undefined,
+    }
+    const result = selectedUserId
+      ? await notificationService.sendAdminNotification({
+          ...payload,
+          userId: selectedUserId,
+          targetRole: targetRole === "all" ? undefined : targetRole,
+        })
+      : await notificationService.sendAdminBulkNotification({
+          ...payload,
+          targetRole,
+        })
     setLoading(false)
-    const failed = results.filter((result) => !result.success)
-    if (!failed.length) {
-      toast.success(`Đã gửi ${results.length} thông báo`)
+    if (result.success) {
+      const sentCount = selectedUserId ? 1 : "count" in result ? result.count || 0 : 0
+      toast.success(`Đã gửi ${sentCount} thông báo`)
       setTitle("")
       setContent("")
       setLink("")
       setUserId("")
-      await load()
+      await load(page)
     } else {
-      toast.error(`Không gửi được ${failed.length}/${results.length} thông báo`, { description: failed[0]?.error || note })
+      toast.error("Không gửi được thông báo", { description: result.error || note })
     }
   }
 
@@ -91,14 +104,14 @@ export default function AdminNotificationsPage() {
         description="Xem log thông báo toàn hệ thống và gửi thông báo theo role hoặc user cụ thể."
         icon={Bell}
         stats={[
-          { label: "Tổng thông báo", value: notifications.length },
+          { label: "Tổng thông báo", value: pagination.total },
           { label: "Chưa đọc", value: unreadCount },
           { label: "Có quyền gửi", value: canSend ? "Có" : "Chỉ xem" },
         ]}
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <DashboardMetricCard label="Tổng thông báo" value={notifications.length} icon={Bell} tone="blue" />
+        <DashboardMetricCard label="Tổng thông báo" value={pagination.total} icon={Bell} tone="blue" />
         <DashboardMetricCard label="Chưa đọc" value={unreadCount} icon={Bell} tone={unreadCount ? "amber" : "emerald"} />
         <DashboardMetricCard label="Quyền gửi" value={canSend ? "Có" : "Chỉ xem"} icon={Send} tone={canSend ? "emerald" : "slate"} />
       </div>
@@ -107,7 +120,7 @@ export default function AdminNotificationsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Gửi thông báo</CardTitle>
-          <CardDescription>FE hỗ trợ gửi theo user hoặc theo role bằng cách gọi endpoint admin cho từng user active.</CardDescription>
+          <CardDescription>Gửi một user cụ thể hoặc gửi hàng loạt theo role bằng một request backend batch.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -122,8 +135,8 @@ export default function AdminNotificationsPage() {
               <Select value={userId || "role"} onValueChange={(value) => setUserId(value === "role" ? "" : value)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="role">Gửi theo role đã chọn ({recipients.length} user)</SelectItem>
-                  {recipients.map((item) => <SelectItem key={item.id} value={item.id}>{item.fullName || item.email} · {item.email}</SelectItem>)}
+                  <SelectItem value="role">{targetRole === "all" ? "Gửi tất cả user active" : `Gửi role ${targetRole}`}</SelectItem>
+                  {selectableRecipients.map((item) => <SelectItem key={item.id} value={item.id}>{item.fullName || item.email} · {item.email}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -148,9 +161,9 @@ export default function AdminNotificationsPage() {
             </div>
             <div className="md:col-span-2">
               <ConfirmReasonDialog
-                trigger={<Button disabled={loading || !title.trim() || !content.trim() || (!userId.trim() && !recipients.length)}><Send className="h-4 w-4" />Gửi thông báo</Button>}
+                trigger={<Button disabled={loading || !title.trim() || !content.trim()}><Send className="h-4 w-4" />Gửi thông báo</Button>}
                 title="Xác nhận gửi thông báo"
-                description={userId ? "Thông báo sẽ được gửi tới user đã chọn." : `Thông báo sẽ được gửi tới ${recipients.length} user active trong role đã chọn.`}
+                description={userId ? "Thông báo sẽ được gửi tới user đã chọn." : targetRole === "all" ? "Backend sẽ gửi tới toàn bộ user active." : `Backend sẽ gửi tới toàn bộ user active có role ${targetRole}.`}
                 actionName="Gửi"
                 severity="warning"
                 requireReason={false}
@@ -184,6 +197,7 @@ export default function AdminNotificationsPage() {
           )) : <EmptyState title="Chưa có notification" description="Log thông báo toàn hệ thống sẽ xuất hiện tại đây." />}
         </CardContent>
       </Card>
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }

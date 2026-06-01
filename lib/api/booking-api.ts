@@ -1,5 +1,5 @@
 import type { PublicTrialBookingRequestResult, TrialBooking, TrialBookingFormData } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapBooking, mapList } from "./mappers"
 
 function bookingSchedulePayload(data: unknown) {
@@ -19,8 +19,11 @@ export const bookingApi = {
   async tutorList() {
     return mapList(await apiRequest<TrialBooking[]>("/tutor/bookings"), mapBooking)
   },
-  async adminList() {
-    return mapList(await apiRequest<TrialBooking[]>("/admin/bookings"), mapBooking)
+  async adminList(params?: PageRequestParams) {
+    return (await this.adminListPage(params)).items
+  },
+  adminListPage(params?: PageRequestParams) {
+    return apiPageRequest<TrialBooking>("/admin/bookings", { params }, mapBooking)
   },
   async adminGet(id: string) {
     return mapBooking(await apiRequest<TrialBooking>(`/admin/bookings/${id}`))

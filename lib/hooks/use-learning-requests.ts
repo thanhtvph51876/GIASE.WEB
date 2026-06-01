@@ -3,6 +3,7 @@
 import { useCallback } from "react"
 import useSWR from "swr"
 import type { LearningRequest, StudentRegistrationFormData, LearningRequestStatus, User } from "@/types"
+import type { ApiPagination, PageRequestParams } from "@/lib/api/client"
 import { auditLogService, learningRequestService, workflowService } from "@/lib/services"
 import { assertPermission, canUpdateLearningRequestStatus } from "@/lib/permissions"
 import { useToast } from "@/hooks/use-toast"
@@ -153,7 +154,9 @@ export function useTutorLearningRequests(tutorId?: string) {
 // For admin dashboard
 // ============================================
 
-export function useAdminLearningRequests(actor?: User | null) {
+const emptyPagination: ApiPagination = { page: 1, pageSize: 50, total: 0, totalPages: 1 }
+
+export function useAdminLearningRequests(actor?: User | null, params: PageRequestParams = {}) {
   const { toast } = useToast()
 
   const {
@@ -161,7 +164,7 @@ export function useAdminLearningRequests(actor?: User | null) {
     error,
     isLoading,
     mutate,
-  } = useSWR("admin-learning-requests", () => learningRequestService.getAllRequests(), {
+  } = useSWR(["admin-learning-requests", params.page || 1, params.pageSize || 50, params.status || "", params.search || ""], () => learningRequestService.getAllRequestsPage(params), {
     revalidateOnFocus: false,
   })
 
@@ -170,7 +173,7 @@ export function useAdminLearningRequests(actor?: User | null) {
     async (id: string, status: LearningRequestStatus): Promise<boolean> => {
       try {
         assertPermission(canUpdateLearningRequestStatus(actor))
-        const before = requests?.find((request) => request.id === id)
+        const before = requests?.items.find((request) => request.id === id)
         const result = await learningRequestService.updateRequestStatus(id, status)
 
         if (result.success) {
@@ -237,7 +240,8 @@ export function useAdminLearningRequests(actor?: User | null) {
   )
 
   return {
-    requests: requests || [],
+    requests: requests?.items || [],
+    pagination: requests?.pagination || emptyPagination,
     isLoading,
     error,
     updateStatus,

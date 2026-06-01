@@ -1,25 +1,40 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { hasAdminPermission } from "@/lib/admin/admin-permissions"
 import { useAuthContext } from "@/lib/contexts/auth-context"
-import { useAdminStudents } from "@/lib/hooks/use-admin"
 import { adminService } from "@/lib/services"
 import { formatDate } from "@/lib/helpers"
 import type { User } from "@/types"
 
 export default function AdminStudentsPage() {
   const { user } = useAuthContext()
-  const { students: users, refresh } = useAdminStudents()
-  const students = users.filter((item) => item.role === "student")
+  const [students, setStudents] = useState<User[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const canManage = hasAdminPermission(user, "users.manage")
   const [busyId, setBusyId] = useState<string | null>(null)
+  const load = async (targetPage = page) => {
+    setLoading(true)
+    try {
+      const result = await adminService.getUsersPage({ role: "student", page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      setStudents(result.items)
+      setPagination(result.pagination)
+    } catch {
+      toast.error("Không tải được danh sách học sinh")
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { load(page) }, [page])
 
   const updateStatus = async (target: User, status: User["status"], reason: string) => {
     setBusyId(target.id)
@@ -27,7 +42,7 @@ export default function AdminStudentsPage() {
       const result = await adminService.updateUserStatus(target.id, status, reason)
       if (result.success) {
         toast.success("Đã cập nhật tài khoản học sinh")
-        refresh()
+        load(page)
       } else toast.error(result.error)
     } finally {
       setBusyId(null)
@@ -43,7 +58,7 @@ export default function AdminStudentsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Tài khoản học sinh</CardTitle>
-          <CardDescription>{students.length} học sinh đang có trong hệ thống.</CardDescription>
+          <CardDescription>{pagination.total} học sinh đang có trong hệ thống.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {students.map((item) => (
@@ -58,6 +73,7 @@ export default function AdminStudentsPage() {
           {!students.length && <div className="soft-panel border-dashed p-10 text-center text-sm text-muted-foreground">Chưa có tài khoản học sinh.</div>}
         </CardContent>
       </Card>
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }

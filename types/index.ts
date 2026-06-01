@@ -687,6 +687,13 @@ export interface ContactRequest {
   phone?: string
   message: string
   status: ContactRequestStatus
+  assignedTo?: string | null
+  assignedToName?: string | null
+  handledById?: string | null
+  handledBy?: string | null
+  handledByEmail?: string | null
+  handledAt?: string | null
+  handlerNote?: string | null
   createdAt: string
   updatedAt?: string
 }

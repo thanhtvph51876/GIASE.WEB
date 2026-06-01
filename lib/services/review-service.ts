@@ -1,4 +1,5 @@
 import type { Review, User } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { reviewApi } from "@/lib/api/review-api"
 
 interface CreateReviewData {
@@ -48,6 +49,10 @@ class ReviewService {
 
   async getAllReviews(): Promise<Review[]> {
     return reviewApi.adminList()
+  }
+
+  getAllReviewsPage(params?: PageRequestParams) {
+    return reviewApi.adminListPage(params)
   }
 
   async getRecentReviews(limit: number = 5): Promise<Review[]> {

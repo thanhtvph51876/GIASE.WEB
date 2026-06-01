@@ -1,13 +1,16 @@
 import type { Review } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapList, mapReview } from "./mappers"
 
 export const reviewApi = {
   async list() {
     return mapList(await apiRequest<Review[]>("/reviews"), mapReview)
   },
-  async adminList() {
-    return mapList(await apiRequest<Review[]>("/admin/reviews"), mapReview)
+  async adminList(params?: PageRequestParams) {
+    return (await this.adminListPage(params)).items
+  },
+  adminListPage(params?: PageRequestParams) {
+    return apiPageRequest<Review>("/admin/reviews", { params }, mapReview)
   },
   async byTutor(tutorId: string) {
     return mapList(await apiRequest<Review[]>(`/tutors/${tutorId}/reviews`, { auth: false }), mapReview)

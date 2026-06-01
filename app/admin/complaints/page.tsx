@@ -5,26 +5,38 @@ import Link from "next/link"
 import { AlertTriangle, ArrowRight } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/platform/operational-components"
 import { useAuthContext } from "@/lib/contexts/auth-context"
+import { hasAdminPermission } from "@/lib/admin/admin-permissions"
 import { adminOperationService } from "@/lib/services/admin-operation-service"
-import { formatDateTime } from "@/lib/helpers"
+import { formatDateTime, getDisputeStatusLabel } from "@/lib/helpers"
 
 type DisputeRow = Record<string, unknown>
 
 export default function AdminComplaintsPage() {
   const { user } = useAuthContext()
   const [disputes, setDisputes] = useState<DisputeRow[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
-  const canUpdateDispute = user?.role === "admin" || user?.role === "system_admin"
+  const canUpdateDispute = hasAdminPermission(user, "complaints.manage")
 
   useEffect(() => {
-    adminOperationService.disputes().then(setDisputes).catch(() => setDisputes([]))
-  }, [])
+    setLoading(true)
+    adminOperationService.disputesPage({ page, pageSize: ADMIN_PAGE_SIZE })
+      .then((result) => {
+        setDisputes(result.items)
+        setPagination(result.pagination)
+      })
+      .catch(() => setDisputes([]))
+      .finally(() => setLoading(false))
+  }, [page])
 
   const updateDispute = async (item: DisputeRow, status: "IN_REVIEW" | "RESOLVED" | "REJECTED", resolution: string) => {
     const id = text(item, "id")
@@ -55,7 +67,7 @@ export default function AdminComplaintsPage() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold">{text(item, "title", "subject", "requestCode", "bookingId", "id") || "Dispute"}</p>
-                  <Badge variant="secondary">{text(item, "status", "disputeStatus", "riskLevel") || "open"}</Badge>
+                  <Badge variant="secondary">{disputeStatusLabel(item)}</Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {[text(item, "studentName", "parentName", "tutorName"), text(item, "priority", "severity"), text(item, "createdAt", "updatedAt")].filter(Boolean).join(" · ")}
@@ -111,6 +123,7 @@ export default function AdminComplaintsPage() {
           )) : <EmptyState title="Chưa có khiếu nại mới" description="Queue này dùng /admin/disputes; khi backend có dữ liệu sẽ hiển thị tại đây thay vì empty state tĩnh." />}
         </CardContent>
       </Card>
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }
@@ -127,7 +140,7 @@ function ComplaintDetailDialog({ item }: { item: DisputeRow }) {
           <DialogDescription>Thông tin để admin xác định hướng xử lý, module liên quan và trạng thái hiện tại.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
-          <Info label="Trạng thái" value={text(item, "status", "disputeStatus", "riskLevel") || "open"} />
+          <Info label="Trạng thái" value={disputeStatusLabel(item)} />
           <Info label="Mức độ" value={text(item, "priority", "severity", "riskLevel") || "Chưa phân loại"} />
           <Info label="Học viên/phụ huynh" value={text(item, "studentName", "parentName", "studentId", "parentId") || "Không có"} />
           <Info label="Gia sư" value={text(item, "tutorName", "tutorId") || "Không có"} />
@@ -161,6 +174,10 @@ function text(item: DisputeRow, ...keys: string[]) {
     if (value !== undefined && value !== null && String(value).trim()) return String(value)
   }
   return ""
+}
+
+function disputeStatusLabel(item: DisputeRow) {
+  return getDisputeStatusLabel(text(item, "status", "disputeStatus", "riskLevel") || "open")
 }
 
 function targetHref(item: DisputeRow) {

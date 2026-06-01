@@ -1,4 +1,5 @@
 import type { UserVerification, VerificationStatus, VerificationType } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { verificationApi, type StudentCardUploadInput, type TutorDocumentUploadInput } from "@/lib/api/verification-api"
 
 class VerificationService {
@@ -38,6 +39,10 @@ class VerificationService {
 
   adminList(params?: { status?: VerificationStatus | "all"; type?: VerificationType | "all" }) {
     return verificationApi.adminList(params)
+  }
+
+  adminListPage(params?: PageRequestParams & { status?: VerificationStatus | "all"; type?: VerificationType | "all" }) {
+    return verificationApi.adminListPage(params)
   }
 
   approve(id: string) {

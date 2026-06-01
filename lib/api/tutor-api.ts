@@ -1,5 +1,5 @@
 import type { Tutor, TutorApprovalEligibility, TutorDocument, TutorFilters, TutorRegistrationFormData, TutorSortBy } from "@/types"
-import { apiRequest, uploadFile } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams, uploadFile } from "./client"
 import { mapList, mapTutor, mapTutorDocument } from "./mappers"
 
 export const tutorApi = {
@@ -23,9 +23,11 @@ export const tutorApi = {
     })
     return mapList(data, mapTutor)
   },
-  async getAllTutors() {
-    const data = await apiRequest<Tutor[]>("/admin/tutors")
-    return mapList(data, mapTutor)
+  async getAllTutors(params?: PageRequestParams) {
+    return (await this.getAllTutorsPage(params)).items
+  },
+  getAllTutorsPage(params?: PageRequestParams) {
+    return apiPageRequest<Tutor>("/admin/tutors", { params }, mapTutor)
   },
   async getTutorById(id: string) {
     return mapTutor(await apiRequest<Tutor>(`/tutors/${id}`, { auth: false }))

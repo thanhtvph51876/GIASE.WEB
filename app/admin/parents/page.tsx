@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -10,17 +11,31 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { RoleBadge } from "@/components/platform/operational-components"
 import { hasAdminPermission } from "@/lib/admin/admin-permissions"
 import { useAuthContext } from "@/lib/contexts/auth-context"
-import { useAdminStudents } from "@/lib/hooks/use-admin"
 import { adminService } from "@/lib/services"
 import { formatDate } from "@/lib/helpers"
 import type { User } from "@/types"
 
 export default function AdminParentsPage() {
   const { user } = useAuthContext()
-  const { students, refresh } = useAdminStudents()
-  const parents = students.filter((item) => item.role === "parent")
+  const [parents, setParents] = useState<User[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const canManage = hasAdminPermission(user, "users.manage")
   const [busyId, setBusyId] = useState<string | null>(null)
+  const load = async (targetPage = page) => {
+    setLoading(true)
+    try {
+      const result = await adminService.getUsersPage({ role: "parent", page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      setParents(result.items)
+      setPagination(result.pagination)
+    } catch {
+      toast.error("Không tải được danh sách phụ huynh")
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { load(page) }, [page])
 
   const updateStatus = async (target: User, status: User["status"], reason: string) => {
     setBusyId(target.id)
@@ -28,7 +43,7 @@ export default function AdminParentsPage() {
       const result = await adminService.updateUserStatus(target.id, status, reason)
       if (result.success) {
         toast.success("Đã cập nhật tài khoản phụ huynh")
-        refresh()
+        load(page)
       } else toast.error(result.error)
     } finally {
       setBusyId(null)
@@ -43,7 +58,7 @@ export default function AdminParentsPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>{parents.length} phụ huynh</CardTitle>
+          <CardTitle>{pagination.total} phụ huynh</CardTitle>
           <CardDescription>Admin có thể xem chi tiết, khóa hoặc mở lại tài khoản theo quyền users.manage.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -92,6 +107,7 @@ export default function AdminParentsPage() {
           {!parents.length && <div className="soft-panel border-dashed p-10 text-center text-sm text-muted-foreground">Chưa có tài khoản phụ huynh.</div>}
         </CardContent>
       </Card>
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }

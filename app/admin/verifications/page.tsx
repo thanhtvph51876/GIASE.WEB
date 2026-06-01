@@ -4,6 +4,7 @@ import { type ReactNode, useMemo, useState } from "react"
 import { Eye, Loader2, ShieldCheck, XCircle } from "lucide-react"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE } from "@/components/admin/admin-pagination"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,10 +23,11 @@ export default function AdminVerificationsPage() {
   const { user } = useAuthContext()
   const [status, setStatus] = useState<VerificationStatus | "all">("pending_review")
   const [type, setType] = useState<VerificationType | "all">("all")
+  const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { verifications, isLoading, approve, reject, needMoreInfo } = useAdminVerifications({ status, type })
+  const { verifications, pagination, isLoading, approve, reject, needMoreInfo } = useAdminVerifications({ status, type, page, pageSize: ADMIN_PAGE_SIZE })
 
   const selected = useMemo(
     () => verifications.find((item) => item.id === selectedId) || verifications[0],
@@ -71,7 +73,7 @@ export default function AdminVerificationsPage() {
         <CardContent className="grid gap-4 p-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label>Trạng thái</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as VerificationStatus | "all")}>
+            <Select value={status} onValueChange={(value) => { setStatus(value as VerificationStatus | "all"); setPage(1) }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
@@ -85,7 +87,7 @@ export default function AdminVerificationsPage() {
           </div>
           <div className="space-y-2">
             <Label>Loại hồ sơ</Label>
-            <Select value={type} onValueChange={(value) => setType(value as VerificationType | "all")}>
+            <Select value={type} onValueChange={(value) => { setType(value as VerificationType | "all"); setPage(1) }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
@@ -96,7 +98,7 @@ export default function AdminVerificationsPage() {
             </Select>
           </div>
           <div className="flex items-end">
-            <Button variant="outline" onClick={() => { setStatus("pending_review"); setType("all") }}>
+            <Button variant="outline" onClick={() => { setStatus("pending_review"); setType("all"); setPage(1) }}>
               Hàng chờ duyệt
             </Button>
           </div>
@@ -107,7 +109,7 @@ export default function AdminVerificationsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Danh sách hồ sơ</CardTitle>
-            <CardDescription>{verifications.length} hồ sơ theo bộ lọc hiện tại.</CardDescription>
+            <CardDescription>{pagination.total} hồ sơ theo bộ lọc hiện tại.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {isLoading && <p className="text-sm text-muted-foreground">Đang tải...</p>}
@@ -203,6 +205,7 @@ export default function AdminVerificationsPage() {
           </CardContent>
         </Card>
       </div>
+      <AdminPagination pagination={pagination} loading={isLoading} onPageChange={setPage} />
     </div>
   )
 }

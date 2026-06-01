@@ -1,4 +1,5 @@
 import type { BookingStatus, PublicTrialBookingRequestResult, TrialBooking, TrialBookingFormData } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { bookingApi } from "@/lib/api/booking-api"
 
 class BookingService {
@@ -125,6 +126,10 @@ class BookingService {
 
   async getAllBookings(): Promise<TrialBooking[]> {
     return bookingApi.adminList()
+  }
+
+  getAllBookingsPage(params?: PageRequestParams) {
+    return bookingApi.adminListPage(params)
   }
 
   async getAdminBookingById(id: string): Promise<TrialBooking | null> {

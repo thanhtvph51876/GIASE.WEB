@@ -4,32 +4,41 @@ import { useEffect, useState } from "react"
 import { CheckCircle2, Inbox, Mail, MessageSquare, PhoneCall } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DashboardMetricCard, EmptyState, EntityCard, PageHero } from "@/components/platform/operational-components"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { contactService } from "@/lib/services"
-import { formatDateTime } from "@/lib/helpers"
+import { formatDateTime, getContactStatusLabel } from "@/lib/helpers"
 import type { ContactRequest, ContactRequestStatus } from "@/types"
 
 const statuses: ContactRequestStatus[] = ["new", "contacted", "resolved", "ignored"]
-const statusLabels: Record<ContactRequestStatus, string> = {
-  new: "Mới",
-  contacted: "Đã liên hệ",
-  resolved: "Đã xử lý",
-  ignored: "Bỏ qua",
-}
 
 export default function AdminContactsPage() {
   const { user } = useAuthContext()
   const [contacts, setContacts] = useState<ContactRequest[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const [statusFilter, setStatusFilter] = useState<ContactRequestStatus | "all">("all")
-  const load = async () => setContacts(await contactService.getAllContactRequests())
-  useEffect(() => { load() }, [])
+  const load = async (targetPage = page) => {
+    setLoading(true)
+    try {
+      const result = await contactService.getAllContactRequestsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      setContacts(result.items)
+      setPagination(result.pagination)
+    } catch {
+      toast.error("Không tải được liên hệ")
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { load(page) }, [page])
   const update = async (id: string, status: ContactRequestStatus) => {
     const result = await contactService.updateStatus(id, status, user)
-    if (result.success) { toast.success("Đã cập nhật liên hệ"); load() } else toast.error(result.error)
+    if (result.success) { toast.success("Đã cập nhật liên hệ"); load(page) } else toast.error(result.error)
   }
   const visibleContacts = statusFilter === "all" ? contacts : contacts.filter((item) => item.status === statusFilter)
   return (
@@ -40,13 +49,13 @@ export default function AdminContactsPage() {
         description="Các yêu cầu từ form liên hệ được lưu trên backend và phân trạng thái để chăm sóc khách hàng."
         icon={MessageSquare}
         stats={[
-          { label: "Tổng liên hệ", value: contacts.length },
+          { label: "Tổng liên hệ", value: pagination.total },
           { label: "Mới", value: contacts.filter((item) => item.status === "new").length },
           { label: "Đã xử lý", value: contacts.filter((item) => item.status === "resolved").length },
         ]}
       />
       <div className="grid gap-4 md:grid-cols-3">
-        <DashboardMetricCard label="Tổng liên hệ" value={contacts.length} icon={Inbox} tone="blue" />
+        <DashboardMetricCard label="Tổng liên hệ" value={pagination.total} icon={Inbox} tone="blue" />
         <DashboardMetricCard label="Cần gọi lại" value={contacts.filter((item) => item.status === "new").length} icon={PhoneCall} tone="amber" />
         <DashboardMetricCard label="Đã xử lý" value={contacts.filter((item) => item.status === "resolved").length} icon={CheckCircle2} tone="emerald" />
       </div>
@@ -58,7 +67,7 @@ export default function AdminContactsPage() {
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả trạng thái</SelectItem>
-            {statuses.map((status) => <SelectItem key={status} value={status}>{statusLabels[status]}</SelectItem>)}
+            {statuses.map((status) => <SelectItem key={status} value={status}>{getContactStatusLabel(status)}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -72,13 +81,13 @@ export default function AdminContactsPage() {
               meta={formatDateTime(contact.createdAt)}
               icon={Mail}
               tone={contact.status === "resolved" ? "emerald" : contact.status === "ignored" ? "slate" : contact.status === "contacted" ? "blue" : "amber"}
-              badge={<Badge variant="secondary">{statusLabels[contact.status]}</Badge>}
+              badge={<Badge variant="secondary">{getContactStatusLabel(contact.status)}</Badge>}
               actions={(
                 <>
                   <ContactDetailDialog contact={contact} />
                   {statuses.map((status) => (
                     <Button key={status} size="sm" variant={contact.status === status ? "default" : "outline"} onClick={() => update(contact.id, status)}>
-                      {statusLabels[status]}
+                      {getContactStatusLabel(status)}
                     </Button>
                   ))}
                 </>
@@ -86,7 +95,7 @@ export default function AdminContactsPage() {
             >
               <div className="space-y-2">
                 <p className="text-sm leading-6 text-slate-700">{contact.message}</p>
-                <p className="text-xs text-muted-foreground">Cập nhật gần nhất: {contact.updatedAt ? formatDateTime(contact.updatedAt) : "Chưa cập nhật"} · Người tiếp nhận: {rawText(contact, "handledBy", "assigneeName", "assignedTo") || user?.fullName || "Support admin"}</p>
+                <p className="text-xs text-muted-foreground">Cập nhật gần nhất: {contact.updatedAt ? formatDateTime(contact.updatedAt) : "Chưa cập nhật"} · Người tiếp nhận: {rawText(contact, "handledBy", "assignedToName") || "Chưa tiếp nhận"}</p>
               </div>
             </EntityCard>
           ))}
@@ -94,6 +103,7 @@ export default function AdminContactsPage() {
       ) : (
         <EmptyState title="Chưa có liên hệ" description="Khi khách gửi form ở trang chủ, yêu cầu sẽ xuất hiện tại đây." />
       )}
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }
@@ -112,10 +122,11 @@ function ContactDetailDialog({ contact }: { contact: ContactRequest }) {
         <div className="grid gap-3 md:grid-cols-2">
           <Info label="Email" value={contact.email} />
           <Info label="SĐT" value={contact.phone || "Không nhập"} />
-          <Info label="Trạng thái" value={statusLabels[contact.status]} />
+          <Info label="Trạng thái" value={getContactStatusLabel(contact.status)} />
           <Info label="Tạo lúc" value={formatDateTime(contact.createdAt)} />
           <Info label="Cập nhật" value={contact.updatedAt ? formatDateTime(contact.updatedAt) : "Chưa cập nhật"} />
-          <Info label="Người xử lý" value={rawText(contact, "handledBy", "assigneeName", "assignedTo") || "Theo audit backend"} />
+          <Info label="Người xử lý" value={rawText(contact, "handledBy", "assignedToName") || "Chưa tiếp nhận"} />
+          <Info label="Xử lý lúc" value={contact.handledAt ? formatDateTime(contact.handledAt) : "Chưa xử lý"} />
           <div className="rounded-lg border bg-slate-50 p-3 md:col-span-2">
             <p className="text-xs font-medium uppercase text-muted-foreground">Nội dung</p>
             <p className="mt-1 text-sm leading-6 text-slate-900">{contact.message}</p>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { CheckCircle2, Clock3, Wallet, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
+import { AdminPagination, defaultPagination, ADMIN_PAGE_SIZE } from "@/components/admin/admin-pagination"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -18,10 +19,24 @@ import type { Payout } from "@/types"
 export default function AdminPayoutsPage() {
   const { user } = useAuthContext()
   const [payouts, setPayouts] = useState<Payout[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const [detailById, setDetailById] = useState<Record<string, Payout>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
-  const load = async () => setPayouts(await payoutService.getAllPayouts())
-  useEffect(() => { load() }, [])
+  const load = async (targetPage = page) => {
+    setLoading(true)
+    try {
+      const result = await payoutService.getAllPayoutsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      setPayouts(result.items)
+      setPagination(result.pagination)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không tải được payout")
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { load(page) }, [page])
 
   const update = async (id: string, status: "paid" | "rejected", reason: string) => {
     setBusyId(id)
@@ -32,7 +47,7 @@ export default function AdminPayoutsPage() {
           : await payoutService.rejectPayout(id, reason, user)
       if (result.success) {
         toast.success("Đã cập nhật payout")
-        load()
+        load(page)
       } else toast.error(result.error || "Không thể cập nhật payout")
     } finally {
       setBusyId(null)
@@ -53,13 +68,13 @@ export default function AdminPayoutsPage() {
         description="Duyệt, từ chối và theo dõi yêu cầu rút tiền của gia sư với audit log đi kèm."
         icon={Wallet}
         stats={[
-          { label: "Tổng payout", value: payouts.length },
+          { label: "Tổng payout", value: pagination.total },
           { label: "Chờ duyệt", value: payouts.filter((item) => item.status === "pending").length },
           { label: "Đã chi trả", value: payouts.filter((item) => item.status === "paid" || item.status === "completed").length },
         ]}
       />
       <div className="grid gap-4 md:grid-cols-3">
-        <DashboardMetricCard label="Tổng payout" value={payouts.length} icon={Wallet} tone="blue" />
+        <DashboardMetricCard label="Tổng payout" value={pagination.total} icon={Wallet} tone="blue" />
         <DashboardMetricCard label="Chờ duyệt" value={payouts.filter((item) => item.status === "pending").length} icon={Clock3} tone="amber" />
         <DashboardMetricCard label="Đã chi trả" value={payouts.filter((item) => item.status === "paid" || item.status === "completed").length} icon={CheckCircle2} tone="emerald" />
       </div>
@@ -119,6 +134,7 @@ export default function AdminPayoutsPage() {
       ) : (
         <EmptyState title="Chưa có payout request" description="Yêu cầu rút tiền sẽ xuất hiện khi gia sư tạo từ màn thu nhập." />
       )}
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import type { Class as LearningClass, ClassSession, ClassStatus } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { classApi } from "@/lib/api/class-api"
 
 type CreateClassData = Omit<
@@ -46,6 +47,10 @@ class ClassService {
 
   async getAllClasses(): Promise<LearningClass[]> {
     return classApi.list("admin")
+  }
+
+  getAllClassesPage(params?: PageRequestParams) {
+    return classApi.listPage("admin", params)
   }
 
   async updateClassStatus(classId: string, status: ClassStatus, _note?: string) {

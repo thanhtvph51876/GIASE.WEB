@@ -1,4 +1,5 @@
 import type { LearningRequest, LearningRequestStatus, StudentRegistrationFormData } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { learningRequestApi } from "@/lib/api/learning-request-api"
 
 class LearningRequestService {
@@ -21,6 +22,10 @@ class LearningRequestService {
 
   async getAllRequests(): Promise<LearningRequest[]> {
     return learningRequestApi.adminList()
+  }
+
+  getAllRequestsPage(params?: PageRequestParams) {
+    return learningRequestApi.adminListPage(params)
   }
 
   async getRequestsByStatus(status: LearningRequestStatus): Promise<LearningRequest[]> {

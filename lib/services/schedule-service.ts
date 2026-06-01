@@ -1,5 +1,5 @@
 import type { ClassSession, SessionStatus, TeachingMode } from "@/types"
-import { apiRequest } from "@/lib/api/client"
+import { apiRequest, type PageRequestParams } from "@/lib/api/client"
 import { classApi } from "@/lib/api/class-api"
 import { mapSession } from "@/lib/api/mappers"
 
@@ -120,6 +120,10 @@ class ScheduleService {
 
   async getAllSessions(): Promise<ClassSession[]> {
     return classApi.allSessions("admin")
+  }
+
+  getAllSessionsPage(params?: PageRequestParams) {
+    return classApi.allSessionsPage(params)
   }
 
   async getWeeklySessionsCount(tutorId: string): Promise<number> {

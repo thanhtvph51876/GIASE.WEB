@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react"
 import useSWR from "swr"
 import type { Tutor, TutorFilters, TutorSortBy, TutorRegistrationFormData } from "@/types"
+import type { ApiPagination, PageRequestParams } from "@/lib/api/client"
 import { tutorService } from "@/lib/services"
 import { useToast } from "@/hooks/use-toast"
 
@@ -123,18 +124,21 @@ export function useTutorProfileByUser(userId?: string) {
   }
 }
 
-export function useAllTutors() {
+const emptyPagination: ApiPagination = { page: 1, pageSize: 50, total: 0, totalPages: 1 }
+
+export function useAllTutors(params: PageRequestParams = {}) {
   const {
-    data: tutors,
+    data,
     error,
     isLoading,
     mutate,
-  } = useSWR("all-tutors", () => tutorService.getAllTutors(), {
+  } = useSWR(["all-tutors", params.page || 1, params.pageSize || 50, params.status || "", params.search || ""], () => tutorService.getAllTutorsPage(params), {
     revalidateOnFocus: false,
   })
 
   return {
-    tutors: tutors || [],
+    tutors: data?.items || [],
+    pagination: data?.pagination || emptyPagination,
     isLoading,
     loading: isLoading,
     error,

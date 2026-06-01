@@ -3,27 +3,45 @@
 import { useEffect, useMemo, useState } from "react"
 import { Flag, Star } from "lucide-react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DashboardMetricCard, RatingDisplay } from "@/components/platform/operational-components"
+import { AdminActionButton } from "@/components/admin/admin-action-button"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
+import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
+import { useAuthContext } from "@/lib/contexts/auth-context"
 import { reviewService } from "@/lib/services"
-import { formatDate } from "@/lib/helpers"
+import { formatDate, getReviewStatusLabel } from "@/lib/helpers"
 import type { Review } from "@/types"
 
 type ReviewStatusFilter = "all" | "visible" | "hidden" | "flagged"
 
 export default function AdminReviewsPage() {
+  const { user } = useAuthContext()
   const [reviews, setReviews] = useState<Review[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const [tutorId, setTutorId] = useState("all")
   const [classId, setClassId] = useState("all")
   const [rating, setRating] = useState("all")
   const [status, setStatus] = useState<ReviewStatusFilter>("all")
   const [busyId, setBusyId] = useState<string | null>(null)
 
-  const load = async () => setReviews(await reviewService.getAllReviews())
-  useEffect(() => { load() }, [])
+  const load = async (targetPage = page) => {
+    setLoading(true)
+    try {
+      const result = await reviewService.getAllReviewsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      setReviews(result.items)
+      setPagination(result.pagination)
+    } catch {
+      toast.error("Không tải được đánh giá")
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { load(page) }, [page])
 
   const tutorOptions = useMemo(() => unique(reviews.map((item) => item.tutorId)), [reviews])
   const classOptions = useMemo(() => unique(reviews.map((item) => item.classId).filter(Boolean) as string[]), [reviews])
@@ -62,7 +80,7 @@ export default function AdminReviewsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <DashboardMetricCard label="Tổng review" value={reviews.length} icon={Star} />
+        <DashboardMetricCard label="Tổng review" value={pagination.total} icon={Star} />
         <DashboardMetricCard label="Review thấp" value={reviews.filter((item) => item.rating <= 3).length} icon={Flag} tone="amber" />
         <DashboardMetricCard label="Rating TB" value={reviews.length ? (reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length).toFixed(1) : "0.0"} />
         <DashboardMetricCard label="Gia sư nhiều review" value={topTutor ? topTutor.count : 0} helper={topTutor?.id || "Chưa có"} />
@@ -118,15 +136,15 @@ export default function AdminReviewsPage() {
               <div key={review.id} className="item-row">
                 <div className="flex items-start justify-between gap-3">
                   <RatingDisplay value={review.rating} />
-                  <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">{rawText(review, "status", "moderationStatus") || "visible"}</span>
+                  <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">{reviewStatusLabel(review)}</span>
                 </div>
                 <p className="mt-2 text-sm leading-6">{review.content}</p>
                 <p className="mt-2 text-xs text-muted-foreground">{review.studentName} · {formatDate(review.createdAt)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Tutor: {review.tutorId} · Lớp: {review.classId || "Không gắn"} · Session: {review.sessionId || "Không gắn"}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" disabled={busyId === review.id} onClick={() => moderate(review.id, "flag")}>Gắn cờ</Button>
-                  <Button size="sm" variant="outline" disabled={busyId === review.id} onClick={() => moderate(review.id, "hide")}>Ẩn</Button>
-                  <Button size="sm" variant="outline" disabled={busyId === review.id} onClick={() => moderate(review.id, "show")}>Hiện</Button>
+                  <AdminActionButton size="sm" variant="outline" disabled={busyId === review.id} availability={getAdminActionAvailability(user, "review", "review.manage", rawText(review, "status", "moderationStatus") || "visible", review)} onClick={() => moderate(review.id, "flag")}>Gắn cờ</AdminActionButton>
+                  <AdminActionButton size="sm" variant="outline" disabled={busyId === review.id} availability={getAdminActionAvailability(user, "review", "review.manage", rawText(review, "status", "moderationStatus") || "visible", review)} onClick={() => moderate(review.id, "hide")}>Ẩn</AdminActionButton>
+                  <AdminActionButton size="sm" variant="outline" disabled={busyId === review.id} availability={getAdminActionAvailability(user, "review", "review.manage", rawText(review, "status", "moderationStatus") || "visible", review)} onClick={() => moderate(review.id, "show")}>Hiện</AdminActionButton>
                 </div>
               </div>
             ))}
@@ -149,6 +167,7 @@ export default function AdminReviewsPage() {
           </CardContent>
         </Card>
       </div>
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }
@@ -174,6 +193,10 @@ function rawText(item: unknown, ...keys: string[]) {
     if (value !== undefined && value !== null && String(value).trim()) return String(value)
   }
   return ""
+}
+
+function reviewStatusLabel(item: unknown) {
+  return getReviewStatusLabel(rawText(item, "status", "moderationStatus") || "visible")
 }
 
 function Summary({ title, value, count }: { title: string; value: string; count: number }) {

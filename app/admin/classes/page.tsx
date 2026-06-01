@@ -5,6 +5,7 @@ import { BookOpenCheck, CalendarDays, CheckCircle2, GraduationCap, TimerReset } 
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE } from "@/components/admin/admin-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -24,7 +25,8 @@ import type { Class, ClassStatus } from "@/types"
 
 export default function AdminClassesPage() {
   const { user } = useAuthContext()
-  const { classes, refresh } = useClasses({ role: "admin" })
+  const [page, setPage] = useState(1)
+  const { classes, pagination, refresh, isLoading } = useClasses({ role: "admin", page, pageSize: ADMIN_PAGE_SIZE })
   const { data, refresh: refreshOperations } = useAdminOperations()
   const [result, setResult] = useState<"active" | "rematch" | "cancelled">("active")
   const [note, setNote] = useState("")
@@ -90,7 +92,7 @@ export default function AdminClassesPage() {
         description="Theo dõi lớp học thử, lớp chính thức, session liên quan và xử lý kết quả học thử ngay tại console."
         icon={GraduationCap}
         stats={[
-          { label: "Tổng lớp", value: classes.length },
+          { label: "Tổng lớp", value: pagination.total },
           { label: "Học thử", value: trialCount },
           { label: "Đang học", value: activeCount },
           { label: "Hoàn thành", value: completedCount },
@@ -98,7 +100,7 @@ export default function AdminClassesPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <DashboardMetricCard label="Tổng lớp" value={classes.length} icon={BookOpenCheck} tone="blue" />
+        <DashboardMetricCard label="Tổng lớp" value={pagination.total} icon={BookOpenCheck} tone="blue" />
         <DashboardMetricCard label="Học thử" value={trialCount} icon={TimerReset} tone="amber" />
         <DashboardMetricCard label="Đang học" value={activeCount} icon={CalendarDays} tone="emerald" />
         <DashboardMetricCard label="Hoàn thành" value={completedCount} icon={CheckCircle2} tone="slate" />
@@ -225,6 +227,7 @@ export default function AdminClassesPage() {
       }) : (
         <EmptyState title="Chưa có lớp học nào" description="Lớp học thử sẽ được tạo khi gia sư chấp nhận booking." />
       )}
+      <AdminPagination pagination={pagination} loading={isLoading} onPageChange={setPage} />
     </div>
   )
 }

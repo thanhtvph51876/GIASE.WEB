@@ -1,5 +1,5 @@
 import type { Conversation, Message } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapConversation, mapList, mapMessage } from "./mappers"
 
 export interface CreateConversationData {
@@ -14,8 +14,11 @@ export const messageApi = {
   async conversations() {
     return mapList(await apiRequest<Conversation[]>("/conversations"), mapConversation)
   },
-  async adminConversations() {
-    return mapList(await apiRequest<Conversation[]>("/admin/conversations"), mapConversation)
+  async adminConversations(params?: PageRequestParams) {
+    return (await this.adminConversationsPage(params)).items
+  },
+  adminConversationsPage(params?: PageRequestParams) {
+    return apiPageRequest<Conversation>("/admin/conversations", { params }, mapConversation)
   },
   async createConversation(data: CreateConversationData) {
     return mapConversation(await apiRequest<Conversation>("/conversations", { method: "POST", body: data }))

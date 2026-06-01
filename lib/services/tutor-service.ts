@@ -1,6 +1,6 @@
 import type { Tutor, TutorApprovalEligibility, TutorDocument, TutorFilters, TutorRegistrationFormData, TutorSortBy, User } from "@/types"
 import { tutorApi } from "@/lib/api/tutor-api"
-import { ApiClientError } from "@/lib/api/client"
+import { ApiClientError, type PageRequestParams } from "@/lib/api/client"
 
 class TutorService {
   private favoriteIdsByUser = new Map<string, string[]>()
@@ -11,6 +11,10 @@ class TutorService {
 
   async getAllTutors(): Promise<Tutor[]> {
     return tutorApi.getAllTutors()
+  }
+
+  getAllTutorsPage(params?: PageRequestParams) {
+    return tutorApi.getAllTutorsPage(params)
   }
 
   async getFeaturedTutors(limit: number = 3): Promise<Tutor[]> {

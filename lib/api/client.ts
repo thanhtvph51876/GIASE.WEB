@@ -2,16 +2,33 @@ import { STORAGE_KEYS } from "@/lib/storage"
 
 type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE"
 
+export interface ApiPagination {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+export interface ApiPage<T> {
+  items: T[]
+  pagination: ApiPagination
+}
+
+export interface PageRequestParams {
+  page?: number
+  pageSize?: number
+  search?: string
+  status?: string
+  role?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
 interface ApiEnvelope<T> {
   success: boolean
   data?: T
   message?: string
-  pagination?: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-  }
+  pagination?: ApiPagination
   error?: {
     code: string
     message: string
@@ -22,13 +39,14 @@ interface ApiEnvelope<T> {
 interface RequestOptions {
   method?: HttpMethod
   body?: unknown
-  params?: Record<string, unknown>
+  params?: Record<string, unknown> | PageRequestParams
   headers?: HeadersInit
   auth?: boolean
 }
 
+const CONFIGURED_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api/v1"
+  CONFIGURED_API_BASE_URL || (process.env.NODE_ENV === "production" ? "" : "http://localhost:8080/api/v1")
 const TOKEN_STORAGE_MODE = process.env.NEXT_PUBLIC_AUTH_TOKEN_STORAGE || "local"
 const PERSIST_BROWSER_TOKENS = TOKEN_STORAGE_MODE !== "memory"
 const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS || 15000)
@@ -95,7 +113,10 @@ export class ApiClientError extends Error {
   }
 }
 
-function buildUrl(path: string, params?: Record<string, unknown>) {
+function buildUrl(path: string, params?: Record<string, unknown> | PageRequestParams) {
+  if (!API_BASE_URL) {
+    throw new ApiClientError("NEXT_PUBLIC_API_BASE_URL chưa được cấu hình cho production.", "API_BASE_URL_MISSING", 500)
+  }
   const url = new URL(`${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`)
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value === undefined || value === null || value === "") return
@@ -205,6 +226,32 @@ async function parseEnvelope<T>(response: Response): Promise<ApiEnvelope<T>> {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const envelope = await apiEnvelopeRequest<T>(path, options)
+  return envelope.data as T
+}
+
+export async function apiPageRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+  mapper?: (item: unknown) => T
+): Promise<ApiPage<T>> {
+  const envelope = await apiEnvelopeRequest<unknown[]>(path, options)
+  const items = Array.isArray(envelope.data) ? envelope.data : []
+  const page = options.params?.page === undefined ? 1 : Number(options.params.page)
+  const pageSize = options.params?.pageSize === undefined ? items.length : Number(options.params.pageSize)
+  const pagination = envelope.pagination || {
+    page: Number.isFinite(page) && page > 0 ? page : 1,
+    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : items.length,
+    total: items.length,
+    totalPages: 1,
+  }
+  return {
+    items: mapper ? items.map(mapper) : (items as T[]),
+    pagination,
+  }
+}
+
+async function apiEnvelopeRequest<T>(path: string, options: RequestOptions = {}): Promise<ApiEnvelope<T>> {
   const headers = new Headers(options.headers)
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData
   if (!isFormData && options.body !== undefined) headers.set("Content-Type", "application/json")
@@ -269,7 +316,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     }
     throw apiError
   }
-  return envelope.data as T
+  return envelope
 }
 
 export async function uploadFile(file: File, options?: { visibility?: "public" | "private"; purpose?: string }) {

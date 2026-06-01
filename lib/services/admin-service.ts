@@ -1,4 +1,5 @@
 import type { AdminStats, LearningRequest, Tutor, User } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { adminApi } from "@/lib/api/admin-api"
 import { tutorService } from "./tutor-service"
 import { learningRequestService } from "./learning-request-service"
@@ -60,6 +61,10 @@ class AdminService {
 
   async getAllUsers(): Promise<User[]> {
     return adminApi.users()
+  }
+
+  getUsersPage(params?: PageRequestParams) {
+    return adminApi.usersPage(params)
   }
 
   async getUserById(id: string): Promise<User | null> {

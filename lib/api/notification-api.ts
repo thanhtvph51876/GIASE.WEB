@@ -1,13 +1,16 @@
 import type { Notification } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapList, mapNotification } from "./mappers"
 
 export const notificationApi = {
   async list() {
     return mapList(await apiRequest<Notification[]>("/notifications"), mapNotification)
   },
-  async adminList() {
-    return mapList(await apiRequest<Notification[]>("/admin/notifications"), mapNotification)
+  async adminList(params?: PageRequestParams) {
+    return (await this.adminListPage(params)).items
+  },
+  adminListPage(params?: PageRequestParams) {
+    return apiPageRequest<Notification>("/admin/notifications", { params }, mapNotification)
   },
   async unreadCount() {
     const data = await apiRequest<{ count: number }>("/notifications/unread-count")
@@ -27,5 +30,11 @@ export const notificationApi = {
   },
   send(data: Partial<Notification>) {
     return apiRequest("/admin/notifications/send", { method: "POST", body: data })
+  },
+  sendBulk(data: Partial<Notification> & { targetRole?: string; userIds?: string[] }) {
+    return apiRequest<{ sent: boolean; count: number; targetRole?: string; recipientIds?: string[] }>("/admin/notifications/send-bulk", {
+      method: "POST",
+      body: data,
+    })
   },
 }

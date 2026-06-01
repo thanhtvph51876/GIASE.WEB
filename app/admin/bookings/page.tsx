@@ -6,6 +6,7 @@ import { CalendarCheck, CheckCircle2, Clock3, RefreshCw, XCircle } from "lucide-
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -22,16 +23,30 @@ export default function AdminBookingsPage() {
   const { user } = useAuthContext()
   const activeId = useSearchParams().get("id")
   const [bookings, setBookings] = useState<TrialBooking[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState(defaultPagination())
+  const [loading, setLoading] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [assignTutorId, setAssignTutorId] = useState("")
-  const load = async () => setBookings(await bookingService.getAllBookings())
-  useEffect(() => { load() }, [])
+  const load = async (targetPage = page) => {
+    setLoading(true)
+    try {
+      const result = await bookingService.getAllBookingsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      setBookings(result.items)
+      setPagination(result.pagination)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không tải được booking")
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { load(page) }, [page])
 
   const complete = async (id: string, note: string) => {
     setBusyId(id)
     try {
       const result = await bookingService.completeTrial(id, note)
-      if (result.success) { toast.success("Đã hoàn tất học thử"); load() } else toast.error(result.error)
+      if (result.success) { toast.success("Đã hoàn tất học thử"); load(page) } else toast.error(result.error)
     } finally {
       setBusyId(null)
     }
@@ -40,7 +55,7 @@ export default function AdminBookingsPage() {
     setBusyId(id)
     try {
       const result = await bookingService.convertToClass(id)
-      if (result.success) { toast.success("Đã convert thành lớp chính thức"); load() } else toast.error(result.error)
+      if (result.success) { toast.success("Đã convert thành lớp chính thức"); load(page) } else toast.error(result.error)
     } finally {
       setBusyId(null)
     }
@@ -49,7 +64,7 @@ export default function AdminBookingsPage() {
     setBusyId(id)
     try {
       const result = await bookingService.cancelBookingByAdmin(id, reason)
-      if (result.success) { toast.success("Đã hủy booking"); load() } else toast.error(result.error)
+      if (result.success) { toast.success("Đã hủy booking"); load(page) } else toast.error(result.error)
     } finally {
       setBusyId(null)
     }
@@ -65,7 +80,7 @@ export default function AdminBookingsPage() {
       if (result.success) {
         toast.success("Đã gán lại gia sư cho booking")
         setAssignTutorId("")
-        load()
+        load(page)
       } else toast.error(result.error)
     } finally {
       setBusyId(null)
@@ -77,7 +92,7 @@ export default function AdminBookingsPage() {
       const result = actor === "student"
         ? await bookingService.markStudentNoShow(id, note)
         : await bookingService.markTutorNoShow(id, note)
-      if (result.success) { toast.success("Đã ghi nhận no-show"); load() } else toast.error(result.error)
+      if (result.success) { toast.success("Đã ghi nhận no-show"); load(page) } else toast.error(result.error)
     } finally {
       setBusyId(null)
     }
@@ -91,14 +106,14 @@ export default function AdminBookingsPage() {
         description="Theo dõi booking chờ phản hồi, xác nhận kết quả học thử và chuyển đổi thành lớp chính thức."
         icon={CalendarCheck}
         stats={[
-          { label: "Tổng booking", value: bookings.length },
+          { label: "Tổng booking", value: pagination.total },
           { label: "Chờ phản hồi", value: bookings.filter((item) => item.status === "pending").length },
           { label: "Đã học thử", value: bookings.filter((item) => item.status === "completed").length },
           { label: "Converted", value: bookings.filter((item) => item.status === "converted").length },
         ]}
       />
       <div className="grid gap-4 md:grid-cols-4">
-        <DashboardMetricCard label="Tổng booking" value={bookings.length} icon={CalendarCheck} tone="blue" />
+        <DashboardMetricCard label="Tổng booking" value={pagination.total} icon={CalendarCheck} tone="blue" />
         <DashboardMetricCard label="Chờ phản hồi" value={bookings.filter((item) => item.status === "pending").length} icon={Clock3} tone="amber" />
         <DashboardMetricCard label="Đã học thử" value={bookings.filter((item) => item.status === "completed").length} icon={CheckCircle2} tone="emerald" />
         <DashboardMetricCard label="Converted" value={bookings.filter((item) => item.status === "converted").length} icon={RefreshCw} tone="slate" />
@@ -220,6 +235,7 @@ export default function AdminBookingsPage() {
       ) : (
         <EmptyState title="Chưa có booking học thử" description="Booking sẽ xuất hiện khi học viên đặt học thử hoặc admin tạo từ yêu cầu học." />
       )}
+      <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useCallback } from "react"
 import useSWR from "swr"
 import type { VerificationStatus, VerificationType } from "@/types"
+import type { ApiPagination, PageRequestParams } from "@/lib/api/client"
 import { verificationService } from "@/lib/services/verification-service"
 import type { StudentCardUploadInput, TutorDocumentUploadInput } from "@/lib/api/verification-api"
 import { useToast } from "@/hooks/use-toast"
@@ -69,10 +70,12 @@ export function useTutorVerifications(enabled = true) {
   }
 }
 
-export function useAdminVerifications(filters?: { status?: VerificationStatus | "all"; type?: VerificationType | "all" }) {
+const emptyPagination: ApiPagination = { page: 1, pageSize: 50, total: 0, totalPages: 1 }
+
+export function useAdminVerifications(filters?: PageRequestParams & { status?: VerificationStatus | "all"; type?: VerificationType | "all" }) {
   const { toast } = useToast()
-  const key = ["admin-verifications", filters?.status || "all", filters?.type || "all"]
-  const { data, error, isLoading, mutate } = useSWR(key, () => verificationService.adminList(filters), {
+  const key = ["admin-verifications", filters?.status || "all", filters?.type || "all", filters?.page || 1, filters?.pageSize || 50]
+  const { data, error, isLoading, mutate } = useSWR(key, () => verificationService.adminListPage(filters), {
     revalidateOnFocus: false,
   })
 
@@ -95,7 +98,8 @@ export function useAdminVerifications(filters?: { status?: VerificationStatus | 
   }, [mutate, toast])
 
   return {
-    verifications: data || [],
+    verifications: data?.items || [],
+    pagination: data?.pagination || emptyPagination,
     error,
     isLoading,
     approve,

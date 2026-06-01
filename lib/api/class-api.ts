@@ -1,11 +1,15 @@
 import type { Class, ClassSession, ClassStatus } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapClass, mapList, mapSession } from "./mappers"
 
 export const classApi = {
-  async list(role?: "student" | "tutor" | "admin") {
+  async list(role?: "student" | "tutor" | "admin", params?: PageRequestParams) {
     const path = role === "admin" ? "/admin/classes" : role === "tutor" ? "/tutor/classes" : "/classes"
+    if (role === "admin") return (await this.listPage("admin", params)).items
     return mapList(await apiRequest<Class[]>(path), mapClass)
+  },
+  listPage(role: "admin", params?: PageRequestParams) {
+    return apiPageRequest<Class>("/admin/classes", { params }, mapClass)
   },
   async get(id: string, role?: "tutor" | "admin") {
     const path = role === "admin" ? `/admin/classes/${id}` : role === "tutor" ? `/tutor/classes/${id}` : `/classes/${id}`
@@ -29,10 +33,13 @@ export const classApi = {
   async createSession(classId: string, data: Partial<ClassSession>) {
     return mapSession(await apiRequest<ClassSession>(`/admin/classes/${classId}/sessions`, { method: "POST", body: data }))
   },
-  async allSessions(role?: "tutor" | "admin") {
+  async allSessions(role?: "tutor" | "admin", params?: PageRequestParams) {
     if (role === "tutor") return mapList(await apiRequest<ClassSession[]>("/tutor/sessions"), mapSession)
-    if (role === "admin") return mapList(await apiRequest<ClassSession[]>("/admin/sessions"), mapSession)
+    if (role === "admin") return (await this.allSessionsPage(params)).items
     return mapList(await apiRequest<ClassSession[]>("/sessions"), mapSession)
+  },
+  allSessionsPage(params?: PageRequestParams) {
+    return apiPageRequest<ClassSession>("/admin/sessions", { params }, mapSession)
   },
   async getSession(id: string) {
     return mapSession(await apiRequest<ClassSession>(`/sessions/${id}`))

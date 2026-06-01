@@ -1,5 +1,5 @@
 import type { UserVerification, VerificationStatus, VerificationTerms, VerificationType } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapList, mapVerification } from "./mappers"
 
 export interface StudentCardUploadInput {
@@ -56,8 +56,11 @@ export const verificationApi = {
   async submitTutor(id: string) {
     return mapVerification(await apiRequest<UserVerification>(`/tutor/verifications/${id}/submit`, { method: "POST" }))
   },
-  async adminList(params?: { status?: VerificationStatus | "all"; type?: VerificationType | "all" }) {
-    return mapList(await apiRequest<UserVerification[]>("/admin/verifications", { params }), mapVerification)
+  async adminList(params?: PageRequestParams & { status?: VerificationStatus | "all"; type?: VerificationType | "all" }) {
+    return (await this.adminListPage(params)).items
+  },
+  adminListPage(params?: PageRequestParams & { status?: VerificationStatus | "all"; type?: VerificationType | "all" }) {
+    return apiPageRequest<UserVerification>("/admin/verifications", { params }, mapVerification)
   },
   async adminGet(id: string) {
     return mapVerification(await apiRequest<UserVerification>(`/admin/verifications/${id}`))

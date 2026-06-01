@@ -4,6 +4,7 @@ import { useState } from "react"
 import { TutorApprovalEligibilityPanel } from "@/components/admin/tutor-approval-eligibility"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
+import { AdminPagination, ADMIN_PAGE_SIZE } from "@/components/admin/admin-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,10 +22,11 @@ import { canPerformAdminAction } from "@/lib/admin/admin-permissions"
 
 export default function AdminTutorsPage() {
   const { user } = useAuthContext()
-  const { tutors, isLoading, error, refresh } = useAllTutors()
+  const [page, setPage] = useState(1)
+  const [keyword, setKeyword] = useState("")
+  const { tutors, pagination, isLoading, error, refresh } = useAllTutors({ page, pageSize: ADMIN_PAGE_SIZE, search: keyword })
   const { eligibilityByTutorId, isLoading: eligibilityLoading, refresh: refreshEligibility } = useTutorApprovalEligibilityMap(tutors.map((tutor) => tutor.id))
   const { approveTutor, rejectTutor } = useTutorApprovalActions(user, refresh)
-  const [keyword, setKeyword] = useState("")
   const approve = async (id: string) => {
     await approveTutor(id)
     refreshEligibility()
@@ -66,7 +68,7 @@ export default function AdminTutorsPage() {
         <>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Metric label="Tổng gia sư" value={tutors.length} />
+        <Metric label="Tổng gia sư" value={pagination.total} />
         <Metric label="Đã duyệt" value={approvedCount} />
         <Metric label="Chờ duyệt" value={pendingCount} />
       </div>
@@ -181,6 +183,7 @@ export default function AdminTutorsPage() {
           </div>
         </CardContent>
       </Card>
+      <AdminPagination pagination={pagination} loading={isLoading} onPageChange={setPage} />
         </>
       )}
     </div>

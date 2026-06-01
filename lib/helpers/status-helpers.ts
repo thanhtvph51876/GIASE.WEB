@@ -2,6 +2,7 @@ import type {
   ApprovalStatus,
   BookingStatus,
   ClassStatus,
+  ContactRequestStatus,
   LearningRequestStatus,
   PaymentStatus,
   PayoutStatus,
@@ -16,9 +17,12 @@ export type StatusKind =
   | "approval"
   | "booking"
   | "class"
+  | "contact"
+  | "dispute"
   | "learningRequest"
   | "payment"
   | "payout"
+  | "review"
   | "earning"
   | "session"
   | "teachingMode"
@@ -37,6 +41,7 @@ type StatusValue =
   | TeachingMode
   | UserStatus
   | VerificationStatus
+  | ContactRequestStatus
   | string
 
 const labels: Record<StatusKind, Record<string, string>> = {
@@ -82,6 +87,22 @@ const labels: Record<StatusKind, Record<string, string>> = {
     completed: "Hoàn thành",
     cancelled: "Đã hủy",
   },
+  contact: {
+    new: "Mới",
+    contacted: "Đã liên hệ",
+    resolved: "Đã xử lý",
+    ignored: "Bỏ qua",
+  },
+  dispute: {
+    OPEN: "Mới mở",
+    open: "Mới mở",
+    IN_REVIEW: "Đang xử lý",
+    in_review: "Đang xử lý",
+    RESOLVED: "Đã xử lý",
+    resolved: "Đã xử lý",
+    REJECTED: "Từ chối",
+    rejected: "Từ chối",
+  },
   learningRequest: {
     draft: "Bản nháp",
     submitted: "Đã gửi yêu cầu",
@@ -120,6 +141,14 @@ const labels: Record<StatusKind, Record<string, string>> = {
     approved: "Đã duyệt",
     paid: "Đã chi trả",
     completed: "Đã rút",
+    rejected: "Bị từ chối",
+  },
+  review: {
+    visible: "Đang hiển thị",
+    hidden: "Đã ẩn",
+    flagged: "Bị gắn cờ",
+    published: "Đã đăng",
+    pending: "Chờ duyệt",
     rejected: "Bị từ chối",
   },
   verification: {
@@ -188,6 +217,15 @@ const tones: Record<string, string> = {
   payout_pending: "warning",
   draft: "neutral",
   new: "warning",
+  contacted: "info",
+  ignored: "neutral",
+  OPEN: "warning",
+  open: "warning",
+  IN_REVIEW: "info",
+  in_review: "info",
+  RESOLVED: "success",
+  resolved: "success",
+  REJECTED: "danger",
   need_update: "warning",
   needs_more_documents: "warning",
   need_more_info: "warning",
@@ -219,4 +257,16 @@ export function getStatusLabel(kind: StatusKind, status?: StatusValue | null): s
 export function getStatusTone(status?: StatusValue | null): "danger" | "info" | "neutral" | "success" | "warning" {
   if (!status) return "neutral"
   return (tones[String(status)] as ReturnType<typeof getStatusTone>) || "neutral"
+}
+
+export function getContactStatusLabel(status?: ContactRequestStatus | null): string {
+  return getStatusLabel("contact", status)
+}
+
+export function getReviewStatusLabel(status?: string | null): string {
+  return getStatusLabel("review", status)
+}
+
+export function getDisputeStatusLabel(status?: string | null): string {
+  return getStatusLabel("dispute", status)
 }

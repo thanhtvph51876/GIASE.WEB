@@ -1,4 +1,5 @@
 import type { Notification, NotificationType, UserRole } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { notificationApi } from "@/lib/api/notification-api"
 
 interface CreateNotificationData {
@@ -10,6 +11,11 @@ interface CreateNotificationData {
   message?: string
   link?: string
   actionUrl?: string
+}
+
+interface BulkNotificationData extends Omit<CreateNotificationData, "userId" | "targetRole"> {
+  targetRole: UserRole | "all"
+  userIds?: string[]
 }
 
 class NotificationService {
@@ -33,12 +39,25 @@ class NotificationService {
     }
   }
 
+  async sendAdminBulkNotification(data: BulkNotificationData) {
+    try {
+      const result = await notificationApi.sendBulk(data as Partial<Notification> & { targetRole?: string; userIds?: string[] })
+      return { success: true, count: result.count, targetRole: result.targetRole }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Không thể gửi thông báo hàng loạt" }
+    }
+  }
+
   async getNotifications(_userId: string): Promise<Notification[]> {
     return notificationApi.list()
   }
 
   async getAdminNotifications(): Promise<Notification[]> {
     return notificationApi.adminList()
+  }
+
+  getAdminNotificationsPage(params?: PageRequestParams) {
+    return notificationApi.adminListPage(params)
   }
 
   async getNotificationsByUser(userId: string): Promise<Notification[]> {

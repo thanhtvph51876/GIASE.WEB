@@ -17,6 +17,7 @@ export type AdminPermission =
   | "learning_requests.manage"
   | "matching.read"
   | "matching.assign"
+  | "matching.manage"
   | "bookings.read"
   | "bookings.manage"
   | "classes.read"
@@ -25,6 +26,8 @@ export type AdminPermission =
   | "sessions.manage"
   | "payments.read"
   | "payments.manage"
+  | "payments.mark_paid"
+  | "payments.mark_failed"
   | "payments.refund"
   | "payouts.read"
   | "payouts.approve"
@@ -39,6 +42,7 @@ export type AdminPermission =
   | "contact_requests.manage"
   | "reviews.read"
   | "reviews.manage"
+  | "complaints.manage"
   | "audit.read"
   | "settings.read"
   | "settings.update"
@@ -107,6 +111,7 @@ const ALL_ADMIN_PERMISSIONS: AdminPermission[] = [
   "learning_requests.manage",
   "matching.read",
   "matching.assign",
+  "matching.manage",
   "bookings.read",
   "bookings.manage",
   "classes.read",
@@ -115,6 +120,8 @@ const ALL_ADMIN_PERMISSIONS: AdminPermission[] = [
   "sessions.manage",
   "payments.read",
   "payments.manage",
+  "payments.mark_paid",
+  "payments.mark_failed",
   "payments.refund",
   "payouts.read",
   "payouts.approve",
@@ -129,6 +136,7 @@ const ALL_ADMIN_PERMISSIONS: AdminPermission[] = [
   "contact_requests.manage",
   "reviews.read",
   "reviews.manage",
+  "complaints.manage",
   "audit.read",
   "settings.read",
   "settings.update",
@@ -140,6 +148,8 @@ const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[] | "*"> = {
   finance_admin: [
     "payments.read",
     "payments.manage",
+    "payments.mark_paid",
+    "payments.mark_failed",
     "payments.refund",
     "payouts.read",
     "payouts.approve",
@@ -159,6 +169,7 @@ const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[] | "*"> = {
     "learning_requests.manage",
     "matching.read",
     "matching.assign",
+    "matching.manage",
     "bookings.read",
     "bookings.manage",
     "classes.read",
@@ -205,7 +216,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   { key: "tutors", label: "Quản lý gia sư", href: "/admin/tutors", requiredPermissions: ["tutors.read"], managePermissions: ["tutors.approve", "tutors.reject", "tutors.suspend"] },
   { key: "tutorApprovals", label: "Duyệt hồ sơ", href: "/admin/tutor-approvals", requiredPermissions: ["tutors.read"], managePermissions: ["tutors.approve", "tutors.reject"] },
   { key: "verifications", label: "Xác thực giấy tờ", href: "/admin/verifications", requiredPermissions: ["verifications.read"], managePermissions: ["verifications.review"] },
-  { key: "learningRequests", label: "Yêu cầu tìm gia sư", href: "/admin/learning-requests", requiredPermissions: ["learning_requests.read"], managePermissions: ["learning_requests.manage", "matching.assign"] },
+  { key: "learningRequests", label: "Yêu cầu tìm gia sư", href: "/admin/learning-requests", requiredPermissions: ["learning_requests.read"], managePermissions: ["learning_requests.manage", "matching.manage"] },
   { key: "bookings", label: "Booking học thử", href: "/admin/bookings", requiredPermissions: ["bookings.read"], managePermissions: ["bookings.manage"] },
   { key: "classes", label: "Lớp học", href: "/admin/classes", requiredPermissions: ["classes.read"], managePermissions: ["classes.manage"] },
   { key: "sessions", label: "Buổi học", href: "/admin/sessions", requiredPermissions: ["sessions.read"], managePermissions: ["sessions.manage"] },
@@ -220,7 +231,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   { key: "notifications", label: "Thông báo", href: "/admin/notifications", requiredPermissions: ["notifications.read", "notifications.send"] },
   { key: "reviews", label: "Đánh giá", href: "/admin/reviews", requiredPermissions: ["reviews.read"], managePermissions: ["reviews.manage"] },
   { key: "settings", label: "Cài đặt", href: "/admin/settings", requiredPermissions: ["settings.read"], managePermissions: ["settings.update"] },
-  { key: "complaints", label: "Khiếu nại", href: "/admin/complaints", requiredPermissions: ["operations.read"] },
+  { key: "complaints", label: "Khiếu nại", href: "/admin/complaints", requiredPermissions: ["operations.read"], managePermissions: ["complaints.manage"] },
 ]
 
 export const ADMIN_ACTION_PERMISSIONS: Record<AdminActionKey, AdminPermission[]> = {
@@ -233,8 +244,8 @@ export const ADMIN_ACTION_PERMISSIONS: Record<AdminActionKey, AdminPermission[]>
   "verification.reject": ["verifications.review"],
   "verification.needMoreInfo": ["verifications.review"],
   "learningRequest.update": ["learning_requests.manage"],
-  "learningRequest.assign": ["matching.assign"],
-  "learningRequest.rematch": ["matching.assign"],
+  "learningRequest.assign": ["matching.manage"],
+  "learningRequest.rematch": ["matching.manage"],
   "learningRequest.cancel": ["learning_requests.manage"],
   "booking.schedule": ["bookings.manage"],
   "booking.complete": ["bookings.manage"],
@@ -243,8 +254,8 @@ export const ADMIN_ACTION_PERMISSIONS: Record<AdminActionKey, AdminPermission[]>
   "session.complete": ["sessions.manage"],
   "session.cancel": ["sessions.manage"],
   "session.markAbsent": ["sessions.manage"],
-  "payment.markPaid": ["payments.manage"],
-  "payment.markFailed": ["payments.manage"],
+  "payment.markPaid": ["payments.mark_paid"],
+  "payment.markFailed": ["payments.mark_failed"],
   "payment.refund": ["payments.refund"],
   "payout.approve": ["payouts.approve"],
   "payout.reject": ["payouts.reject"],
@@ -309,4 +320,3 @@ export function getAdminModuleForPath(pathname: string): AdminModuleKey | null {
     .sort((a, b) => b.href.length - a.href.length)
   return sorted.find((module) => normalized === module.href || normalized.startsWith(`${module.href}/`))?.key || null
 }
-

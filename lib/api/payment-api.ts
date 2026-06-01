@@ -1,5 +1,5 @@
 import type { Payment, Payout } from "@/types"
-import { apiRequest } from "./client"
+import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapList, mapPayment, mapPayout } from "./mappers"
 
 export interface PaymentSettings {
@@ -67,8 +67,11 @@ export const paymentApi = {
   async list() {
     return mapList(await apiRequest<Payment[]>("/payments"), mapPayment)
   },
-  async adminList() {
-    return mapList(await apiRequest<Payment[]>("/admin/payments"), mapPayment)
+  async adminList(params?: PageRequestParams) {
+    return (await this.adminListPage(params)).items
+  },
+  adminListPage(params?: PageRequestParams) {
+    return apiPageRequest<Payment>("/admin/payments", { params }, mapPayment)
   },
   async adminGet(id: string) {
     return mapPayment(await apiRequest<Payment>(`/admin/payments/${id}`))
@@ -79,8 +82,11 @@ export const paymentApi = {
   async tutorPayouts() {
     return mapList(await apiRequest<Payout[]>("/tutor/payouts"), mapPayout)
   },
-  async adminPayouts() {
-    return mapList(await apiRequest<Payout[]>("/admin/payouts"), mapPayout)
+  async adminPayouts(params?: PageRequestParams) {
+    return (await this.adminPayoutsPage(params)).items
+  },
+  adminPayoutsPage(params?: PageRequestParams) {
+    return apiPageRequest<Payout>("/admin/payouts", { params }, mapPayout)
   },
   async adminPayout(id: string) {
     return mapPayout(await apiRequest<Payout>(`/admin/payouts/${id}`))

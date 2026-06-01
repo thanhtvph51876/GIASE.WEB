@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect } from "react"
 import type { ReactNode } from "react"
 import useSWR from "swr"
 import {
@@ -142,7 +143,7 @@ export default function HomePage() {
                   ))}
                 </div>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <Button size="lg" className="rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 shadow-emerald-700/20 hover:from-emerald-700 hover:to-emerald-600" asChild>
+                  <Button size="lg" className="rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 shadow-emerald-700/20 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-emerald-600/30" asChild>
                     <Link href="/tutors">
                       <Search className="h-4 w-4" />
                       Tìm gia sư ngay
@@ -222,7 +223,7 @@ export default function HomePage() {
                   ))}
                 </select>
               </SearchField>
-              <Button type="submit" className="h-12 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 shadow-emerald-700/20 hover:from-emerald-700 hover:to-emerald-600">
+              <Button type="submit" className="h-12 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 shadow-emerald-700/20 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-emerald-600/30">
                 <Search className="h-4 w-4" />
                 Tìm kiếm
               </Button>

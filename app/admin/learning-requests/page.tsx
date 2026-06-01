@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
+import { AdminPagination, ADMIN_PAGE_SIZE } from "@/components/admin/admin-pagination"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -35,7 +36,8 @@ const quickStatuses: Array<{ status: LearningRequestStatus; label: string }> = [
 export default function AdminLearningRequestsPage() {
   const { user } = useAuthContext()
   const activeId = useSearchParams().get("id")
-  const { requests, updateStatus, assignTutor, refresh } = useAdminLearningRequests(user)
+  const [page, setPage] = useState(1)
+  const { requests, pagination, updateStatus, assignTutor, refresh, isLoading } = useAdminLearningRequests(user, { page, pageSize: ADMIN_PAGE_SIZE })
   const [selectedTutor, setSelectedTutor] = useState("")
   const [matchesByRequest, setMatchesByRequest] = useState<Record<string, BackendTutorMatch[]>>({})
   const [loadingMatches, setLoadingMatches] = useState<Record<string, boolean>>({})
@@ -78,7 +80,7 @@ export default function AdminLearningRequestsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Metric label="Tổng yêu cầu" value={requests.length} />
+        <Metric label="Tổng yêu cầu" value={pagination.total} />
         <Metric label="Cần gán" value={needAssign} />
         <Metric label="Đang học" value={activeCount} />
       </div>
@@ -199,6 +201,7 @@ export default function AdminLearningRequestsPage() {
           {!requests.length && <div className="soft-panel border-dashed p-10 text-center text-sm text-muted-foreground">Chưa có yêu cầu học nào.</div>}
         </CardContent>
       </Card>
+      <AdminPagination pagination={pagination} loading={isLoading} onPageChange={setPage} />
     </div>
   )
 }

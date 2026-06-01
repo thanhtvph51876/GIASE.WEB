@@ -1,4 +1,5 @@
 import type { Payment, PaymentStatus, Payout, User } from "@/types"
+import type { PageRequestParams } from "@/lib/api/client"
 import { earningApi } from "@/lib/api/earning-api"
 import { paymentApi } from "@/lib/api/payment-api"
 import { isAdminRole } from "@/lib/permissions"
@@ -18,6 +19,10 @@ class PaymentService {
 
   async getAllPayments(): Promise<Payment[]> {
     return paymentApi.adminList()
+  }
+
+  getAllPaymentsPage(params?: PageRequestParams) {
+    return paymentApi.adminListPage(params)
   }
 
   async getAdminPayment(paymentId: string): Promise<Payment | null> {
@@ -110,6 +115,10 @@ class PaymentService {
 
   async getAllPayouts(): Promise<Payout[]> {
     return paymentApi.adminPayouts()
+  }
+
+  getAllPayoutsPage(params?: PageRequestParams) {
+    return paymentApi.adminPayoutsPage(params)
   }
 
   async getAdminPayout(payoutId: string): Promise<Payout | null> {
