@@ -88,6 +88,7 @@ export function useAdminOperations() {
     async () => {
       const [
         overview,
+        workItems,
         matchingQueue,
         bookingRisk,
         verificationRisk,
@@ -103,6 +104,7 @@ export function useAdminOperations() {
         reviews,
       ] = await Promise.all([
         adminOperationService.overview().catch(() => ({})),
+        adminOperationService.workItems().catch(() => []),
         adminOperationService.matchingQueue().catch(() => []),
         adminOperationService.bookingRisk().catch(() => []),
         adminOperationService.verificationRisk().catch(() => []),
@@ -119,6 +121,7 @@ export function useAdminOperations() {
       ])
       return {
         overview,
+        workItems,
         matchingQueue,
         bookingRisk,
         verificationRisk,

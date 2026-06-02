@@ -52,23 +52,35 @@ class SettingsService {
     return settingsApi.systemList()
   }
 
-  async upsertSystemSetting(input: { key: string; value: string; description?: string; type?: string }, _actor?: User | null) {
+  async upsertSystemSetting(input: { key: string; value: string; description?: string; type?: string; isSensitive?: boolean }, _actor?: User | null) {
     const payload = {
       key: input.key.trim(),
       value: parseSettingValue(input.value, input.type),
       description: input.description?.trim() || undefined,
       valueType: input.type || "string",
+      isSensitive: Boolean(input.isSensitive),
     }
     if (!payload.key) throw new Error("Thiếu key cấu hình")
     return settingsApi.systemCreate(payload)
   }
 
-  async updateSystemSetting(key: string, input: { value: string; description?: string; type?: string }, _actor?: User | null) {
+  async updateSystemSetting(key: string, input: { value: string; description?: string; type?: string; isSensitive?: boolean; skipValue?: boolean }, _actor?: User | null) {
     return settingsApi.systemUpdate(key, {
-      value: parseSettingValue(input.value, input.type),
+      ...(input.skipValue ? {} : { value: parseSettingValue(input.value, input.type) }),
       description: input.description?.trim() || undefined,
       valueType: input.type || "string",
+      isSensitive: Boolean(input.isSensitive),
     })
+  }
+
+  async getSystemSettingHistory(key: string) {
+    if (!key.trim()) throw new Error("Thiếu key cấu hình")
+    return settingsApi.systemHistory(key.trim())
+  }
+
+  async deleteSystemSetting(key: string, _actor?: User | null) {
+    if (!key.trim()) throw new Error("Thiếu key cấu hình")
+    return settingsApi.systemDelete(key.trim())
   }
 }
 

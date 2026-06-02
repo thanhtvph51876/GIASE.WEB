@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
@@ -73,6 +74,9 @@ export default function AdminParentsPage() {
                 <p className="mt-1 text-sm text-muted-foreground">{parent.email} · {parent.phone || "Chưa có SĐT"}</p>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/admin/parents/${parent.id}`}>CRM</Link>
+                </Button>
                 <ParentDetailDialog parent={parent} />
                 <ConfirmReasonDialog
                   trigger={<Button size="sm" variant="outline" disabled={!canManage || busyId === parent.id || parent.status === "inactive"}>Khóa</Button>}

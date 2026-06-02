@@ -33,6 +33,18 @@ class MasterDataService {
     return masterDataApi.certificates()
   }
 
+  getAdminItems(kind: "subjects" | "locations" | "certificates") {
+    return masterDataApi.adminList(kind, { activeOnly: false })
+  }
+
+  getAdminUsage(kind: "subjects" | "locations" | "certificates", id: string) {
+    return masterDataApi.adminUsage(kind, id)
+  }
+
+  updateAdminItemsStatus(kind: "subjects" | "locations" | "certificates", ids: string[], isActive: boolean) {
+    return masterDataApi.adminBulkStatus(kind, { ids, isActive })
+  }
+
   getTeachingModes() {
     return masterDataApi.teachingModes()
   }

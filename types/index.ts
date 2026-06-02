@@ -661,6 +661,106 @@ export interface AuditLog {
   createdAt: string
 }
 
+export interface AdminCrmNote {
+  id: string
+  entityType: string
+  entityId: string
+  content: string
+  visibility?: string
+  createdBy?: string
+  createdByName?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface AdminRiskFlag {
+  id: string
+  entityType: string
+  entityId: string
+  level: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | string
+  reason: string
+  note?: string
+  active?: boolean
+  source?: "manual" | "derived" | string
+  createdBy?: string
+  createdByName?: string
+  resolvedBy?: string
+  resolvedByName?: string
+  resolvedAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface AdminCrmComplaint {
+  id: string
+  bookingId?: string
+  status: string
+  title?: string
+  description?: string
+  reason?: string
+  priority?: string
+  riskLevel?: string
+  slaDueAt?: string
+  assignedAdminName?: string
+  resolutionType?: string
+  resolutionNote?: string
+  closedAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface AdminCrmRecord {
+  id?: string
+  status?: string
+  title?: string
+  type?: string
+  amount?: number
+  reason?: string
+  createdAt?: string
+  updatedAt?: string
+  [key: string]: unknown
+}
+
+export interface AdminUserCrm {
+  user: User
+  profile?: Record<string, unknown> | null
+  summary: Record<string, number | string | null>
+  learningRequests: LearningRequest[]
+  bookings: TrialBooking[]
+  classes: Class[]
+  sessions: ClassSession[]
+  payments: Payment[]
+  refunds: AdminCrmRecord[]
+  complaints: AdminCrmComplaint[]
+  reviews: Review[]
+  conversations: AdminCrmRecord[]
+  notes: AdminCrmNote[]
+  riskFlags: AdminRiskFlag[]
+  auditLogs: AuditLog[]
+}
+
+export interface AdminTutorCrm {
+  user: User
+  tutor: Tutor
+  summary: Record<string, number | string | null>
+  approvalEligibility?: TutorApprovalEligibility
+  verifications: UserVerification[]
+  learningRequests: LearningRequest[]
+  bookings: TrialBooking[]
+  classes: Class[]
+  sessions: ClassSession[]
+  payments: Payment[]
+  refunds: AdminCrmRecord[]
+  earnings: TutorEarning[]
+  payouts: Payout[]
+  reviews: Review[]
+  complaints: AdminCrmComplaint[]
+  conversations: AdminCrmRecord[]
+  notes: AdminCrmNote[]
+  riskFlags: AdminRiskFlag[]
+  auditLogs: AuditLog[]
+}
+
 export interface SystemSetting {
   id: string
   bookingEnabled: boolean

@@ -56,6 +56,15 @@ export const masterDataApi = {
   adminCreate(kind: AdminMasterDataKind, data: unknown) {
     return apiRequest(`/admin/master-data/${kind}`, { method: "POST", body: data })
   },
+  adminList(kind: AdminMasterDataKind, params?: MasterDataParams) {
+    return apiRequest<unknown[]>(`/admin/master-data/${kind}`, { params })
+  },
+  adminUsage(kind: AdminMasterDataKind, id: string) {
+    return apiRequest<Record<string, unknown>>(`/admin/master-data/${kind}/${id}/usage`)
+  },
+  adminBulkStatus(kind: AdminMasterDataKind, data: { ids: string[]; isActive: boolean }) {
+    return apiRequest<Record<string, unknown>>(`/admin/master-data/${kind}/bulk-status`, { method: "POST", body: data })
+  },
   adminUpdate(kind: AdminMasterDataKind, id: string, data: unknown) {
     return apiRequest(`/admin/master-data/${kind}/${id}`, { method: "PATCH", body: data })
   },

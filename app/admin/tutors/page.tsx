@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { TutorApprovalEligibilityPanel } from "@/components/admin/tutor-approval-eligibility"
 import { AdminActionButton } from "@/components/admin/admin-action-button"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
@@ -108,6 +109,9 @@ export default function AdminTutorsPage() {
                     <TutorApprovalEligibilityPanel eligibility={eligibility} loading={eligibilityLoading} />
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/admin/tutors/${tutor.id}`}>CRM</Link>
+                    </Button>
                     <ConfirmReasonDialog
                       trigger={<AdminActionButton size="sm" availability={approveAvailability} disabled={eligibilityLoading}>Duyệt</AdminActionButton>}
                       title="Duyệt hồ sơ gia sư"

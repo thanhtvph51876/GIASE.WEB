@@ -16,4 +16,10 @@ export const settingsApi = {
   systemUpdate(key: string, data: unknown) {
     return apiRequest<Record<string, unknown>>(`/admin/system-settings/${encodeURIComponent(key)}`, { method: "PATCH", body: data })
   },
+  systemHistory(key: string) {
+    return apiRequest<Array<Record<string, unknown>>>(`/admin/system-settings/${encodeURIComponent(key)}/history`)
+  },
+  systemDelete(key: string) {
+    return apiRequest<Record<string, unknown>>(`/admin/system-settings/${encodeURIComponent(key)}`, { method: "DELETE" })
+  },
 }

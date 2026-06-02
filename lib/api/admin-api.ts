@@ -1,4 +1,4 @@
-import type { AdminStats, User } from "@/types"
+import type { AdminStats, AdminTutorCrm, AdminUserCrm, User } from "@/types"
 import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
 import { mapList, mapUser } from "./mappers"
 
@@ -49,6 +49,30 @@ export const adminApi = {
   },
   user(id: string) {
     return apiRequest<User>(`/admin/users/${id}`).then(mapUser)
+  },
+  userCrm(id: string) {
+    return apiRequest<AdminUserCrm>(`/admin/users/${id}/crm`)
+  },
+  addUserNote(id: string, content: string) {
+    return apiRequest(`/admin/users/${id}/notes`, { method: "POST", body: { content } })
+  },
+  addUserRiskFlag(id: string, body: { level: string; reason: string; note?: string }) {
+    return apiRequest(`/admin/users/${id}/risk-flags`, { method: "POST", body })
+  },
+  resolveUserRiskFlag(userId: string, flagId: string) {
+    return apiRequest(`/admin/users/${userId}/risk-flags/${flagId}`, { method: "DELETE" })
+  },
+  tutorCrm(id: string) {
+    return apiRequest<AdminTutorCrm>(`/admin/tutors/${id}/crm`)
+  },
+  addTutorNote(id: string, content: string) {
+    return apiRequest(`/admin/tutors/${id}/notes`, { method: "POST", body: { content } })
+  },
+  addTutorRiskFlag(id: string, body: { level: string; reason: string; note?: string }) {
+    return apiRequest(`/admin/tutors/${id}/risk-flags`, { method: "POST", body })
+  },
+  resolveTutorRiskFlag(tutorId: string, flagId: string) {
+    return apiRequest(`/admin/tutors/${tutorId}/risk-flags/${flagId}`, { method: "DELETE" })
   },
   updateUserStatus(id: string, status: User["status"], reason?: string) {
     return apiRequest<User>(`/admin/users/${id}/status`, { method: "PATCH", body: { status, reason } }).then(mapUser)

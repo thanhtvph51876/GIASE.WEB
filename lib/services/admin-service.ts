@@ -75,6 +75,38 @@ class AdminService {
     }
   }
 
+  getUserCrm(id: string) {
+    return adminApi.userCrm(id)
+  }
+
+  getTutorCrm(id: string) {
+    return adminApi.tutorCrm(id)
+  }
+
+  addUserNote(id: string, content: string) {
+    return adminApi.addUserNote(id, content)
+  }
+
+  addTutorNote(id: string, content: string) {
+    return adminApi.addTutorNote(id, content)
+  }
+
+  addUserRiskFlag(id: string, body: { level: string; reason: string; note?: string }) {
+    return adminApi.addUserRiskFlag(id, body)
+  }
+
+  addTutorRiskFlag(id: string, body: { level: string; reason: string; note?: string }) {
+    return adminApi.addTutorRiskFlag(id, body)
+  }
+
+  resolveUserRiskFlag(userId: string, flagId: string) {
+    return adminApi.resolveUserRiskFlag(userId, flagId)
+  }
+
+  resolveTutorRiskFlag(tutorId: string, flagId: string) {
+    return adminApi.resolveTutorRiskFlag(tutorId, flagId)
+  }
+
   async updateUserStatus(id: string, status: User["status"], reason?: string) {
     try {
       const user = await adminApi.updateUserStatus(id, status, reason)

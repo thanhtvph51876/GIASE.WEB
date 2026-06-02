@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation"
+import { AdminCrmDetail } from "@/components/admin/admin-crm-detail"
 
-export default async function AdminTutorDetailAlias({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminTutorCrmPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  redirect(`/admin/tutors?id=${id}`)
+  return <AdminCrmDetail id={id} entity="tutor" backHref="/admin/tutors" />
 }

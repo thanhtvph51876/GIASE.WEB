@@ -16,6 +16,8 @@ Giới hạn kiểm tra: chưa có URL production và tài khoản test thật; 
 | Rủi ro bảo mật còn lại | Token browser storage ở demo; Swagger permitAll; cần HttpOnly cookie/CSRF, monitoring, production gateway thật |
 | Ưu tiên ngay | Bật backend + seed + test E2E core workflows; fix production base URL; harden auth/session/cookie |
 
+Ghi chú chi tiết riêng cho toàn bộ chức năng và nghiệp vụ admin sau nâng cấp: `ADMIN_FULL_FUNCTIONAL_BUSINESS_NOTE.md`.
+
 ## Phần 1 - Quét toàn bộ website
 
 ### 1.1 Inventory kỹ thuật

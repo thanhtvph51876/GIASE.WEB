@@ -1,20 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { AlertTriangle, ArrowRight } from "lucide-react"
+import { AlertTriangle, ArrowRight, Search, ShieldAlert, UserCheck } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmptyState } from "@/components/platform/operational-components"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { hasAdminPermission } from "@/lib/admin/admin-permissions"
 import { adminOperationService } from "@/lib/services/admin-operation-service"
-import { formatDateTime, getDisputeStatusLabel } from "@/lib/helpers"
+import { formatDateTime } from "@/lib/helpers"
 
 type DisputeRow = Record<string, unknown>
 
@@ -25,9 +26,14 @@ export default function AdminComplaintsPage() {
   const [pagination, setPagination] = useState(defaultPagination())
   const [loading, setLoading] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [priorityFilter, setPriorityFilter] = useState("all")
+  const [slaFilter, setSlaFilter] = useState("all")
+  const [ownerFilter, setOwnerFilter] = useState("all")
   const canUpdateDispute = hasAdminPermission(user, "complaints.manage")
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true)
     adminOperationService.disputesPage({ page, pageSize: ADMIN_PAGE_SIZE })
       .then((result) => {
@@ -36,16 +42,35 @@ export default function AdminComplaintsPage() {
       })
       .catch(() => setDisputes([]))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
   }, [page])
 
-  const updateDispute = async (item: DisputeRow, status: "IN_REVIEW" | "RESOLVED" | "REJECTED", resolution: string) => {
-    const id = text(item, "id")
-    if (!id) return
-    setBusyId(id)
+  const filtered = useMemo(() => {
+    const needle = search.trim().toLowerCase()
+    return disputes.filter((item) => {
+      const matchesSearch = !needle || searchable(item).includes(needle)
+      const matchesStatus = statusFilter === "all" || text(item, "status") === statusFilter
+      const matchesPriority = priorityFilter === "all" || text(item, "priority") === priorityFilter
+      const matchesSla = slaFilter === "all" || Boolean(item.overdue) === (slaFilter === "overdue")
+      const matchesOwner = ownerFilter === "all" || text(item, "assignedAdminId") === user?.id
+      return matchesSearch && matchesStatus && matchesPriority && matchesSla && matchesOwner
+    })
+  }, [disputes, ownerFilter, priorityFilter, search, slaFilter, statusFilter, user?.id])
+
+  const runAction = async (id: string, action: "assign" | "escalate" | "resolve", reason: string) => {
+    setBusyId(`${action}:${id}`)
     try {
-      const updated = await adminOperationService.updateDispute(id, { status, resolution })
+      const updated =
+        action === "assign"
+          ? await adminOperationService.assignDispute(id, { assignedAdminId: user?.id, reason })
+          : action === "escalate"
+            ? await adminOperationService.escalateDispute(id, { reason })
+            : await adminOperationService.resolveDispute(id, { resolutionType: "NO_ACTION", resolutionNote: reason, reason })
       setDisputes((current) => current.map((row) => text(row, "id") === id ? updated : row))
-      toast.success("Đã cập nhật khiếu nại")
+      toast.success("Đã cập nhật complaint case")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không thể cập nhật khiếu nại")
     } finally {
@@ -56,71 +81,110 @@ export default function AdminComplaintsPage() {
   return (
     <div className="space-y-5">
       <div className="surface-panel border-l-4 border-l-primary p-6">
-        <h1 className="text-2xl font-bold">Khiếu nại</h1>
-        <p className="text-sm text-muted-foreground">Theo dõi dispute queue, xác định đối tượng liên quan và chuyển sang module xử lý phù hợp.</p>
+        <h1 className="text-2xl font-bold">Complaint case management</h1>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          Quản lý complaint/dispute theo owner, SLA, priority, risk, timeline và resolution. Finance/tutor action vẫn phải xử lý qua module chuyên trách.
+        </p>
       </div>
       <Card>
-        <CardHeader><CardTitle>Complaint / dispute queue</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {disputes.length ? disputes.map((item, index) => (
-            <div key={String(item.id || index)} className="item-row grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold">{text(item, "title", "subject", "requestCode", "bookingId", "id") || "Dispute"}</p>
-                  <Badge variant="secondary">{disputeStatusLabel(item)}</Badge>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {[text(item, "studentName", "parentName", "tutorName"), text(item, "priority", "severity"), text(item, "createdAt", "updatedAt")].filter(Boolean).join(" · ")}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">{resolutionHint(item)}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <ComplaintDetailDialog item={item} />
-                <ConfirmReasonDialog
-                  trigger={<Button size="sm" variant="outline" disabled={!canUpdateDispute || busyId === text(item, "id")}>Tiếp nhận</Button>}
-                  title="Tiếp nhận khiếu nại"
-                  description="Chuyển dispute sang IN_REVIEW để ghi nhận admin đã bắt đầu xử lý."
-                  actionName="Tiếp nhận"
-                  severity="warning"
-                  requireReason={false}
-                  onConfirm={(reason, note) => updateDispute(item, "IN_REVIEW", note || reason)}
-                />
-                <ConfirmReasonDialog
-                  trigger={<Button size="sm" variant="outline" disabled={!canUpdateDispute || busyId === text(item, "id")}>Đã xử lý</Button>}
-                  title="Đánh dấu đã xử lý"
-                  description="Chỉ dùng khi đã có kết luận và phương án xử lý rõ ràng."
-                  actionName="Resolve"
-                  severity="warning"
-                  reasonOptions={[
-                    { value: "REFUND_OR_ADJUSTMENT_DONE", label: "Đã hoàn tiền/điều chỉnh" },
-                    { value: "REMEDIATION_DONE", label: "Đã xử lý học bù/đổi gia sư" },
-                    { value: "OTHER", label: "Kết luận khác" },
-                  ]}
-                  onConfirm={(reason, note) => updateDispute(item, "RESOLVED", note || reason)}
-                />
-                <ConfirmReasonDialog
-                  trigger={<Button size="sm" variant="outline" disabled={!canUpdateDispute || busyId === text(item, "id")}>Từ chối</Button>}
-                  title="Từ chối khiếu nại"
-                  description="Dùng khi khiếu nại không đủ căn cứ; lý do sẽ lưu vào resolution."
-                  actionName="Từ chối"
-                  severity="danger"
-                  reasonOptions={[
-                    { value: "INSUFFICIENT_EVIDENCE", label: "Không đủ căn cứ" },
-                    { value: "POLICY_NOT_ELIGIBLE", label: "Không đủ điều kiện theo policy" },
-                    { value: "OTHER", label: "Lý do khác" },
-                  ]}
-                  onConfirm={(reason, note) => updateDispute(item, "REJECTED", note || reason)}
-                />
-                <Button asChild size="sm" variant="outline">
-                  <Link href={targetHref(item)}>
-                    Mở module xử lý
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-              </div>
+        <CardHeader>
+          <CardTitle>Case queue</CardTitle>
+          <CardDescription>{filtered.length} case trong trang hiện tại sau khi lọc.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 lg:grid-cols-[1.5fr_180px_150px_140px_160px]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" placeholder="Tìm title, reporter, subject, resolution..." />
             </div>
-          )) : <EmptyState title="Chưa có khiếu nại mới" description="Queue này dùng /admin/disputes; khi backend có dữ liệu sẽ hiển thị tại đây thay vì empty state tĩnh." />}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Mọi status</SelectItem>
+                {unique(disputes.map((item) => text(item, "status")).filter(Boolean)).map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Mọi priority</SelectItem>
+                <SelectItem value="CRITICAL">CRITICAL</SelectItem>
+                <SelectItem value="HIGH">HIGH</SelectItem>
+                <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                <SelectItem value="LOW">LOW</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={slaFilter} onValueChange={setSlaFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả SLA</SelectItem>
+                <SelectItem value="overdue">Quá SLA</SelectItem>
+                <SelectItem value="ok">Chưa quá</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả owner</SelectItem>
+                <SelectItem value="me">Assigned to me</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {filtered.length ? filtered.map((item, index) => {
+            const id = text(item, "id")
+            const canResolveQuick = ["INVESTIGATING", "PROPOSED_RESOLUTION", "ESCALATED"].includes(text(item, "status"))
+            return (
+              <div key={id || index} className={rowClass(item)}>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-slate-950">{text(item, "title", "subject", "bookingId", "id") || "Complaint"}</p>
+                    <Badge variant="secondary">{text(item, "status") || "NEW"}</Badge>
+                    <SeverityBadge value={text(item, "priority") || "MEDIUM"} />
+                    <SeverityBadge value={text(item, "riskLevel") || "MEDIUM"} label="Risk" />
+                    {Boolean(item.overdue) && <Badge className="border-red-200 bg-red-50 text-red-700" variant="outline">Quá SLA</Badge>}
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {[text(item, "reporterName", "studentName", "parentName"), text(item, "assignedAdmin") ? `Owner: ${text(item, "assignedAdmin")}` : "Chưa assign", safeDate(text(item, "slaDueAt"))].filter(Boolean).join(" · ")}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{resolutionHint(item)}</p>
+                </div>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <ConfirmReasonDialog
+                    trigger={<Button size="sm" variant="outline" disabled={!canUpdateDispute || busyId === `assign:${id}`}><UserCheck className="h-4 w-4" />Nhận case</Button>}
+                    title="Nhận xử lý complaint"
+                    description="Assign case cho bạn và ghi timeline/audit."
+                    actionName="Nhận case"
+                    severity="warning"
+                    onConfirm={(reason, note) => runAction(id, "assign", note || reason)}
+                  />
+                  <ConfirmReasonDialog
+                    trigger={<Button size="sm" variant="outline" disabled={!canUpdateDispute || busyId === `escalate:${id}`}><ShieldAlert className="h-4 w-4" />Escalate</Button>}
+                    title="Escalate complaint"
+                    description="Chuyển case sang ESCALATED và đặt priority/risk CRITICAL."
+                    actionName="Escalate"
+                    severity="danger"
+                    onConfirm={(reason, note) => runAction(id, "escalate", note || reason)}
+                  />
+                  <ConfirmReasonDialog
+                    trigger={<Button size="sm" variant="outline" disabled={!canUpdateDispute || !canResolveQuick || busyId === `resolve:${id}`}>Resolve</Button>}
+                    title="Resolve complaint"
+                    description="Resolve nhanh với resolution type NO_ACTION. Case phức tạp nên mở detail để chọn resolution type."
+                    actionName="Resolve"
+                    severity="warning"
+                    onConfirm={(reason, note) => runAction(id, "resolve", note || reason)}
+                  />
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/admin/complaints/${encodeURIComponent(id)}`}>
+                      Chi tiết
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <AlertTriangle className={item.overdue ? "h-4 w-4 text-red-500" : "h-4 w-4 text-amber-500"} />
+                </div>
+              </div>
+            )
+          }) : <EmptyState title="Không có case phù hợp" description="Đổi bộ lọc hoặc kiểm tra dữ liệu từ `/admin/disputes`." />}
         </CardContent>
       </Card>
       <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />
@@ -128,44 +192,36 @@ export default function AdminComplaintsPage() {
   )
 }
 
-function ComplaintDetailDialog({ item }: { item: DisputeRow }) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">Chi tiết</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{text(item, "title", "subject", "requestCode", "bookingId", "id") || "Dispute"}</DialogTitle>
-          <DialogDescription>Thông tin để admin xác định hướng xử lý, module liên quan và trạng thái hiện tại.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3 md:grid-cols-2">
-          <Info label="Trạng thái" value={disputeStatusLabel(item)} />
-          <Info label="Mức độ" value={text(item, "priority", "severity", "riskLevel") || "Chưa phân loại"} />
-          <Info label="Học viên/phụ huynh" value={text(item, "studentName", "parentName", "studentId", "parentId") || "Không có"} />
-          <Info label="Gia sư" value={text(item, "tutorName", "tutorId") || "Không có"} />
-          <Info label="Booking" value={text(item, "bookingId") || "Không gắn"} />
-          <Info label="Payment" value={text(item, "paymentId") || "Không gắn"} />
-          <Info label="Tạo lúc" value={safeDate(text(item, "createdAt"))} />
-          <Info label="Cập nhật" value={safeDate(text(item, "updatedAt"))} />
-          <div className="rounded-lg border bg-slate-50 p-3 md:col-span-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Hướng xử lý đề xuất</p>
-            <p className="mt-1 text-sm leading-6 text-slate-900">{resolutionHint(item)}</p>
-          </div>
-          <pre className="max-h-56 overflow-auto rounded-lg border bg-slate-950 p-3 text-xs text-slate-50 md:col-span-2">{JSON.stringify(item, null, 2)}</pre>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
+function SeverityBadge({ value, label }: { value: string; label?: string }) {
+  const tone = value === "CRITICAL" ? "border-red-200 bg-red-50 text-red-700" : value === "HIGH" ? "border-amber-200 bg-amber-50 text-amber-700" : value === "LOW" ? "border-slate-200 bg-slate-50 text-slate-600" : "border-blue-200 bg-blue-50 text-blue-700"
+  return <Badge className={tone} variant="outline">{label ? `${label}: ${value}` : value}</Badge>
 }
 
-function Info({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-lg border bg-slate-50 p-3">
-      <p className="text-xs font-medium uppercase text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words text-sm font-semibold text-slate-900">{value}</p>
-    </div>
-  )
+function rowClass(item: DisputeRow) {
+  if (item.overdue || text(item, "priority") === "CRITICAL") return "item-row grid gap-3 border-red-200 bg-red-50/70 md:grid-cols-[1fr_auto] md:items-center"
+  if (text(item, "priority") === "HIGH") return "item-row grid gap-3 border-amber-200 bg-amber-50/70 md:grid-cols-[1fr_auto] md:items-center"
+  return "item-row grid gap-3 md:grid-cols-[1fr_auto] md:items-center"
+}
+
+function resolutionHint(item: DisputeRow) {
+  const resolutionType = text(item, "resolutionType")
+  if (resolutionType.includes("REFUND")) return "Case có hướng refund: xử lý tiền tại payment flow với quyền payments.refund."
+  if (resolutionType === "TUTOR_SUSPENDED") return "Case có hướng suspend tutor: xử lý tại tutor flow với quyền tutors.suspend."
+  if (text(item, "resolutionNote", "resolution")) return text(item, "resolutionNote", "resolution")
+  return "Mở chi tiết để xem timeline, note nội bộ, related entity và chọn resolution."
+}
+
+function searchable(item: DisputeRow) {
+  return [
+    text(item, "title"),
+    text(item, "subject"),
+    text(item, "status"),
+    text(item, "priority"),
+    text(item, "riskLevel"),
+    text(item, "reporterName"),
+    text(item, "assignedAdmin"),
+    text(item, "resolutionNote", "resolution"),
+  ].join(" ").toLowerCase()
 }
 
 function text(item: DisputeRow, ...keys: string[]) {
@@ -176,33 +232,10 @@ function text(item: DisputeRow, ...keys: string[]) {
   return ""
 }
 
-function disputeStatusLabel(item: DisputeRow) {
-  return getDisputeStatusLabel(text(item, "status", "disputeStatus", "riskLevel") || "open")
-}
-
-function targetHref(item: DisputeRow) {
-  const paymentId = text(item, "paymentId")
-  const payoutId = text(item, "payoutId")
-  const bookingId = text(item, "bookingId")
-  const classId = text(item, "classId")
-  const tutorId = text(item, "tutorId")
-  if (paymentId) return `/admin/payments?id=${encodeURIComponent(paymentId)}`
-  if (payoutId) return `/admin/payouts?id=${encodeURIComponent(payoutId)}`
-  if (bookingId) return `/admin/bookings?id=${encodeURIComponent(bookingId)}`
-  if (classId) return `/admin/classes?id=${encodeURIComponent(classId)}`
-  if (tutorId) return `/admin/tutors/${encodeURIComponent(tutorId)}`
-  return "/admin/operations"
-}
-
-function resolutionHint(item: DisputeRow) {
-  if (text(item, "paymentId")) return "Ưu tiên đối soát thanh toán/refund, sau đó cập nhật audit và thông báo lại cho phụ huynh."
-  if (text(item, "payoutId")) return "Kiểm tra earning item, ngân hàng và trạng thái payout trước khi duyệt/từ chối."
-  if (text(item, "bookingId")) return "Kiểm tra booking học thử, no-show, lịch học và quyết định gán lại hoặc hủy."
-  if (text(item, "classId")) return "Kiểm tra lớp, session, học phí và trạng thái tạm dừng/hoàn thành/hủy."
-  if (text(item, "tutorId")) return "Rà hồ sơ gia sư, review thấp, no-show và cân nhắc yêu cầu cập nhật hoặc khóa."
-  return "Phân loại đối tượng liên quan trước, sau đó xử lý tại module tương ứng và dùng audit log để theo dõi."
-}
-
 function safeDate(value: string) {
-  return value ? formatDateTime(value) : "Không có"
+  return value ? formatDateTime(value) : "Không có SLA"
+}
+
+function unique(values: string[]) {
+  return [...new Set(values)].sort()
 }

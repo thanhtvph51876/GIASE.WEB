@@ -43,9 +43,12 @@ export type AdminPermission =
   | "reviews.read"
   | "reviews.manage"
   | "complaints.manage"
+  | "crm.manage"
   | "audit.read"
   | "settings.read"
   | "settings.update"
+  | "master_data.read"
+  | "master_data.manage"
 
 export type AdminModuleKey =
   | "dashboard"
@@ -95,9 +98,16 @@ export type AdminActionKey =
   | "payment.refund"
   | "payout.approve"
   | "payout.reject"
+  | "complaint.assign"
+  | "complaint.update"
+  | "complaint.resolve"
+  | "complaint.close"
+  | "complaint.escalate"
+  | "complaint.note"
   | "review.manage"
   | "notification.send"
   | "settings.update"
+  | "masterData.manage"
 
 const ALL_ADMIN_PERMISSIONS: AdminPermission[] = [
   "tutors.read",
@@ -137,9 +147,12 @@ const ALL_ADMIN_PERMISSIONS: AdminPermission[] = [
   "reviews.read",
   "reviews.manage",
   "complaints.manage",
+  "crm.manage",
   "audit.read",
   "settings.read",
   "settings.update",
+  "master_data.read",
+  "master_data.manage",
 ]
 
 const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[] | "*"> = {
@@ -161,7 +174,7 @@ const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[] | "*"> = {
     "tutors.read",
     "tutors.approve",
     "tutors.reject",
-    "tutors.suspend",
+    "crm.manage",
     "verifications.read",
     "verifications.review",
     "files.view_verification",
@@ -190,6 +203,8 @@ const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[] | "*"> = {
     "notifications.send",
     "contact_requests.manage",
     "reviews.read",
+    "complaints.manage",
+    "crm.manage",
     "reports.read",
     "operations.read",
   ],
@@ -230,7 +245,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   { key: "messages", label: "Tin nhắn", href: "/admin/messages", requiredPermissions: ["conversations.read"] },
   { key: "notifications", label: "Thông báo", href: "/admin/notifications", requiredPermissions: ["notifications.read", "notifications.send"] },
   { key: "reviews", label: "Đánh giá", href: "/admin/reviews", requiredPermissions: ["reviews.read"], managePermissions: ["reviews.manage"] },
-  { key: "settings", label: "Cài đặt", href: "/admin/settings", requiredPermissions: ["settings.read"], managePermissions: ["settings.update"] },
+  { key: "settings", label: "Cài đặt", href: "/admin/settings", requiredPermissions: ["settings.read"], managePermissions: ["settings.update", "master_data.manage"] },
   { key: "complaints", label: "Khiếu nại", href: "/admin/complaints", requiredPermissions: ["operations.read"], managePermissions: ["complaints.manage"] },
 ]
 
@@ -259,9 +274,16 @@ export const ADMIN_ACTION_PERMISSIONS: Record<AdminActionKey, AdminPermission[]>
   "payment.refund": ["payments.refund"],
   "payout.approve": ["payouts.approve"],
   "payout.reject": ["payouts.reject"],
+  "complaint.assign": ["complaints.manage"],
+  "complaint.update": ["complaints.manage"],
+  "complaint.resolve": ["complaints.manage"],
+  "complaint.close": ["complaints.manage"],
+  "complaint.escalate": ["complaints.manage"],
+  "complaint.note": ["complaints.manage"],
   "review.manage": ["reviews.manage"],
   "notification.send": ["notifications.send"],
   "settings.update": ["settings.update"],
+  "masterData.manage": ["master_data.manage"],
 }
 
 export function isGranularAdminRole(role?: UserRole | null): role is AdminRole {

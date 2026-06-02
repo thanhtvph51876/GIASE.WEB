@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
@@ -89,6 +90,9 @@ function UserRow({ user, canManage, busy, onStatus }: { user: User; canManage: b
         <p className="mt-1 text-sm text-muted-foreground">{user.email} · {user.phone || "Chưa có SĐT"}</p>
       </div>
       <div className="flex flex-wrap gap-2">
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/admin/students/${user.id}`}>CRM</Link>
+        </Button>
         <UserDetailDialog user={user} />
         <ConfirmReasonDialog
           trigger={<Button size="sm" variant="outline" disabled={!canManage || busy || user.status === "inactive"}>Khóa</Button>}

@@ -23,6 +23,7 @@ export type AdminEntityType =
   | "payout"
   | "contact"
   | "review"
+  | "complaint"
   | "settings"
 
 export interface AdminActionAvailability {
@@ -161,6 +162,7 @@ export function allowedAdminActions(
     payout: ["payout.approve", "payout.reject"],
     contact: [],
     review: ["review.manage"],
+    complaint: ["complaint.assign", "complaint.update", "complaint.resolve", "complaint.close", "complaint.escalate", "complaint.note"],
     settings: ["settings.update"],
   }
 
