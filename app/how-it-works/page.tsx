@@ -1,6 +1,13 @@
 import { CheckCircle2, Search, Send, ShieldCheck, Video } from "lucide-react"
 import { Header, Footer } from "@/components/layout"
 import { Card, CardContent } from "@/components/ui/card"
+import { pageMetadata } from "@/lib/site-config"
+
+export const metadata = pageMetadata({
+  title: "Quy trình tìm gia sư",
+  description: "Quy trình kết nối phụ huynh, học sinh và gia sư từ tìm kiếm, gửi yêu cầu, xác nhận hồ sơ đến học thử.",
+  path: "/how-it-works",
+})
 
 const steps = [
   { icon: Search, title: "Tìm gia sư phù hợp", text: "Lọc theo môn, lớp, khu vực, học phí và hình thức học." },

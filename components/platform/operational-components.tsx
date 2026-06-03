@@ -3,12 +3,15 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import type { LucideIcon } from "lucide-react"
-import { AlertTriangle, ArrowRight, Inbox, Loader2, Star } from "lucide-react"
+import { AlertTriangle, ArrowRight, Clock, Inbox, Loader2, Mail, MapPin, Phone, RefreshCw, ShieldCheck, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
+import { siteConfig } from "@/lib/config/site"
 import { cn } from "@/lib/utils"
+
+export { StatusBadge }
 
 const toneClasses = {
   blue: {
@@ -82,6 +85,203 @@ export function PageHero({
   )
 }
 
+export function PageHeader({
+  eyebrow,
+  title,
+  description,
+  actions,
+  className,
+}: {
+  eyebrow?: string
+  title: string
+  description?: string
+  actions?: ReactNode
+  className?: string
+}) {
+  return (
+    <header className={cn("space-y-4", className)}>
+      {eyebrow && <Badge className="premium-badge">{eyebrow}</Badge>}
+      <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+        <div>
+          <h1 className="font-heading text-3xl font-bold tracking-normal text-slate-950 md:text-5xl">{title}</h1>
+          {description && <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">{description}</p>}
+        </div>
+        {actions && <div className="flex flex-wrap gap-2 md:justify-end">{actions}</div>}
+      </div>
+    </header>
+  )
+}
+
+export function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  actions,
+  className,
+}: {
+  eyebrow?: string
+  title: string
+  description?: string
+  actions?: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn("grid gap-3 md:grid-cols-[1fr_auto] md:items-end", className)}>
+      <div>
+        {eyebrow && <p className="text-sm font-semibold uppercase tracking-normal text-primary">{eyebrow}</p>}
+        <h2 className="mt-1 text-2xl font-bold tracking-normal text-slate-950">{title}</h2>
+        {description && <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap gap-2 md:justify-end">{actions}</div>}
+    </div>
+  )
+}
+
+export function RetryButton({
+  onRetry,
+  label = "Thử lại",
+  className,
+}: {
+  onRetry: () => void
+  label?: string
+  className?: string
+}) {
+  return (
+    <Button type="button" variant="outline" onClick={onRetry} className={cn("gap-2", className)}>
+      <RefreshCw className="h-4 w-4" />
+      {label}
+    </Button>
+  )
+}
+
+export function PublicDataNotice({
+  message,
+  loadingMessage,
+  isLoading,
+  onRetry,
+  retryLabel = "Thử lại",
+  className,
+}: {
+  message: string
+  loadingMessage?: string
+  isLoading?: boolean
+  onRetry?: () => void
+  retryLabel?: string
+  className?: string
+}) {
+  return (
+    <div className={cn("flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between", className)}>
+      <div className="flex items-start gap-2">
+        {isLoading ? (
+          <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+        ) : (
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+        )}
+        <p>{isLoading && loadingMessage ? loadingMessage : message}</p>
+      </div>
+      {onRetry && !isLoading && (
+        <RetryButton onRetry={onRetry} label={retryLabel} className="bg-white/70" />
+      )}
+    </div>
+  )
+}
+
+export function TrustBadge({
+  label,
+  icon: Icon = ShieldCheck,
+  tone = "emerald",
+}: {
+  label: string
+  icon?: LucideIcon
+  tone?: Tone
+}) {
+  return (
+    <span className={cn("inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold", toneClasses[tone].shell)}>
+      <Icon className="h-4 w-4" />
+      {label}
+    </span>
+  )
+}
+
+export function CTASection({
+  title,
+  description,
+  primaryLabel,
+  primaryHref,
+  secondaryLabel,
+  secondaryHref,
+}: {
+  title: string
+  description: string
+  primaryLabel: string
+  primaryHref: string
+  secondaryLabel?: string
+  secondaryHref?: string
+}) {
+  return (
+    <section className="surface-panel gradient-mesh reveal p-6 md:p-8">
+      <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-950">{title}</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+        </div>
+        <div className="flex flex-wrap gap-2 md:justify-end">
+          <Button asChild>
+            <Link href={primaryHref}>{primaryLabel}</Link>
+          </Button>
+          {secondaryLabel && secondaryHref && (
+            <Button asChild variant="outline">
+              <Link href={secondaryHref}>{secondaryLabel}</Link>
+            </Button>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export function FormFieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return (
+    <p className="mt-1 flex items-start gap-1.5 text-sm text-destructive">
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>{message}</span>
+    </p>
+  )
+}
+
+export function ContactInfoBlock({ className }: { className?: string }) {
+  const rows = [
+    { icon: Mail, label: "Email", value: siteConfig.supportEmail, href: `mailto:${siteConfig.supportEmail}` },
+    { icon: Phone, label: "Hotline", value: siteConfig.supportPhone, href: siteConfig.supportPhoneHref },
+    { icon: MapPin, label: "Địa chỉ", value: siteConfig.businessAddress },
+    { icon: Clock, label: "Giờ hỗ trợ", value: siteConfig.workingHours },
+  ]
+
+  return (
+    <div className={cn("grid gap-3", className)}>
+      {rows.map(({ icon: Icon, label, value, href }) => {
+        const content = (
+          <div className="flex items-start gap-3 rounded-lg border border-slate-200/80 bg-white/80 p-3 text-sm">
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <p className="font-semibold text-slate-950">{label}</p>
+              <p className="text-muted-foreground">{value}</p>
+            </div>
+          </div>
+        )
+        return href ? (
+          <a key={label} href={href} className="block transition-opacity hover:opacity-80">
+            {content}
+          </a>
+        ) : (
+          <div key={label}>{content}</div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function EmptyState({
   title,
   description,
@@ -126,9 +326,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       <AlertTriangle className="mx-auto h-8 w-8" />
       <p className="mt-2 font-medium">{message}</p>
       {onRetry && (
-        <Button className="mt-4" variant="outline" onClick={onRetry}>
-          Thử lại
-        </Button>
+        <RetryButton className="mt-4" onRetry={onRetry} />
       )}
     </div>
   )

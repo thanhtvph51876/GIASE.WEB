@@ -5,7 +5,9 @@
 
 :root {
   /* Gia Su Su Pham - Premium Warm Light Glassmorphism */
-  --premium-bg-cream: #ffffff;
+  --premium-bg-cream: #fdfbf7;
+  --font-inter: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-outfit: Outfit, Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --premium-soft-mint: #f0fdf4;
   --premium-soft-lavender: #faf5ff;
   --premium-emerald: #059669;
@@ -17,7 +19,7 @@
   --premium-border-soft: rgba(255, 255, 255, 0.45);
   --premium-shadow: 0 24px 70px -40px rgba(15, 23, 42, 0.34);
   --premium-transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  --background: #ffffff;
+  --background: #fdfbf7;
   --foreground: #0f172a;
   --card: rgba(255, 255, 255, 0.94);
   --card-foreground: #0f172a;

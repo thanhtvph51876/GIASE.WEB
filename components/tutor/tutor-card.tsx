@@ -15,6 +15,14 @@ interface TutorCardProps {
 }
 
 export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
+  const subjects = tutor.subjects?.length ? tutor.subjects : ["Đang cập nhật môn học"]
+  const locations = tutor.locations || []
+  const rating = Number.isFinite(tutor.rating) ? tutor.rating : 0
+  const reviewCount = tutor.reviewCount || 0
+  const responseRate = Number.isFinite(tutor.responseRate) ? tutor.responseRate : 0
+  const totalClasses = tutor.totalClasses || 0
+  const pricePerHour = Number.isFinite(tutor.pricePerHour) ? tutor.pricePerHour : 0
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -61,15 +69,15 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
                 )}
               </div>
               <p className="truncate text-sm text-muted-foreground">
-                {tutor.subjects.slice(0, 2).join(", ")}
+                {subjects.slice(0, 2).join(", ")}
               </p>
               <div className="mt-1 flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{tutor.rating}</span>
+                  <span className="text-sm font-medium">{rating || "Mới"}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  ({tutor.reviewCount} đánh giá)
+                  ({reviewCount} đánh giá)
                 </span>
               </div>
             </div>
@@ -103,25 +111,25 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
               </span>
             </div>
 
-            {tutor.locations.length > 0 && (
+            {locations.length > 0 && (
               <div className="mb-3 flex items-center gap-1 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
                 <span>
-                  {tutor.locations.slice(0, 2).join(", ")}
-                  {tutor.locations.length > 2 && ` +${tutor.locations.length - 2}`}
+                  {locations.slice(0, 2).join(", ")}
+                  {locations.length > 2 && ` +${locations.length - 2}`}
                 </span>
               </div>
             )}
 
             <div className="flex flex-wrap gap-1.5">
-              {tutor.subjects.slice(0, 4).map((subject) => (
+              {subjects.slice(0, 4).map((subject) => (
                   <Badge key={subject} variant="secondary" className="rounded-full bg-emerald-50 text-xs text-emerald-800">
                   {subject}
                 </Badge>
               ))}
-              {tutor.subjects.length > 4 && (
+              {subjects.length > 4 && (
                 <Badge variant="outline" className="text-xs">
-                  +{tutor.subjects.length - 4}
+                  +{subjects.length - 4}
                 </Badge>
               )}
             </div>
@@ -132,25 +140,25 @@ export function TutorCard({ tutor, variant = "default" }: TutorCardProps) {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{tutor.rating}</span>
+              <span className="font-medium">{rating || "Mới"}</span>
               <span className="text-sm text-muted-foreground">
-                ({tutor.reviewCount} đánh giá)
+                ({reviewCount} đánh giá)
               </span>
             </div>
             <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
               <CalendarDays className="h-4 w-4" />
-              {tutor.totalClasses} buổi
+              {totalClasses} buổi
             </span>
             <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
               <MessageCircle className="h-4 w-4" />
-              {tutor.responseRate}% phản hồi
+              {responseRate}% phản hồi
             </span>
           </div>
           <div className="shrink-0 text-right">
             <span className="text-lg font-semibold text-primary">
-              {formatCurrency(tutor.pricePerHour)}
+              {pricePerHour ? formatCurrency(pricePerHour) : "Liên hệ"}
             </span>
-            <span className="text-sm text-muted-foreground">/giờ</span>
+            {pricePerHour ? <span className="text-sm text-muted-foreground">/giờ</span> : null}
           </div>
         </div>
       </CardContent>

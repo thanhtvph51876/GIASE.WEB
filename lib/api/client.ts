@@ -192,9 +192,8 @@ async function doRefreshAccessToken() {
   const headers = new Headers()
   headers.set("Content-Type", "application/json")
   try {
-    const response = await fetch(buildUrl("/auth/refresh"), {
+    const response = await fetchWithTimeout(buildUrl("/auth/refresh"), {
       method: "POST",
-      credentials: "include",
       headers,
       body: refreshToken ? JSON.stringify({ refreshToken }) : JSON.stringify({}),
     })

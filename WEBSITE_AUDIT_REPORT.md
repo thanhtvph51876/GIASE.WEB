@@ -1,5 +1,91 @@
 # Báo cáo audit website Gia Sư Sư Phạm
 
+## Cập nhật Phase 1 bổ sung - 2026-06-03
+
+Phạm vi bổ sung: hoàn thiện các điểm còn lệch so với checklist public production UX sau đợt cập nhật trước.
+
+| Hạng mục | Kết quả |
+|---|---|
+| SEO cho page client-heavy | Tách các route `/`, `/tutors`, `/tutors/[id]`, `/tutors/[id]/booking`, `/register`, `/login`, `/register-student`, `/learning-requests` thành server wrapper có metadata và client implementation riêng |
+| Site config chuẩn | Bổ sung `lib/config/site.ts`, thêm `siteName`, `businessAddress`, `socialLinks`, `legalLinks` trên source config hiện có |
+| Shared public UX components | Bổ sung `RetryButton`, `PageHeader`, `SectionHeader`, `TrustBadge`, `CTASection`, `FormFieldError`, `ContactInfoBlock`, re-export `StatusBadge` |
+| Public API helper | Bổ sung `fetchWithTimeout`, `normalizeApiError`, `retryGet`, `safeGetPublicData`, `mapBackendTutorToViewModel`, `mapBackendRequestToViewModel` |
+| GET retry an toàn | Tutor list/detail, public learning requests và master-data catalog dùng retry có giới hạn; POST submit không bị retry bừa |
+| Legal/support sync | Legal pages dùng metadata helper và hiển thị support block lấy từ site config; footer/legal links lấy từ config |
+| Kiểm thử | `npm run lint` pass, `npx tsc --noEmit` pass, `npm run build` pass khi chạy ngoài sandbox với `NEXT_DIST_DIR=.next-phase1-build-escalated` |
+
+Ghi chú build: build trong sandbox vẫn gặp `EPERM` khi Next ghi/rename manifest trên Windows; build ngoài sandbox pass và generate 115 route.
+
+## Cập nhật public site production-level - 2026-06-02
+
+Phạm vi cập nhật: các màn public chính, helper API/client public, contact/SEO, loading/empty/error/retry và route alias không phá route cũ.
+
+### 0. Kết quả kiểm thử mới nhất
+
+| Lệnh | Kết quả |
+|---|---|
+| `npm run lint` | Pass |
+| `npx tsc --noEmit` | Pass |
+| `npm run build` | Pass khi chạy ngoài sandbox với `NEXT_DIST_DIR=.next-public-build-escalated`; trong sandbox Windows bị `EPERM` khi ghi/rename file build |
+
+Ghi chú build: lần build thường đầu tiên bị lock file `.next`; build tạm trong sandbox tiếp tục bị Windows chặn `EPERM`. Sau khi chạy ngoài sandbox, production build đã compile, typecheck, generate static pages và liệt kê đầy đủ các route public/admin/dashboard. Đã bỏ phụ thuộc `next/font/google` để build offline không cần tải Google Fonts.
+
+### 1. File public/SEO/contact đã đổi
+
+| Nhóm | File | Nội dung |
+|---|---|---|
+| Site config/SEO | `lib/site-config.ts`, `app/layout.tsx`, `app/robots.ts`, `app/sitemap.ts` | Gom tên site, URL, email, hotline, địa chỉ, metadata, canonical, OpenGraph, Twitter, JSON-LD, robots và sitemap |
+| Public data fallback | `lib/public-data.ts`, `lib/hooks/use-master-data.ts` | Thêm timeout public 8s, fallback subjects/grades/locations/teachingModes/certificates, master data dùng `allSettled` để không sập cả page |
+| Tutor API hooks | `lib/hooks/use-tutors.ts`, `lib/services/tutor-service.ts` | Danh sách/detail gia sư có public timeout; detail dùng strict API để page hiện error/retry thay vì nuốt lỗi thành not found |
+| Learning requests | `lib/hooks/use-learning-requests.ts` | Feed yêu cầu học công khai có timeout/retry rõ |
+| Contact | `app/contact/page.tsx`, `app/contact/contact-page-client.tsx`, `components/layout/footer.tsx`, `app/about/page.tsx` | Contact info đồng bộ `hotro@giasusupham.vn`, `0901 234 567`, địa chỉ, giờ hỗ trợ; contact form thêm phone |
+| UI public | `app/globals.css`, `app/page.tsx`, `app/tutors/page.tsx`, `app/tutors/[id]/page.tsx`, `app/tutors/[id]/booking/page.tsx`, `app/register-student/page.tsx`, `app/register/page.tsx`, `app/learning-requests/page.tsx`, `components/tutor/tutor-card.tsx` | Warm light glass background, fallback/error/retry, empty CTA, safe rendering khi BE trả thiếu field |
+| SEO route | `app/register-tutor/page.tsx`, `app/how-it-works/page.tsx`, `app/about/page.tsx`, `app/process/page.tsx` | Metadata server-side cho trang static; thêm `/process` redirect sang `/how-it-works` để không mất route |
+
+### 2. Màn public đã có loading/empty/error/retry
+
+| Page | Loading | Empty | Error/retry | Ghi chú |
+|---|---|---|---|---|
+| `/` | Featured tutors/stats dùng trạng thái fallback | Chưa có gia sư nổi bật thì CTA đăng ký nhu cầu học | Stats/master-data/tutors lỗi không chặn page; có nút thử lại | Có JSON-LD Organization |
+| `/tutors` | Skeleton card khi tải danh sách | "Chưa có gia sư phù hợp", CTA xóa lọc hoặc đăng ký nhu cầu học | Tutor list lỗi hiện ErrorState retry; master data lỗi chỉ warning và dùng fallback | Favorite/compare giữ nguyên |
+| `/tutors/[id]` | LoadingSkeleton | Not found riêng | API lỗi hiện ErrorState retry và nút quay lại list | Fallback an toàn cho subjects/grades/locations/rating/price/schedule |
+| `/tutors/[id]/booking` | LoadingSkeleton | Not found riêng | API lỗi hiện ErrorState retry | Form booking dùng fallback môn/lớp nếu BE thiếu mảng |
+| `/register-student` | Không khóa form khi master data loading | Không phụ thuộc danh mục | Master data lỗi chỉ warning, có retry | Có input nhập tay grade/subject/location khi không thấy trong danh mục |
+| `/register` | Suspense fallback dạng card/loading | Không áp dụng | Form validate RHF/Zod | Thêm checkbox đồng ý terms/privacy |
+| `/learning-requests` | LoadingSkeleton khi tải request | "Chưa có yêu cầu học đang mở", CTA hoàn thiện hồ sơ gia sư | Request feed lỗi retry; master data lỗi chỉ warning | Filter vẫn dùng fallback |
+| `/contact` | Submit button có loading icon | Không áp dụng | Service trả toast lỗi | Form gửi fullName/email/phone/message vào backend contact request |
+
+### 3. Backend/source of truth
+
+| Hạng mục | Kết quả |
+|---|---|
+| Tutor list/detail | Vẫn gọi backend qua `tutorApi`/`tutorService`; không mock tutor |
+| Learning requests | Vẫn gọi `/public/learning-requests` và create public/auth request như cũ |
+| Contact | Vẫn gọi `/contact-requests`, không hard-code lưu local |
+| Master data | Backend vẫn là nguồn chính; fallback chỉ dùng để UI không chết khi API lỗi/timeout |
+| Stats | Backend vẫn là nguồn chính; số liệu fallback chỉ để homepage không trắng khi API chưa phản hồi |
+
+### 4. SEO và contact
+
+| Hạng mục | Đã làm |
+|---|---|
+| Root metadata | Có `metadataBase`, title template, description, keywords, canonical, OpenGraph, Twitter |
+| Static page metadata | `/contact`, `/about`, `/how-it-works`, `/register-tutor`, `/process` |
+| Robots/sitemap | Có `/robots.txt` và `/sitemap.xml`; chặn `/admin`, `/dashboard`; public routes có trong sitemap |
+| JSON-LD | Homepage render Organization/EducationalOrganization JSON-LD |
+| Contact nhất quán | Email `hotro@giasusupham.vn`, hotline `0901 234 567`, address `280 An Dương Vương, Quận 5, TP. Hồ Chí Minh`, giờ hỗ trợ `Thứ 2 - Thứ 7, 08:00 - 20:00` |
+
+### 5. Backend issue/TODO còn lại
+
+| Ưu tiên | Việc còn cần |
+|---|---|
+| P0 | Chạy E2E với backend thật đang bật để xác nhận submit contact/register-student/trial booking tạo record đúng trong admin |
+| P0 | Kiểm tra production `NEXT_PUBLIC_API_BASE_URL` và CORS/cookie/token mode trước deploy |
+| P1 | Tách thêm server metadata wrapper cho các page client-heavy nếu muốn title/description riêng tuyệt đối cho `/`, `/tutors`, `/login`, `/register`, `/register-student`, `/learning-requests` |
+| P1 | Bổ sung ảnh OG thật `/og-image.png` nếu chưa có asset production |
+| P1 | Thêm Playwright smoke test public routes: home, tutors, tutor detail, register-student, learning-requests, contact |
+| P2 | Backend nên trả request id/correlation id để ErrorState hiển thị mã lỗi hỗ trợ CSKH |
+
 Ngày audit: 2026-05-30  
 Phạm vi kiểm tra: source frontend `H:\website-clone`, backend `H:\backend`, runtime local `http://127.0.0.1:3000`.  
 Giới hạn kiểm tra: chưa có URL production và tài khoản test thật; backend local `http://localhost:8080/api/v1/health` không truy cập được vì Docker/PostgreSQL/backend chưa chạy. Các kết luận E2E được đánh dấu theo mức "qua source" hoặc "chưa xác minh runtime".

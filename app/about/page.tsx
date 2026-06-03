@@ -4,6 +4,13 @@ import { Header, Footer } from "@/components/layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { pageMetadata, siteConfig } from "@/lib/site-config"
+
+export const metadata = pageMetadata({
+  title: "Giới thiệu Gia Sư Sư Phạm",
+  description: "Gia Sư Sư Phạm là nền tảng kết nối học viên, phụ huynh với gia sư đã được kiểm duyệt và có quy trình vận hành minh bạch.",
+  path: "/about",
+})
 
 const principles = [
   {
@@ -127,9 +134,9 @@ export default function AboutPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm leading-6 text-muted-foreground">
-                <p>Hotline: 0123 456 789</p>
-                <p>Email: contact@giasusupham.vn</p>
-                <p>Địa chỉ: 280 An Dương Vương, Quận 5, TP. Hồ Chí Minh</p>
+                <p>Hotline: {siteConfig.supportPhone}</p>
+                <p>Email: {siteConfig.supportEmail}</p>
+                <p>Địa chỉ: {siteConfig.businessAddress}</p>
                 <Button asChild>
                   <Link href="/contact">Gửi yêu cầu hỗ trợ</Link>
                 </Button>

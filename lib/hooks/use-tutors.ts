@@ -3,8 +3,9 @@
 import { useState, useCallback } from "react"
 import useSWR from "swr"
 import type { Tutor, TutorFilters, TutorSortBy, TutorRegistrationFormData } from "@/types"
-import type { ApiPagination, PageRequestParams } from "@/lib/api/client"
+import { ApiClientError, type ApiPagination, type PageRequestParams } from "@/lib/api/client"
 import { tutorService } from "@/lib/services"
+import { retryGet, withPublicTimeout } from "@/lib/public-data"
 import { useToast } from "@/hooks/use-toast"
 
 // ============================================
@@ -31,7 +32,7 @@ export function useTutors(options: UseTutorsOptions = {}) {
     mutate,
   } = useSWR(
     ["tutors", filters, sortBy],
-    () => tutorService.getTutors(filters, sortBy),
+    () => retryGet(() => withPublicTimeout(tutorService.getTutors(filters, sortBy), "Danh sách gia sư")),
     {
       revalidateOnFocus: false,
       dedupingInterval: 5000,
@@ -79,7 +80,7 @@ export function useTutorDetail(id: string) {
     error,
     isLoading,
     mutate,
-  } = useSWR(id ? ["tutor", id] : null, () => tutorService.getTutorById(id), {
+  } = useSWR(id ? ["tutor", id] : null, () => retryGet(() => withPublicTimeout(tutorService.getTutorByIdStrict(id), "Hồ sơ gia sư")), {
     revalidateOnFocus: false,
   })
 
@@ -87,6 +88,10 @@ export function useTutorDetail(id: string) {
     tutor,
     isLoading,
     error,
+    isNotFound:
+      error instanceof ApiClientError &&
+      (error.status === 404 || error.code === "NOT_FOUND"),
+    errorStatus: error instanceof ApiClientError ? error.status : undefined,
     refresh: mutate,
   }
 }

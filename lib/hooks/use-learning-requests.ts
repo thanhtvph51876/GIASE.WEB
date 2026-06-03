@@ -6,6 +6,7 @@ import type { LearningRequest, StudentRegistrationFormData, LearningRequestStatu
 import type { ApiPagination, PageRequestParams } from "@/lib/api/client"
 import { auditLogService, learningRequestService, workflowService } from "@/lib/services"
 import { assertPermission, canUpdateLearningRequestStatus } from "@/lib/permissions"
+import { retryGet, withPublicTimeout } from "@/lib/public-data"
 import { useToast } from "@/hooks/use-toast"
 
 // ============================================
@@ -111,7 +112,7 @@ export function useOpenLearningRequests() {
     error,
     isLoading,
     mutate,
-  } = useSWR("open-learning-requests", () => learningRequestService.getPublicRequests(), {
+  } = useSWR("open-learning-requests", () => retryGet(() => withPublicTimeout(learningRequestService.getPublicRequests(), "Yêu cầu học đang mở")), {
     revalidateOnFocus: false,
   })
 

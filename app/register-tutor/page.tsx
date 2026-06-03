@@ -16,6 +16,13 @@ import { Header, Footer } from "@/components/layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { pageMetadata } from "@/lib/site-config"
+
+export const metadata = pageMetadata({
+  title: "Đăng ký làm gia sư",
+  description: "Tìm hiểu quy trình ứng tuyển gia sư, hoàn thiện hồ sơ, xác thực giấy tờ, ký cam kết và nhận lớp trên Gia Sư Sư Phạm.",
+  path: "/register-tutor",
+})
 
 const benefits = [
   { icon: Banknote, title: "Tăng thu nhập minh bạch", text: "Nhận lớp phù hợp, theo dõi lịch học và thu nhập trong dashboard gia sư." },

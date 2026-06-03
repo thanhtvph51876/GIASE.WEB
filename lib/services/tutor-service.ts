@@ -63,6 +63,10 @@ class TutorService {
     }
   }
 
+  async getTutorByIdStrict(id: string): Promise<Tutor> {
+    return tutorApi.getTutorById(id)
+  }
+
   async createTutorProfile(data: TutorRegistrationFormData, _userId: string) {
     try {
       const tutor = await tutorApi.createTutorProfile(data)

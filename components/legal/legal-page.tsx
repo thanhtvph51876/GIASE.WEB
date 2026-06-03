@@ -4,6 +4,7 @@ import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ContactInfoBlock } from "@/components/platform/operational-components"
 import type { LegalPageContent } from "@/lib/legal-content"
 
 interface LegalPageProps {
@@ -68,6 +69,7 @@ export function LegalPage({ content }: LegalPageProps) {
               <Button asChild className="mt-4 w-full">
                 <Link href="/contact">Liên hệ hỗ trợ</Link>
               </Button>
+              <ContactInfoBlock className="mt-4" />
             </aside>
           </div>
         </section>
