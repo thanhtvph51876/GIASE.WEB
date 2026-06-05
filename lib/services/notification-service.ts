@@ -52,6 +52,10 @@ class NotificationService {
     return notificationApi.list()
   }
 
+  getNotificationsPage(_userId: string, params?: PageRequestParams) {
+    return notificationApi.listPage(params)
+  }
+
   async getAdminNotifications(): Promise<Notification[]> {
     return notificationApi.adminList()
   }

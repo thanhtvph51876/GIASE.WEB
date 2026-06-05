@@ -715,3 +715,40 @@
     filter: none !important;
   }
 }
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body:has(.commitment-print-area) {
+    background: #ffffff !important;
+  }
+
+  body:has(.commitment-print-area) * {
+    visibility: hidden;
+  }
+
+  body:has(.commitment-print-area) .commitment-print-area,
+  body:has(.commitment-print-area) .commitment-print-area * {
+    visibility: visible;
+  }
+
+  body:has(.commitment-print-area) .commitment-print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    overflow: visible;
+    padding: 0;
+    background: #ffffff;
+  }
+
+  body:has(.commitment-print-area) .commitment-paper {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    border: 0;
+    box-shadow: none;
+  }
+}

@@ -121,14 +121,23 @@ export const paymentApi = {
       body: { reason: "Admin xử lý hoàn tiền từ dashboard", ...data },
     }).then(mapPayment)
   },
-  transactions() {
-    return apiRequest<PaymentTransaction[]>("/admin/payment-transactions")
+  async transactions(params?: PageRequestParams) {
+    return (await this.transactionsPage(params)).items
   },
-  webhookEvents() {
-    return apiRequest<PaymentWebhookEvent[]>("/admin/payment-webhook-events")
+  transactionsPage(params?: PageRequestParams) {
+    return apiPageRequest<PaymentTransaction>("/admin/payment-transactions", { params })
   },
-  refunds() {
-    return apiRequest<PaymentRefund[]>("/admin/refunds")
+  async webhookEvents(params?: PageRequestParams) {
+    return (await this.webhookEventsPage(params)).items
+  },
+  webhookEventsPage(params?: PageRequestParams) {
+    return apiPageRequest<PaymentWebhookEvent>("/admin/payment-webhook-events", { params })
+  },
+  async refunds(params?: PageRequestParams) {
+    return (await this.refundsPage(params)).items
+  },
+  refundsPage(params?: PageRequestParams) {
+    return apiPageRequest<PaymentRefund>("/admin/refunds", { params })
   },
   requestPayout(data: Partial<Payout>) {
     return apiRequest<Payout>("/tutor/payouts", { method: "POST", body: data }).then(mapPayout)

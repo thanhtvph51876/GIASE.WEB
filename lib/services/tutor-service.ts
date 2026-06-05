@@ -9,6 +9,10 @@ class TutorService {
     return tutorApi.getTutors(filters, sortBy)
   }
 
+  getTutorsPage(filters?: TutorFilters, sortBy: TutorSortBy = "best_match", params?: PageRequestParams) {
+    return tutorApi.getTutorsPage(filters, sortBy, params)
+  }
+
   async getAllTutors(): Promise<Tutor[]> {
     return tutorApi.getAllTutors()
   }

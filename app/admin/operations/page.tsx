@@ -27,6 +27,7 @@ import { ErrorState, LoadingSkeleton } from "@/components/platform/operational-c
 import { useAdminOperations } from "@/lib/hooks/use-admin"
 import { hasAdminPermission } from "@/lib/admin/admin-permissions"
 import { useAuthContext } from "@/lib/contexts/auth-context"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { adminOperationService, bookingService, learningRequestService, payoutService } from "@/lib/services"
 import type { OperationWorkItem } from "@/lib/services/admin-operation-service"
 
@@ -47,6 +48,7 @@ export default function AdminOperationsPage() {
   const [createdDate, setCreatedDate] = useState("")
   const [page, setPage] = useState(1)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const debouncedSearch = useDebouncedValue(search, 350)
 
   if (isLoading) return <LoadingSkeleton label="Đang tải trung tâm vận hành..." />
   if (error) return <ErrorState message="Không tải được dữ liệu vận hành từ backend." onRetry={() => refresh()} />
@@ -57,7 +59,7 @@ export default function AdminOperationsPage() {
   const statuses = unique(workItems.map((item) => text(item, "status")).filter(Boolean))
 
   const filteredItems = useMemo(() => {
-    const needle = search.trim().toLowerCase()
+    const needle = debouncedSearch.trim().toLowerCase()
     return workItems.filter((item) => {
       const matchesSearch = !needle || searchable(item).includes(needle)
       const matchesPriority = priority === "all" || text(item, "priority") === priority
@@ -68,7 +70,7 @@ export default function AdminOperationsPage() {
       const matchesDate = !createdDate || text(item, "createdAt").slice(0, 10) === createdDate
       return matchesSearch && matchesPriority && matchesModule && matchesStatus && matchesOverdue && matchesAssigned && matchesDate
     })
-  }, [assignedFilter, createdDate, moduleFilter, overdueFilter, priority, search, statusFilter, user?.id, workItems])
+  }, [assignedFilter, createdDate, debouncedSearch, moduleFilter, overdueFilter, priority, statusFilter, user?.id, workItems])
 
   const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
   const safePage = Math.min(page, pageCount)

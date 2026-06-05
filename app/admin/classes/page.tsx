@@ -21,7 +21,7 @@ import { useAdminOperations } from "@/lib/hooks/use-admin"
 import { useClasses } from "@/lib/hooks/use-classes"
 import { classService, workflowService } from "@/lib/services"
 import { formatCurrency, formatDate } from "@/lib/helpers"
-import type { Class, ClassStatus } from "@/types"
+import type { Class, ClassSession, ClassStatus } from "@/types"
 
 export default function AdminClassesPage() {
   const { user } = useAuthContext()
@@ -34,7 +34,7 @@ export default function AdminClassesPage() {
   const [fee, setFee] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
 
-  const sessions = data?.sessions || []
+  const sessions = (data?.sessions || []) as ClassSession[]
   const trialCount = classes.filter((item) => item.status === "trial").length
   const activeCount = classes.filter((item) => item.status === "active").length
   const completedCount = classes.filter((item) => item.status === "completed").length

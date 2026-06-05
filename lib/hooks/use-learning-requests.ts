@@ -107,20 +107,29 @@ export function useLearningRequests(userId?: string) {
 }
 
 export function useOpenLearningRequests() {
+  return useOpenLearningRequestsPage()
+}
+
+export function useOpenLearningRequestsPage(params: PageRequestParams = {}) {
   const {
-    data: requests,
+    data,
     error,
     isLoading,
+    isValidating,
     mutate,
-  } = useSWR("open-learning-requests", () => retryGet(() => withPublicTimeout(learningRequestService.getPublicRequests(), "Yêu cầu học đang mở")), {
+  } = useSWR(["open-learning-requests", params.page || 1, params.pageSize || 24, params.search || "", params.subject || "", params.grade || "", params.location || ""], () => retryGet(() => withPublicTimeout(learningRequestService.getPublicRequestsPage(params), "Yêu cầu học đang mở")), {
     revalidateOnFocus: false,
   })
 
+  const items = (data?.items || []).filter(
+    (request) => request.status !== "cancelled" && request.status !== "completed"
+  )
+
   return {
-    requests: (requests || []).filter(
-      (request) => request.status !== "cancelled" && request.status !== "completed"
-    ),
+    requests: items,
+    pagination: data?.pagination || { page: params.page || 1, pageSize: params.pageSize || 24, total: items.length, totalPages: 1 },
     isLoading,
+    isValidating,
     loading: isLoading,
     error,
     refetch: mutate,

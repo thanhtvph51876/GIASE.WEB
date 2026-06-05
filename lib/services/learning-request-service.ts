@@ -20,6 +20,10 @@ class LearningRequestService {
     return learningRequestApi.publicList()
   }
 
+  getPublicRequestsPage(params?: PageRequestParams) {
+    return learningRequestApi.publicListPage(params)
+  }
+
   async getAllRequests(): Promise<LearningRequest[]> {
     return learningRequestApi.adminList()
   }

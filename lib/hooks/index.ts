@@ -4,8 +4,9 @@
 // ============================================
 
 export { useAuth } from "./use-auth"
+export { useDebouncedValue } from "./use-debounced-value"
 export { useTutors, useTutorDetail, useTutorProfileByUser, useAllTutors, useFavorites, useTutorRegistration } from "./use-tutors"
-export { useLearningRequests, useAdminLearningRequests, useOpenLearningRequests, useTutorLearningRequests } from "./use-learning-requests"
+export { useLearningRequests, useAdminLearningRequests, useOpenLearningRequests, useOpenLearningRequestsPage, useTutorLearningRequests } from "./use-learning-requests"
 export { useBookings } from "./use-bookings"
 export { useSchedule } from "./use-schedule"
 export { useReviews, useStudentReviews } from "./use-reviews"

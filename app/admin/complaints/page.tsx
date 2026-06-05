@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { AlertTriangle, ArrowRight, Search, ShieldAlert, UserCheck } from "lucide-react"
 import { toast } from "sonner"
@@ -16,8 +16,10 @@ import { useAuthContext } from "@/lib/contexts/auth-context"
 import { hasAdminPermission } from "@/lib/admin/admin-permissions"
 import { adminOperationService } from "@/lib/services/admin-operation-service"
 import { formatDateTime } from "@/lib/helpers"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 
 type DisputeRow = Record<string, unknown>
+const disputeStatuses = ["NEW", "ASSIGNED", "INVESTIGATING", "WAITING_PARENT", "WAITING_TUTOR", "PROPOSED_RESOLUTION", "RESOLVED", "CLOSED", "ESCALATED", "REJECTED"]
 
 export default function AdminComplaintsPage() {
   const { user } = useAuthContext()
@@ -32,10 +34,19 @@ export default function AdminComplaintsPage() {
   const [slaFilter, setSlaFilter] = useState("all")
   const [ownerFilter, setOwnerFilter] = useState("all")
   const canUpdateDispute = hasAdminPermission(user, "complaints.manage")
+  const debouncedSearch = useDebouncedValue(search, 300)
 
   const load = () => {
     setLoading(true)
-    adminOperationService.disputesPage({ page, pageSize: ADMIN_PAGE_SIZE })
+    adminOperationService.disputesPage({
+      page,
+      pageSize: ADMIN_PAGE_SIZE,
+      search: debouncedSearch,
+      status: statusFilter === "all" ? undefined : statusFilter,
+      priority: priorityFilter === "all" ? undefined : priorityFilter,
+      sla: slaFilter === "all" ? undefined : slaFilter,
+      owner: ownerFilter === "all" ? undefined : ownerFilter,
+    })
       .then((result) => {
         setDisputes(result.items)
         setPagination(result.pagination)
@@ -46,19 +57,13 @@ export default function AdminComplaintsPage() {
 
   useEffect(() => {
     load()
-  }, [page])
+  }, [debouncedSearch, ownerFilter, page, priorityFilter, slaFilter, statusFilter])
 
-  const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase()
-    return disputes.filter((item) => {
-      const matchesSearch = !needle || searchable(item).includes(needle)
-      const matchesStatus = statusFilter === "all" || text(item, "status") === statusFilter
-      const matchesPriority = priorityFilter === "all" || text(item, "priority") === priorityFilter
-      const matchesSla = slaFilter === "all" || Boolean(item.overdue) === (slaFilter === "overdue")
-      const matchesOwner = ownerFilter === "all" || text(item, "assignedAdminId") === user?.id
-      return matchesSearch && matchesStatus && matchesPriority && matchesSla && matchesOwner
-    })
-  }, [disputes, ownerFilter, priorityFilter, search, slaFilter, statusFilter, user?.id])
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, ownerFilter, priorityFilter, slaFilter, statusFilter])
+
+  const filtered = disputes
 
   const runAction = async (id: string, action: "assign" | "escalate" | "resolve", reason: string) => {
     setBusyId(`${action}:${id}`)
@@ -101,7 +106,7 @@ export default function AdminComplaintsPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Mọi status</SelectItem>
-                {unique(disputes.map((item) => text(item, "status")).filter(Boolean)).map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                {disputeStatuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -211,19 +216,6 @@ function resolutionHint(item: DisputeRow) {
   return "Mở chi tiết để xem timeline, note nội bộ, related entity và chọn resolution."
 }
 
-function searchable(item: DisputeRow) {
-  return [
-    text(item, "title"),
-    text(item, "subject"),
-    text(item, "status"),
-    text(item, "priority"),
-    text(item, "riskLevel"),
-    text(item, "reporterName"),
-    text(item, "assignedAdmin"),
-    text(item, "resolutionNote", "resolution"),
-  ].join(" ").toLowerCase()
-}
-
 function text(item: DisputeRow, ...keys: string[]) {
   for (const key of keys) {
     const value = item[key]
@@ -234,8 +226,4 @@ function text(item: DisputeRow, ...keys: string[]) {
 
 function safeDate(value: string) {
   return value ? formatDateTime(value) : "Không có SLA"
-}
-
-function unique(values: string[]) {
-  return [...new Set(values)].sort()
 }

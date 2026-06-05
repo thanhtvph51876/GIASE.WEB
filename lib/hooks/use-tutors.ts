@@ -7,6 +7,7 @@ import { ApiClientError, type ApiPagination, type PageRequestParams } from "@/li
 import { tutorService } from "@/lib/services"
 import { retryGet, withPublicTimeout } from "@/lib/public-data"
 import { useToast } from "@/hooks/use-toast"
+import { useDebouncedValue } from "./use-debounced-value"
 
 // ============================================
 // USE TUTORS HOOK
@@ -16,23 +17,30 @@ import { useToast } from "@/hooks/use-toast"
 interface UseTutorsOptions {
   initialFilters?: TutorFilters
   initialSortBy?: TutorSortBy
+  pageSize?: number
 }
 
+const PUBLIC_TUTOR_PAGE_SIZE = 24
+const emptyPublicPagination: ApiPagination = { page: 1, pageSize: PUBLIC_TUTOR_PAGE_SIZE, total: 0, totalPages: 1 }
+
 export function useTutors(options: UseTutorsOptions = {}) {
-  const { initialFilters, initialSortBy = "best_match" } = options
+  const { initialFilters, initialSortBy = "best_match", pageSize = PUBLIC_TUTOR_PAGE_SIZE } = options
 
   const [filters, setFilters] = useState<TutorFilters>(initialFilters || {})
   const [sortBy, setSortBy] = useState<TutorSortBy>(initialSortBy)
+  const [page, setPage] = useState(1)
+  const debouncedFilters = useDebouncedValue(filters, 350)
 
   // Fetch tutors with SWR
   const {
-    data: tutors,
+    data,
     error,
     isLoading,
+    isValidating,
     mutate,
   } = useSWR(
-    ["tutors", filters, sortBy],
-    () => retryGet(() => withPublicTimeout(tutorService.getTutors(filters, sortBy), "Danh sách gia sư")),
+    ["tutors", debouncedFilters, sortBy, page, pageSize],
+    () => retryGet(() => withPublicTimeout(tutorService.getTutorsPage(debouncedFilters, sortBy, { page, pageSize }), "Danh sách gia sư")),
     {
       revalidateOnFocus: false,
       dedupingInterval: 5000,
@@ -42,12 +50,19 @@ export function useTutors(options: UseTutorsOptions = {}) {
   // Update filters
   const updateFilters = useCallback((newFilters: Partial<TutorFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }))
+    setPage(1)
+  }, [])
+
+  const updateSortBy = useCallback((nextSortBy: TutorSortBy) => {
+    setSortBy(nextSortBy)
+    setPage(1)
   }, [])
 
   // Reset filters
   const resetFilters = useCallback(() => {
     setFilters({})
     setSortBy("best_match")
+    setPage(1)
   }, [])
 
   // Refresh data
@@ -56,14 +71,18 @@ export function useTutors(options: UseTutorsOptions = {}) {
   }, [mutate])
 
   return {
-    tutors: tutors || [],
+    tutors: data?.items || [],
+    pagination: data?.pagination || emptyPublicPagination,
     filters,
     sortBy,
+    page,
     isLoading,
+    isValidating,
     error,
     setFilters,
     updateFilters,
-    setSortBy,
+    setSortBy: updateSortBy,
+    setPage,
     resetFilters,
     refresh,
   }

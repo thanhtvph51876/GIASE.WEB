@@ -3,7 +3,7 @@
 import type { ApiPagination } from "@/lib/api/client"
 import { Button } from "@/components/ui/button"
 
-export const ADMIN_PAGE_SIZE = 50
+export const ADMIN_PAGE_SIZE = 25
 
 export function AdminPagination({
   pagination,

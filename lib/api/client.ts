@@ -15,6 +15,7 @@ export interface ApiPage<T> {
 }
 
 export interface PageRequestParams {
+  [key: string]: string | number | boolean | undefined
   page?: number
   pageSize?: number
   search?: string

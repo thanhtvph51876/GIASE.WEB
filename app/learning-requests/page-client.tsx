@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ErrorState, LoadingSkeleton, PublicDataNotice } from "@/components/platform/operational-components"
-import { useOpenLearningRequests } from "@/lib/hooks/use-learning-requests"
+import { ErrorState, LoadingSkeleton, PaginationBar, PublicDataNotice } from "@/components/platform/operational-components"
+import { useOpenLearningRequestsPage } from "@/lib/hooks/use-learning-requests"
 import { useMasterDataCatalog } from "@/lib/hooks/use-master-data"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { formatCurrency, formatDate } from "@/lib/helpers"
 import type { LearningRequestStatus } from "@/types"
 
@@ -35,13 +36,23 @@ const statusLabels: Record<LearningRequestStatus, string> = {
   completed: "Hoàn thành",
   cancelled: "Đã hủy",
 }
+const PUBLIC_REQUEST_PAGE_SIZE = 24
 
 export default function LearningRequestsPage() {
   const [keyword, setKeyword] = useState("")
   const [subject, setSubject] = useState("all")
   const [grade, setGrade] = useState("all")
   const [location, setLocation] = useState("all")
-  const { requests: openRequests, isLoading: requestsLoading, error: requestsError, refetch } = useOpenLearningRequests()
+  const [page, setPage] = useState(1)
+  const debouncedKeyword = useDebouncedValue(keyword, 350)
+  const { requests: openRequests, pagination, isLoading: requestsLoading, isValidating: requestsValidating, error: requestsError, refetch } = useOpenLearningRequestsPage({
+    page,
+    pageSize: PUBLIC_REQUEST_PAGE_SIZE,
+    search: debouncedKeyword,
+    subject: subject === "all" ? undefined : subject,
+    grade: grade === "all" ? undefined : grade,
+    location: location === "all" ? undefined : location,
+  })
   const {
     subjects,
     grades,
@@ -54,7 +65,7 @@ export default function LearningRequestsPage() {
 
   const requests = useMemo(() => {
     return openRequests.filter((request) => {
-      const query = keyword.trim().toLowerCase()
+      const query = debouncedKeyword.trim().toLowerCase()
       if (query) {
         const match =
           request.subject.toLowerCase().includes(query) ||
@@ -67,7 +78,24 @@ export default function LearningRequestsPage() {
       if (location !== "all" && request.location !== location) return false
       return true
     })
-  }, [keyword, subject, grade, location, openRequests])
+  }, [debouncedKeyword, subject, grade, location, openRequests])
+
+  const updateKeyword = (value: string) => {
+    setKeyword(value)
+    setPage(1)
+  }
+  const updateSubject = (value: string) => {
+    setSubject(value)
+    setPage(1)
+  }
+  const updateGrade = (value: string) => {
+    setGrade(value)
+    setPage(1)
+  }
+  const updateLocation = (value: string) => {
+    setLocation(value)
+    setPage(1)
+  }
 
   return (
     <div className="premium-page-bg flex min-h-screen flex-col">
@@ -90,12 +118,12 @@ export default function LearningRequestsPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
+                  onChange={(event) => updateKeyword(event.target.value)}
                   placeholder="Tìm theo môn, lớp, khu vực..."
                   className="pl-9"
                 />
               </div>
-              <Select value={subject} onValueChange={setSubject}>
+              <Select value={subject} onValueChange={updateSubject}>
                 <SelectTrigger>
                   <SelectValue placeholder="Môn học" />
                 </SelectTrigger>
@@ -108,7 +136,7 @@ export default function LearningRequestsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={grade} onValueChange={setGrade}>
+              <Select value={grade} onValueChange={updateGrade}>
                 <SelectTrigger>
                   <SelectValue placeholder="Lớp" />
                 </SelectTrigger>
@@ -121,7 +149,7 @@ export default function LearningRequestsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={location} onValueChange={setLocation}>
+              <Select value={location} onValueChange={updateLocation}>
                 <SelectTrigger>
                   <SelectValue placeholder="Khu vực" />
                 </SelectTrigger>
@@ -161,7 +189,8 @@ export default function LearningRequestsPage() {
             <>
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Tìm thấy <b className="text-foreground">{requests.length}</b> yêu cầu phù hợp
+              Tìm thấy <b className="text-foreground">{pagination.total || requests.length}</b> yêu cầu phù hợp
+              {requestsValidating && !requestsLoading ? " · đang cập nhật" : ""}
             </p>
             <Button className="rounded-full" asChild>
               <Link href="/register-student">Tạo yêu cầu học</Link>
@@ -169,9 +198,10 @@ export default function LearningRequestsPage() {
           </div>
 
           {requests.length ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {requests.map((request) => (
-                <Card key={request.id} className="glass-card gradient-border-hover premium-hover-lift rounded-2xl transition-colors hover:border-primary/30">
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {requests.map((request) => (
+                  <Card key={request.id} className="glass-card gradient-border-hover premium-hover-lift rounded-2xl transition-colors hover:border-primary/30">
                   <CardHeader>
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -199,9 +229,11 @@ export default function LearningRequestsPage() {
                       <Link href="/login">Đăng nhập để nhận lớp</Link>
                     </Button>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
+                  </Card>
+                ))}
+              </div>
+              <PaginationBar className="mt-5" pagination={pagination} loading={requestsLoading || requestsValidating} onPageChange={setPage} />
+            </>
           ) : (
             <Card className="glass-card-strong rounded-2xl">
               <CardContent className="py-14 text-center">
@@ -216,6 +248,7 @@ export default function LearningRequestsPage() {
                     setSubject("all")
                     setGrade("all")
                     setLocation("all")
+                    setPage(1)
                   }}>
                     Xóa bộ lọc
                   </Button>

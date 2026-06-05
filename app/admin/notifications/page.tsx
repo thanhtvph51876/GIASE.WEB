@@ -15,9 +15,10 @@ import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { hasAdminPermission } from "@/lib/admin/admin-permissions"
-import { adminService, notificationService } from "@/lib/services"
+import { notificationService } from "@/lib/services"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { formatDateTime } from "@/lib/helpers"
-import type { Notification, NotificationType, User, UserRole } from "@/types"
+import type { Notification, NotificationType, UserRole } from "@/types"
 
 const roles: Array<UserRole | "all"> = ["all", "student", "parent", "tutor", "admin"]
 const types: NotificationType[] = ["info", "success", "warning", "error"]
@@ -28,30 +29,38 @@ export default function AdminNotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState(defaultPagination())
-  const [users, setUsers] = useState<User[]>([])
   const [targetRole, setTargetRole] = useState<UserRole | "all">("all")
   const [userId, setUserId] = useState("")
   const [type, setType] = useState<NotificationType>("info")
+  const [filterStatus, setFilterStatus] = useState("all")
+  const [filterType, setFilterType] = useState("all")
+  const [search, setSearch] = useState("")
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [link, setLink] = useState("")
   const [loading, setLoading] = useState(false)
+  const debouncedSearch = useDebouncedValue(search, 300)
 
   const load = async (targetPage = page) => {
-    const result = await notificationService.getAdminNotificationsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+    const result = await notificationService.getAdminNotificationsPage({
+      page: targetPage,
+      pageSize: ADMIN_PAGE_SIZE,
+      search: debouncedSearch,
+      status: filterStatus === "all" ? undefined : filterStatus,
+      type: filterType === "all" ? undefined : filterType,
+    })
     setNotifications(result.items)
     setPagination(result.pagination)
   }
   useEffect(() => {
     load(page).catch(() => toast.error("Không tải được notification admin"))
-    adminService.getAllUsers().then(setUsers).catch(() => setUsers([]))
-  }, [page])
+  }, [page, debouncedSearch, filterStatus, filterType])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, filterStatus, filterType])
 
   const unreadCount = useMemo(() => notifications.filter((item) => !item.read).length, [notifications])
-  const selectableRecipients = useMemo(() => {
-    const filtered = targetRole === "all" ? users : users.filter((item) => item.role === targetRole)
-    return filtered.filter((item) => item.status === "active")
-  }, [targetRole, users])
 
   const send = async (_reason: string, note: string) => {
     if (!title.trim() || !content.trim()) {
@@ -59,10 +68,6 @@ export default function AdminNotificationsPage() {
       return
     }
     const selectedUserId = userId.trim()
-    if (selectedUserId && !users.some((item) => item.id === selectedUserId)) {
-      toast.error("Người nhận đã chọn không hợp lệ")
-      return
-    }
     setLoading(true)
     const payload = {
       type,
@@ -131,14 +136,8 @@ export default function AdminNotificationsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Người nhận cụ thể</Label>
-              <Select value={userId || "role"} onValueChange={(value) => setUserId(value === "role" ? "" : value)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="role">{targetRole === "all" ? "Gửi tất cả user active" : `Gửi role ${targetRole}`}</SelectItem>
-                  {selectableRecipients.map((item) => <SelectItem key={item.id} value={item.id}>{item.fullName || item.email} · {item.email}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>User ID cụ thể</Label>
+              <Input value={userId} onChange={(event) => setUserId(event.target.value)} placeholder={targetRole === "all" ? "Bỏ trống để gửi tất cả user active" : `Bỏ trống để gửi role ${targetRole}`} />
             </div>
             <div className="space-y-2">
               <Label>Loại</Label>
@@ -173,6 +172,31 @@ export default function AdminNotificationsPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bộ lọc log</CardTitle>
+          <CardDescription>Lọc trực tiếp bằng backend để không phải tải toàn bộ notification về trình duyệt.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="unread">Chưa đọc</SelectItem>
+              <SelectItem value="read">Đã đọc</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger><SelectValue placeholder="Loại" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả loại</SelectItem>
+              {types.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm tiêu đề, nội dung, user..." />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

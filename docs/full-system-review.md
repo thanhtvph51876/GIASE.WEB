@@ -1655,3 +1655,24 @@ He thong hien da co day du cac module can thiet cho mot nen tang gia su end-to-e
 Muc do hoan thien ve source: cao, da co workflow that va BE/FE map ro.
 
 Muc do can xac nhan truoc production: E2E live data, gateway thật, file private, RBAC theo tung role va cross-module data integrity.
+
+## Phu Luc 2026-06-05 - Review Hieu Nang Du Lieu Lon
+
+Muc tieu nang cap lan nay: xu ly cac diem co nguy co lag khi du lieu tang, dac biet admin back-office va cac inbox/log tai chinh.
+
+Da nang cap:
+
+- `/admin/tutors` khong con lay 500 row co dinh va khong con mapper gay N+1 cho subject/grade. Endpoint da nhan `page`, `pageSize`, `status`, `search`; search gom ten/email/truong/nganh/student code/mon day.
+- `/admin/bookings`, `/admin/classes`, `/admin/sessions`, `/admin/payments`, `/admin/payouts`, `/admin/notifications`, `/admin/payment-transactions`, `/admin/payment-webhook-events`, `/admin/refunds` da co server-side pagination/filter thay vi de FE tai het roi loc.
+- `/conversations`, `/conversations/{id}/messages`, `/notifications` da tra page metadata de inbox khong tai lich su qua dai.
+- `pageSize` public tutors bi gioi han 50; admin/general pageSize bi gioi han 200.
+- FE payment console, admin notifications, admin tutors, notification hook va message hook da dung page/filter tu backend.
+- Rate limit da duoc harden: chi tin forwarded IP khi remote la proxy noi bo/loopback, va bucket in-memory duoc cleanup dinh ky de tranh phinh RAM khi bi scan.
+- Them migration `V24__operational_pagination_filter_indexes.sql` cho booking/class/session/payment/payout/webhook/refund/notification/search indexes.
+- Them benchmark SQL tai `H:\backend\performance\large-data-review.sql` de chay `EXPLAIN (ANALYZE, BUFFERS)` tren staging/prod-like DB.
+
+Ket luan sau nang cap:
+
+- Truoc do lag khong phai chi do FE. Co nhieu endpoint BE tra list lon/fixed 500 va FE tiep tuc loc local, nen khi du lieu tang se cham ca network, DB, JSON parse va render.
+- Sau nang cap, cac hang doi van hanh chinh da dung server-side paging/filter va co index ho tro. Web se muot hon khi du lieu tang, nhung can chay benchmark SQL tren DB co data that de xac nhan query plan.
+- Con nen lam tiep truoc production lon: dua rate-limit sang Redis/distributed bucket neu chay nhieu instance, cache JWT permission/current user ngan han de giam DB hit moi request, va them E2E/perf smoke cho admin list voi 10k/100k ban ghi staging.

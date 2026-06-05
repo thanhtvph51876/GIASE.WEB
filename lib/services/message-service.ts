@@ -10,8 +10,12 @@ interface SendMessageData {
 }
 
 class MessageService {
-  async getConversations(_userId: string): Promise<Conversation[]> {
-    return messageApi.conversations()
+  async getConversations(_userId: string, params?: PageRequestParams): Promise<Conversation[]> {
+    return messageApi.conversations(params)
+  }
+
+  getConversationsPage(_userId: string, params?: PageRequestParams) {
+    return messageApi.conversationsPage(params)
   }
 
   async getAdminConversations(): Promise<Conversation[]> {
@@ -26,8 +30,12 @@ class MessageService {
     return messageApi.createConversation(data)
   }
 
-  async getMessages(conversationId: string): Promise<Message[]> {
-    return messageApi.messages(conversationId)
+  async getMessages(conversationId: string, params?: PageRequestParams): Promise<Message[]> {
+    return messageApi.messages(conversationId, params)
+  }
+
+  getMessagesPage(conversationId: string, params?: PageRequestParams) {
+    return messageApi.messagesPage(conversationId, params)
   }
 
   async sendMessage(data: SendMessageData) {

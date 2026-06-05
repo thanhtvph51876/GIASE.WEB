@@ -33,16 +33,28 @@ class PaymentService {
     }
   }
 
-  async getPaymentTransactions() {
-    return paymentApi.transactions()
+  async getPaymentTransactions(params?: PageRequestParams) {
+    return paymentApi.transactions(params)
   }
 
-  async getWebhookEvents() {
-    return paymentApi.webhookEvents()
+  getPaymentTransactionsPage(params?: PageRequestParams) {
+    return paymentApi.transactionsPage(params)
   }
 
-  async getRefunds() {
-    return paymentApi.refunds()
+  async getWebhookEvents(params?: PageRequestParams) {
+    return paymentApi.webhookEvents(params)
+  }
+
+  getWebhookEventsPage(params?: PageRequestParams) {
+    return paymentApi.webhookEventsPage(params)
+  }
+
+  async getRefunds(params?: PageRequestParams) {
+    return paymentApi.refunds(params)
+  }
+
+  getRefundsPage(params?: PageRequestParams) {
+    return paymentApi.refundsPage(params)
   }
 
   async updatePaymentStatus(paymentId: string, status: PaymentStatus, _actor?: User | null, reason?: string) {

@@ -1,8 +1,9 @@
 "use client"
 
-import { FormEvent, type ReactNode, useState } from "react"
+import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { CheckCircle2, FileText, Loader2, ShieldCheck, Upload } from "lucide-react"
+import { CheckCircle2, FileText, Loader2, Printer, ShieldCheck, Upload } from "lucide-react"
+import { CommitmentDocument, type CommitmentData } from "@/components/verification/commitment-document"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +24,11 @@ const agreementLines = [
   "Tôi đồng ý với điều khoản sử dụng và chính sách dữ liệu của nền tảng.",
 ]
 
+function todayInputValue() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+}
+
 export default function StudentVerificationPage() {
   const { user } = useAuthContext()
   const { verifications, latest, isLoading, uploadStudentCard, signAndSubmit } = useStudentVerifications(Boolean(user))
@@ -33,11 +39,73 @@ export default function StudentVerificationPage() {
   const [fullNameInput, setFullNameInput] = useState(user?.fullName || "")
   const [schoolEmail, setSchoolEmail] = useState("")
   const [signerName, setSignerName] = useState(user?.fullName || "")
+  const [signerEmail, setSignerEmail] = useState(user?.email || "")
+  const [signerPhone, setSignerPhone] = useState(user?.phone || "")
+  const [dateOfBirth, setDateOfBirth] = useState("")
+  const [identityNumber, setIdentityNumber] = useState("")
+  const [address, setAddress] = useState("")
+  const [city, setCity] = useState("Hà Nội")
+  const [signedDate, setSignedDate] = useState(todayInputValue)
   const [accepted, setAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const current = active || latest
+
+  useEffect(() => {
+    if (!user) return
+    setFullNameInput((value) => value || user.fullName)
+    setSignerName((value) => value || user.fullName)
+    setSignerEmail((value) => value || user.email)
+    setSignerPhone((value) => value || user.phone)
+  }, [user])
+
+  const commitmentData: CommitmentData = useMemo(() => ({
+    platformName: "GIA SƯ SƯ PHẠM",
+    slogan: "Kết nối tri thức - Đồng hành tương lai",
+    formCode: "Mẫu XTSV-01",
+    title: "CAM KẾT XÁC THỰC THÔNG TIN",
+    subtitle: "Áp dụng cho học sinh/sinh viên xác thực tài khoản",
+    fullName: signerName || fullNameInput || current?.fullNameInput || user?.fullName || "",
+    dateOfBirth,
+    identityNumber,
+    phone: signerPhone || user?.phone || "",
+    email: signerEmail || schoolEmail || current?.schoolEmail || current?.userEmail || user?.email || "",
+    address,
+    role: "Học sinh",
+    city,
+    signedDate,
+    platformRepresentative: "Gia Sư Sư Phạm",
+    evidence: [
+      { label: "Trường", value: schoolName || current?.schoolName },
+      { label: "Mã sinh viên", value: studentCode || current?.studentCode },
+      { label: "Email trường", value: schoolEmail || current?.schoolEmail },
+      { label: "Mã hồ sơ", value: current?.id },
+    ],
+    items: agreementLines,
+  }), [
+    address,
+    city,
+    current?.fullNameInput,
+    current?.id,
+    current?.schoolEmail,
+    current?.schoolName,
+    current?.studentCode,
+    current?.userEmail,
+    dateOfBirth,
+    fullNameInput,
+    identityNumber,
+    schoolEmail,
+    schoolName,
+    signedDate,
+    signerEmail,
+    signerName,
+    signerPhone,
+    studentCode,
+    user?.email,
+    user?.fullName,
+    user?.phone,
+  ])
 
   const onUpload = async (event: FormEvent) => {
     event.preventDefault()
@@ -61,7 +129,7 @@ export default function StudentVerificationPage() {
     setLoading(true)
     setError(null)
     try {
-      const verification = await signAndSubmit(current.id, signerName, user?.email)
+      const verification = await signAndSubmit(current.id, signerName, signerEmail || user?.email)
       setActive(verification)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể gửi xác thực.")
@@ -164,18 +232,31 @@ export default function StudentVerificationPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={onSign} className="space-y-5">
-              <div className="rounded-lg border bg-slate-50 p-4 text-sm leading-6">
-                {agreementLines.map((line) => <p key={line}>- {line}</p>)}
+              <CommitmentDocument data={commitmentData} />
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Họ tên người cam kết"><Input value={signerName} onChange={(event) => setSignerName(event.target.value)} /></Field>
+                <Field label="CCCD/CMND"><Input value={identityNumber} onChange={(event) => setIdentityNumber(event.target.value)} /></Field>
+                <Field label="Email người ký"><Input type="email" value={signerEmail} onChange={(event) => setSignerEmail(event.target.value)} /></Field>
+                <Field label="Số điện thoại"><Input value={signerPhone} onChange={(event) => setSignerPhone(event.target.value)} /></Field>
+                <Field label="Ngày sinh"><Input type="date" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} /></Field>
+                <Field label="Ngày ký"><Input type="date" value={signedDate} onChange={(event) => setSignedDate(event.target.value)} /></Field>
+                <Field label="Thành phố ký"><Input value={city} onChange={(event) => setCity(event.target.value)} /></Field>
+                <Field label="Địa chỉ liên hệ"><Input value={address} onChange={(event) => setAddress(event.target.value)} /></Field>
               </div>
-              <Field label="Họ tên người cam kết"><Input value={signerName} onChange={(event) => setSignerName(event.target.value)} /></Field>
               <div className="flex items-start gap-2">
                 <Checkbox id="agreement" checked={accepted} onCheckedChange={(checked) => setAccepted(checked === true)} />
                 <Label htmlFor="agreement" className="leading-6">Tôi đã đọc và đồng ý với bản cam kết xác thực thông tin.</Label>
               </div>
-              <Button disabled={loading || !accepted || !signerName.trim()}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                Tôi đồng ý và gửi xác thực
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button disabled={loading || !accepted || !signerName.trim()}>
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                  Tôi đồng ý và gửi xác thực
+                </Button>
+                <Button type="button" variant="outline" onClick={() => window.print()}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  In / Xuất PDF
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>

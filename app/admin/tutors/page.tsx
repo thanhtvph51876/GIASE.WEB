@@ -17,6 +17,7 @@ import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useTutorApprovalActions } from "@/lib/hooks/use-admin"
 import { useTutorApprovalEligibilityMap } from "@/lib/hooks/use-tutor-approval-eligibility"
 import { useAllTutors } from "@/lib/hooks/use-tutors"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { adminService, tutorService } from "@/lib/services"
 import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
 import { canPerformAdminAction } from "@/lib/admin/admin-permissions"
@@ -25,7 +26,9 @@ export default function AdminTutorsPage() {
   const { user } = useAuthContext()
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState("")
-  const { tutors, pagination, isLoading, error, refresh } = useAllTutors({ page, pageSize: ADMIN_PAGE_SIZE, search: keyword })
+  const [status, setStatus] = useState("all")
+  const debouncedKeyword = useDebouncedValue(keyword, 350)
+  const { tutors, pagination, isLoading, error, refresh } = useAllTutors({ page, pageSize: ADMIN_PAGE_SIZE, search: debouncedKeyword, status })
   const { eligibilityByTutorId, isLoading: eligibilityLoading, refresh: refreshEligibility } = useTutorApprovalEligibilityMap(tutors.map((tutor) => tutor.id))
   const { approveTutor, rejectTutor } = useTutorApprovalActions(user, refresh)
   const approve = async (id: string) => {
@@ -54,7 +57,6 @@ export default function AdminTutorsPage() {
     await tutorService.reviewDocument(tutorId, documentId, status, status === "rejected" ? "Giấy tờ chưa rõ, cần tải lại." : undefined)
     refresh()
   }
-  const filtered = tutors.filter((tutor) => `${tutor.fullName} ${tutor.subjects.join(" ")} ${tutor.university}`.toLowerCase().includes(keyword.toLowerCase()))
   const approvedCount = tutors.filter((tutor) => tutor.approvalStatus === "approved").length
   const pendingCount = tutors.filter((tutor) => tutor.approvalStatus === "pending").length
   return (
@@ -80,9 +82,31 @@ export default function AdminTutorsPage() {
           <CardDescription>Lọc theo tên, môn dạy hoặc trường đang theo học.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="Tìm theo tên, môn, trường..." />
+          <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+            <Input value={keyword} onChange={(event) => { setKeyword(event.target.value); setPage(1) }} placeholder="Tìm theo tên, môn, trường..." />
+            <select
+              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm"
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="pending">Chờ duyệt</option>
+              <option value="approved">Đã duyệt</option>
+              <option value="submitted">Đã nộp hồ sơ</option>
+              <option value="pending_verification">Chờ xác minh</option>
+              <option value="need_update">Cần bổ sung</option>
+              <option value="needs_more_documents">Thiếu giấy tờ</option>
+              <option value="verified">Đã xác minh</option>
+              <option value="rejected">Từ chối</option>
+              <option value="suspended">Đã khóa</option>
+              <option value="inactive">Không hoạt động</option>
+            </select>
+          </div>
           <div className="space-y-3">
-            {filtered.map((tutor) => {
+            {tutors.map((tutor) => {
               const eligibility = eligibilityByTutorId[tutor.id]
               const approveAvailability = getAdminActionAvailability(user, "tutor", "tutor.approve", tutor.approvalStatus, tutor, { eligibility })
               const rejectAvailability = getAdminActionAvailability(user, "tutor", "tutor.reject", tutor.approvalStatus, tutor)
@@ -183,7 +207,7 @@ export default function AdminTutorsPage() {
                 </div>
               )
             })}
-            {!filtered.length && <div className="soft-panel border-dashed p-10 text-center text-sm text-muted-foreground">Không tìm thấy gia sư phù hợp.</div>}
+            {!tutors.length && <div className="soft-panel border-dashed p-10 text-center text-sm text-muted-foreground">Không tìm thấy gia sư phù hợp.</div>}
           </div>
         </CardContent>
       </Card>

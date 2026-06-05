@@ -32,7 +32,14 @@ export default function AdminReviewsPage() {
   const load = async (targetPage = page) => {
     setLoading(true)
     try {
-      const result = await reviewService.getAllReviewsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      const result = await reviewService.getAllReviewsPage({
+        page: targetPage,
+        pageSize: ADMIN_PAGE_SIZE,
+        tutorId: tutorId === "all" ? undefined : tutorId,
+        classId: classId === "all" ? undefined : classId,
+        rating: rating === "all" ? undefined : rating,
+        status: status === "all" ? undefined : status,
+      })
       setReviews(result.items)
       setPagination(result.pagination)
     } catch {
@@ -41,7 +48,7 @@ export default function AdminReviewsPage() {
       setLoading(false)
     }
   }
-  useEffect(() => { load(page) }, [page])
+  useEffect(() => { load(page) }, [classId, page, rating, status, tutorId])
 
   const tutorOptions = useMemo(() => unique(reviews.map((item) => item.tutorId)), [reviews])
   const classOptions = useMemo(() => unique(reviews.map((item) => item.classId).filter(Boolean) as string[]), [reviews])
@@ -92,28 +99,28 @@ export default function AdminReviewsPage() {
           <CardDescription>Lọc theo tutor, class, rating và trạng thái để xử lý chất lượng có trọng tâm.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-4">
-          <Select value={tutorId} onValueChange={setTutorId}>
+          <Select value={tutorId} onValueChange={(value) => { setTutorId(value); setPage(1) }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả gia sư</SelectItem>
               {tutorOptions.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={classId} onValueChange={setClassId}>
+          <Select value={classId} onValueChange={(value) => { setClassId(value); setPage(1) }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả lớp</SelectItem>
               {classOptions.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={rating} onValueChange={setRating}>
+          <Select value={rating} onValueChange={(value) => { setRating(value); setPage(1) }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả rating</SelectItem>
               {[5, 4, 3, 2, 1].map((item) => <SelectItem key={item} value={String(item)}>{item} sao</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={status} onValueChange={(value) => setStatus(value as ReviewStatusFilter)}>
+          <Select value={status} onValueChange={(value) => { setStatus(value as ReviewStatusFilter); setPage(1) }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
@@ -162,7 +169,7 @@ export default function AdminReviewsPage() {
             <Summary title="Lớp nhiều review nhất" value={topClass?.id || "Chưa có"} count={topClass?.count || 0} />
             <div className="rounded-lg border bg-slate-50 p-3">
               <p className="text-sm font-semibold">Tìm nhanh Tutor/Class ID</p>
-              <Input className="mt-2" placeholder="Dán tutorId để lọc" onChange={(event) => setTutorId(event.target.value.trim() || "all")} />
+              <Input className="mt-2" placeholder="Dán tutorId để lọc" onChange={(event) => { setTutorId(event.target.value.trim() || "all"); setPage(1) }} />
             </div>
           </CardContent>
         </Card>

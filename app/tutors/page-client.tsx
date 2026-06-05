@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Slider } from "@/components/ui/slider"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ErrorState, LoadingSkeleton, PublicDataNotice } from "@/components/platform/operational-components"
+import { ErrorState, LoadingSkeleton, PaginationBar, PublicDataNotice } from "@/components/platform/operational-components"
 import { useAuthContext } from "@/lib/contexts/auth-context"
 import { useMasterDataCatalog } from "@/lib/hooks/use-master-data"
 import { useFavorites, useTutors } from "@/lib/hooks/use-tutors"
@@ -41,7 +41,7 @@ function TutorsContent() {
     teachingMode: (searchParams.get("mode") as TeachingMode | null) || undefined,
   }
   const { user } = useAuthContext()
-  const { tutors, filters, sortBy, isLoading, error: tutorsError, updateFilters, setSortBy, resetFilters, refresh } = useTutors({
+  const { tutors, pagination, filters, sortBy, isLoading, isValidating, error: tutorsError, updateFilters, setSortBy, setPage, resetFilters, refresh } = useTutors({
     initialFilters,
   })
   const {
@@ -72,7 +72,7 @@ function TutorsContent() {
     filters.verified,
     filters.gender,
   ].filter(Boolean).length
-  const comparedTutors = tutors.filter((tutor) => compareIds.includes(tutor.id))
+  const comparedTutors = useMemo(() => tutors.filter((tutor) => compareIds.includes(tutor.id)), [compareIds, tutors])
   const locationOptions = locations?.map((location) => location.fullPath || location.name) || []
   const toggleCompare = (id: string) => {
     setCompareIds((current) => {
@@ -285,8 +285,11 @@ function TutorsContent() {
             <div className="space-y-5">
                 <div className="glass-card-strong flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="font-semibold">{isLoading ? "Đang tải..." : `${tutors.length} gia sư phù hợp`}</p>
-                  <p className="text-sm text-muted-foreground">Dữ liệu được đồng bộ qua service và lưu lại trong trình duyệt.</p>
+                  <p className="font-semibold">{isLoading ? "Đang tải..." : `${pagination.total || tutors.length} gia sư phù hợp`}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Mỗi lần chỉ tải một trang nhỏ để danh sách vẫn mượt khi số hồ sơ tăng.
+                  </p>
+                  {isValidating && !isLoading && <p className="mt-1 text-xs text-muted-foreground">Đang cập nhật kết quả...</p>}
                   {compareIds.length > 0 && <p className="mt-1 text-sm font-medium text-primary">Đang chọn {compareIds.length}/3 gia sư để so sánh</p>}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -408,37 +411,40 @@ function TutorsContent() {
                   ))}
                 </div>
               ) : tutors.length > 0 ? (
-                <div className={viewMode === "grid" ? "grid gap-5 md:grid-cols-2 xl:grid-cols-3" : "grid gap-4"}>
-                  {tutors.map((tutor) => (
-                    <div key={tutor.id} className="space-y-3">
-                      <TutorCard tutor={tutor} />
-                      <div className="glass-card flex flex-col gap-2 rounded-2xl p-3 sm:flex-row">
-                        <Button
-                          type="button"
-                          variant={isFavorite(tutor.id) ? "default" : "outline"}
-                          size="sm"
-                          className="h-auto flex-1 whitespace-normal text-xs sm:text-sm"
-                          onClick={() => handleFavorite(tutor.id)}
-                          aria-label={`Lưu gia sư ${tutor.fullName}`}
-                          title={`Lưu gia sư ${tutor.fullName}`}
-                        >
-                          {isFavorite(tutor.id) ? "Đã lưu" : user ? "Lưu" : "Lưu - cần đăng nhập"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={compareIds.includes(tutor.id) ? "default" : "outline"}
-                          size="sm"
-                          className="h-auto flex-1 whitespace-normal text-xs sm:text-sm"
-                          onClick={() => toggleCompare(tutor.id)}
-                          disabled={!compareIds.includes(tutor.id) && compareIds.length >= 3}
-                          aria-label={`So sánh gia sư ${tutor.fullName}`}
-                          title={`So sánh gia sư ${tutor.fullName}`}
-                        >
-                          {compareIds.includes(tutor.id) ? "Đang so sánh" : "So sánh"}
-                        </Button>
+                <div className="space-y-5">
+                  <div className={viewMode === "grid" ? "grid gap-5 md:grid-cols-2 xl:grid-cols-3" : "grid gap-4"}>
+                    {tutors.map((tutor) => (
+                      <div key={tutor.id} className="space-y-3">
+                        <TutorCard tutor={tutor} />
+                        <div className="glass-card flex flex-col gap-2 rounded-2xl p-3 sm:flex-row">
+                          <Button
+                            type="button"
+                            variant={isFavorite(tutor.id) ? "default" : "outline"}
+                            size="sm"
+                            className="h-auto flex-1 whitespace-normal text-xs sm:text-sm"
+                            onClick={() => handleFavorite(tutor.id)}
+                            aria-label={`Lưu gia sư ${tutor.fullName}`}
+                            title={`Lưu gia sư ${tutor.fullName}`}
+                          >
+                            {isFavorite(tutor.id) ? "Đã lưu" : user ? "Lưu" : "Lưu - cần đăng nhập"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={compareIds.includes(tutor.id) ? "default" : "outline"}
+                            size="sm"
+                            className="h-auto flex-1 whitespace-normal text-xs sm:text-sm"
+                            onClick={() => toggleCompare(tutor.id)}
+                            disabled={!compareIds.includes(tutor.id) && compareIds.length >= 3}
+                            aria-label={`So sánh gia sư ${tutor.fullName}`}
+                            title={`So sánh gia sư ${tutor.fullName}`}
+                          >
+                            {compareIds.includes(tutor.id) ? "Đang so sánh" : "So sánh"}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <PaginationBar pagination={pagination} loading={isLoading || isValidating} onPageChange={setPage} />
                 </div>
               ) : (
                 <Card className="glass-card-strong rounded-2xl">

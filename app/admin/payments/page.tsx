@@ -8,9 +8,11 @@ import { ConfirmReasonDialog } from "@/components/admin/ConfirmReasonDialog"
 import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { DashboardMetricCard, EmptyState, EntityCard, LoadingSkeleton, PageHero, PaymentStatusBadge } from "@/components/platform/operational-components"
 import { SecurePaymentBanner, TransactionTimeline } from "@/components/payment/payment-trust-ui"
 import { useAuthContext } from "@/lib/contexts/auth-context"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { paymentService } from "@/lib/services"
 import { formatCurrency, formatDate } from "@/lib/helpers"
 import type { Payment } from "@/types"
@@ -19,35 +21,57 @@ import { getAdminActionAvailability } from "@/lib/admin/admin-actions"
 
 type FinanceTab = "payments" | "transactions" | "webhooks" | "refunds"
 
+const statusOptionsByTab: Record<FinanceTab, string[]> = {
+  payments: ["all", "pending", "processing", "paid", "completed", "failed", "expired", "refunded", "partially_refunded", "cancelled"],
+  transactions: ["all", "created", "pending", "success", "failed", "cancelled", "expired", "refunded"],
+  webhooks: ["all", "processed", "pending", "failed"],
+  refunds: ["all", "pending", "processing", "succeeded", "failed", "cancelled"],
+}
+
 export default function AdminPaymentsPage() {
   const { user } = useAuthContext()
   const [payments, setPayments] = useState<Payment[]>([])
-  const [page, setPage] = useState(1)
-  const [pagination, setPagination] = useState(defaultPagination())
+  const [paymentPage, setPaymentPage] = useState(1)
+  const [paymentPagination, setPaymentPagination] = useState(defaultPagination())
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
+  const [transactionPage, setTransactionPage] = useState(1)
+  const [transactionPagination, setTransactionPagination] = useState(defaultPagination())
   const [webhooks, setWebhooks] = useState<PaymentWebhookEvent[]>([])
+  const [webhookPage, setWebhookPage] = useState(1)
+  const [webhookPagination, setWebhookPagination] = useState(defaultPagination())
   const [refunds, setRefunds] = useState<PaymentRefund[]>([])
+  const [refundPage, setRefundPage] = useState(1)
+  const [refundPagination, setRefundPagination] = useState(defaultPagination())
   const [settings, setSettings] = useState<PaymentSettings | null>(null)
   const [tab, setTab] = useState<FinanceTab>("payments")
   const [gatewayFilter, setGatewayFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const debouncedSearch = useDebouncedValue(search, 300)
 
   const load = async () => {
     setLoading(true)
     try {
+      const gateway = gatewayFilter === "all" ? undefined : gatewayFilter
+      const activeStatus = (target: FinanceTab) => (tab === target && statusFilter !== "all" ? statusFilter : undefined)
+      const activeSearch = (target: FinanceTab) => (tab === target ? debouncedSearch : undefined)
       const [paymentRows, txRows, webhookRows, refundRows, paymentSettings] = await Promise.all([
-        paymentService.getAllPaymentsPage({ page, pageSize: ADMIN_PAGE_SIZE }),
-        paymentService.getPaymentTransactions(),
-        paymentService.getWebhookEvents(),
-        paymentService.getRefunds(),
+        paymentService.getAllPaymentsPage({ page: paymentPage, pageSize: ADMIN_PAGE_SIZE, gateway, status: activeStatus("payments"), search: activeSearch("payments") }),
+        paymentService.getPaymentTransactionsPage({ page: transactionPage, pageSize: ADMIN_PAGE_SIZE, gateway, status: activeStatus("transactions"), search: activeSearch("transactions") }),
+        paymentService.getWebhookEventsPage({ page: webhookPage, pageSize: ADMIN_PAGE_SIZE, gateway, status: activeStatus("webhooks"), search: activeSearch("webhooks") }),
+        paymentService.getRefundsPage({ page: refundPage, pageSize: ADMIN_PAGE_SIZE, status: activeStatus("refunds"), search: activeSearch("refunds") }),
         paymentService.getSettings(),
       ])
       setPayments(paymentRows.items)
-      setPagination(paymentRows.pagination)
-      setTransactions(txRows)
-      setWebhooks(webhookRows)
-      setRefunds(refundRows)
+      setPaymentPagination(paymentRows.pagination)
+      setTransactions(txRows.items)
+      setTransactionPagination(txRows.pagination)
+      setWebhooks(webhookRows.items)
+      setWebhookPagination(webhookRows.pagination)
+      setRefunds(refundRows.items)
+      setRefundPagination(refundRows.pagination)
       setSettings(paymentSettings)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không tải được dữ liệu payment ops")
@@ -56,7 +80,14 @@ export default function AdminPaymentsPage() {
     }
   }
 
-  useEffect(() => { load() }, [page])
+  useEffect(() => {
+    setPaymentPage(1)
+    setTransactionPage(1)
+    setWebhookPage(1)
+    setRefundPage(1)
+  }, [gatewayFilter, statusFilter, debouncedSearch])
+
+  useEffect(() => { load() }, [paymentPage, transactionPage, webhookPage, refundPage, gatewayFilter, statusFilter, debouncedSearch, tab])
 
   const update = async (id: string, action: "paid" | "failed" | "refunded", reason?: string) => {
     setBusyId(id)
@@ -77,11 +108,19 @@ export default function AdminPaymentsPage() {
   }
 
   const gatewayOptions = useMemo(() => {
-    const values = Array.from(new Set(payments.map((item) => item.gateway).filter(Boolean))) as string[]
+    const values = Array.from(new Set([
+      ...(settings?.enabledGateways || []),
+      ...payments.map((item) => item.gateway).filter(Boolean),
+      ...transactions.map((item) => item.gateway).filter(Boolean),
+      ...webhooks.map((item) => item.gateway).filter(Boolean),
+    ])) as string[]
     return ["all", ...values]
-  }, [payments])
+  }, [payments, settings?.enabledGateways, transactions, webhooks])
 
-  const visiblePayments = gatewayFilter === "all" ? payments : payments.filter((item) => item.gateway === gatewayFilter)
+  const currentPagination =
+    tab === "payments" ? paymentPagination : tab === "transactions" ? transactionPagination : tab === "webhooks" ? webhookPagination : refundPagination
+  const setCurrentPage =
+    tab === "payments" ? setPaymentPage : tab === "transactions" ? setTransactionPage : tab === "webhooks" ? setWebhookPage : setRefundPage
   const paid = payments.filter((item) => item.status === "paid" || item.status === "completed")
   const riskWebhooks = webhooks.filter((item) => !item.signatureValid || Boolean(item.processingError))
 
@@ -96,7 +135,7 @@ export default function AdminPaymentsPage() {
         icon={WalletCards}
         actions={<Button variant="outline" onClick={load}><RefreshCw className="h-4 w-4" />Làm mới</Button>}
         stats={[
-          { label: "Tổng giao dịch", value: pagination.total },
+          { label: "Tổng giao dịch", value: paymentPagination.total },
           { label: "Đã thanh toán", value: paid.length },
           { label: "Webhook cần xem", value: riskWebhooks.length },
           { label: "Doanh thu", value: formatCurrency(paid.reduce((sum, item) => sum + item.amount, 0)) },
@@ -106,7 +145,7 @@ export default function AdminPaymentsPage() {
       <SecurePaymentBanner mode={settings?.paymentMode} />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <DashboardMetricCard label="Tổng giao dịch" value={pagination.total} icon={ReceiptText} tone="blue" />
+        <DashboardMetricCard label="Tổng giao dịch" value={paymentPagination.total} icon={ReceiptText} tone="blue" />
         <DashboardMetricCard label="Đã thanh toán" value={paid.length} icon={CheckCircle2} tone="emerald" />
         <DashboardMetricCard label="Webhook rủi ro" value={riskWebhooks.length} icon={ShieldAlert} tone={riskWebhooks.length ? "rose" : "emerald"} />
         <DashboardMetricCard label="Doanh thu" value={formatCurrency(paid.reduce((sum, item) => sum + item.amount, 0))} icon={CreditCard} tone="slate" />
@@ -115,12 +154,25 @@ export default function AdminPaymentsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
         <div className="flex flex-wrap gap-2">
           {(["payments", "transactions", "webhooks", "refunds"] as FinanceTab[]).map((item) => (
-            <Button key={item} size="sm" variant={tab === item ? "default" : "outline"} onClick={() => setTab(item)}>
+            <Button key={item} size="sm" variant={tab === item ? "default" : "outline"} onClick={() => {
+              setTab(item)
+              setStatusFilter("all")
+            }}>
               {item === "payments" ? "Payments" : item === "transactions" ? "Transactions" : item === "webhooks" ? "Webhook events" : "Refunds"}
             </Button>
           ))}
         </div>
-        {tab === "payments" && (
+        <div className="flex flex-wrap gap-2">
+          <select
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+          >
+            {statusOptionsByTab[tab].map((status) => (
+              <option key={status} value={status}>{status === "all" ? "Tất cả trạng thái" : status}</option>
+            ))}
+          </select>
+          {tab !== "refunds" && (
           <select
             className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm"
             value={gatewayFilter}
@@ -130,13 +182,20 @@ export default function AdminPaymentsPage() {
               <option key={gateway} value={gateway}>{gateway === "all" ? "Tất cả gateway" : gateway}</option>
             ))}
           </select>
-        )}
+          )}
+          <Input
+            className="h-9 w-64 max-w-full"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Tìm payment/order/refund..."
+          />
+        </div>
       </div>
 
       {tab === "payments" && (
-        visiblePayments.length ? (
+        payments.length ? (
           <div className="space-y-3">
-            {visiblePayments.map((payment) => (
+            {payments.map((payment) => (
               (() => {
                 const markPaidAvailability = getAdminActionAvailability(user, "payment", "payment.markPaid", payment.status, payment)
                 const markFailedAvailability = getAdminActionAvailability(user, "payment", "payment.markFailed", payment.status, payment)
@@ -203,8 +262,6 @@ export default function AdminPaymentsPage() {
           <EmptyState title="Chưa có giao dịch" description="Thanh toán sẽ xuất hiện khi hệ thống tạo lớp hoặc buổi học có học phí." />
         )
       )}
-      {tab === "payments" && <AdminPagination pagination={pagination} loading={loading} onPageChange={setPage} />}
-
       {tab === "transactions" && (
         <Card className="border-slate-200/80 bg-white/95 shadow-sm">
           <CardHeader>
@@ -297,6 +354,8 @@ export default function AdminPaymentsPage() {
           <p className="mt-1 text-sm">Một số event có chữ ký không hợp lệ hoặc lỗi xử lý. Hãy mở tab Webhook events để xem chi tiết trước khi đối soát thủ công.</p>
         </div>
       )}
+
+      <AdminPagination pagination={currentPagination} loading={loading} onPageChange={setCurrentPage} />
     </div>
   )
 }

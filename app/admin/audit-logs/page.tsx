@@ -12,6 +12,7 @@ import { AdminPagination, ADMIN_PAGE_SIZE, defaultPagination } from "@/component
 import { auditLogService } from "@/lib/services"
 import { formatDateTime, getAuditActionLabel, getAuditEntityLabel, getRoleLabel } from "@/lib/helpers"
 import { isAdminRole } from "@/lib/permissions"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import type { AuditLog } from "@/types"
 
 export default function AdminAuditLogsPage() {
@@ -24,26 +25,46 @@ export default function AdminAuditLogsPage() {
   const [entityType, setEntityType] = useState("all")
   const [actorRole, setActorRole] = useState("all")
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
+  const debouncedQuery = useDebouncedValue(query, 350)
 
   useEffect(() => {
+    let active = true
     setLoading(true)
-    auditLogService.getAllLogsPage({ page, pageSize: ADMIN_PAGE_SIZE })
+    auditLogService.getAllLogsPage({
+      page,
+      pageSize: ADMIN_PAGE_SIZE,
+      search: debouncedQuery,
+      action: action === "all" ? undefined : action,
+      entityType: entityType === "all" ? undefined : entityType,
+      actorRole: actorRole === "all" ? undefined : actorRole,
+    })
       .then((result) => {
+        if (!active) return
         setLogs(result.items as AuditLog[])
         setPagination(result.pagination)
       })
-      .finally(() => setLoading(false))
-  }, [page])
+      .catch(() => {
+        if (!active) return
+        setLogs([])
+        setPagination(defaultPagination(page))
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [action, actorRole, debouncedQuery, entityType, page])
 
-  const actions = Array.from(new Set(logs.map((log) => log.action)))
-  const entityTypes = Array.from(new Set(logs.map((log) => log.entityType)))
-  const actorRoles = Array.from(new Set(logs.map((log) => log.actorRole)))
-  const adminLogs = logs.filter((log) => isAdminRole(log.actorRole)).length
-  const tutorLogs = logs.filter((log) => log.actorRole === "tutor").length
-  const familyLogs = logs.filter((log) => log.actorRole === "student" || log.actorRole === "parent").length
+  const actions = useMemo(() => Array.from(new Set(logs.map((log) => log.action))), [logs])
+  const entityTypes = useMemo(() => Array.from(new Set(logs.map((log) => log.entityType))), [logs])
+  const actorRoles = useMemo(() => Array.from(new Set(logs.map((log) => log.actorRole))), [logs])
+  const adminLogs = useMemo(() => logs.filter((log) => isAdminRole(log.actorRole)).length, [logs])
+  const tutorLogs = useMemo(() => logs.filter((log) => log.actorRole === "tutor").length, [logs])
+  const familyLogs = useMemo(() => logs.filter((log) => log.actorRole === "student" || log.actorRole === "parent").length, [logs])
 
   const filtered = useMemo(() => {
-    const keyword = query.trim().toLowerCase()
+    const keyword = debouncedQuery.trim().toLowerCase()
     return logs.filter((log) => {
       if (action !== "all" && log.action !== action) return false
       if (entityType !== "all" && log.entityType !== entityType) return false
@@ -51,7 +72,7 @@ export default function AdminAuditLogsPage() {
       if (!keyword) return true
       return `${log.actorName} ${log.action} ${log.entityName || ""} ${log.note || ""}`.toLowerCase().includes(keyword)
     })
-  }, [action, actorRole, entityType, logs, query])
+  }, [action, actorRole, debouncedQuery, entityType, logs])
 
   return (
     <div className="space-y-5">
@@ -71,10 +92,10 @@ export default function AdminAuditLogsPage() {
           <CardDescription>{filtered.length} log phù hợp với điều kiện hiện tại.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 p-4 lg:grid-cols-[1fr_220px_180px_160px]">
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm người thực hiện, hành động, ghi chú..." />
-          <Select value={action} onValueChange={setAction}><SelectTrigger><SelectValue placeholder="Hành động" /></SelectTrigger><SelectContent><SelectItem value="all">Tất cả hành động</SelectItem>{actions.map((item) => <SelectItem key={item} value={item}>{getAuditActionLabel(item)}</SelectItem>)}</SelectContent></Select>
-          <Select value={entityType} onValueChange={setEntityType}><SelectTrigger><SelectValue placeholder="Đối tượng" /></SelectTrigger><SelectContent><SelectItem value="all">Tất cả đối tượng</SelectItem>{entityTypes.map((item) => <SelectItem key={item} value={item}>{getAuditEntityLabel(item)}</SelectItem>)}</SelectContent></Select>
-          <Select value={actorRole} onValueChange={setActorRole}><SelectTrigger><SelectValue placeholder="Vai trò" /></SelectTrigger><SelectContent><SelectItem value="all">Tất cả vai trò</SelectItem>{actorRoles.map((item) => <SelectItem key={item} value={item}>{getRoleLabel(item)}</SelectItem>)}</SelectContent></Select>
+          <Input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="Tìm người thực hiện, hành động, ghi chú..." />
+          <Select value={action} onValueChange={(value) => { setAction(value); setPage(1) }}><SelectTrigger><SelectValue placeholder="Hành động" /></SelectTrigger><SelectContent><SelectItem value="all">Tất cả hành động</SelectItem>{actions.map((item) => <SelectItem key={item} value={item}>{getAuditActionLabel(item)}</SelectItem>)}</SelectContent></Select>
+          <Select value={entityType} onValueChange={(value) => { setEntityType(value); setPage(1) }}><SelectTrigger><SelectValue placeholder="Đối tượng" /></SelectTrigger><SelectContent><SelectItem value="all">Tất cả đối tượng</SelectItem>{entityTypes.map((item) => <SelectItem key={item} value={item}>{getAuditEntityLabel(item)}</SelectItem>)}</SelectContent></Select>
+          <Select value={actorRole} onValueChange={(value) => { setActorRole(value); setPage(1) }}><SelectTrigger><SelectValue placeholder="Vai trò" /></SelectTrigger><SelectContent><SelectItem value="all">Tất cả vai trò</SelectItem>{actorRoles.map((item) => <SelectItem key={item} value={item}>{getRoleLabel(item)}</SelectItem>)}</SelectContent></Select>
         </CardContent>
       </Card>
       <Card>

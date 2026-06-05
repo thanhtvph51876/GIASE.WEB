@@ -18,6 +18,8 @@ type DashboardData = {
   reviews: Awaited<ReturnType<typeof reviewService.getAllReviews>>
 }
 
+const DASHBOARD_PREVIEW_SIZE = 12
+
 async function settleDashboardTasks(tasks: Array<[keyof DashboardData, Promise<unknown>]>) {
   const data: DashboardData = {
     pendingTutors: [],
@@ -51,12 +53,12 @@ export function useAdminDashboard(actor?: User | null) {
         tasks.push(["stats", adminService.getDashboardStats()])
         tasks.push(["reports", adminService.getReportsData()])
       }
-      if (hasAdminPermission(currentUser, "tutors.read")) tasks.push(["pendingTutors", adminService.getPendingTutors()])
-      if (hasAdminPermission(currentUser, "learning_requests.read")) tasks.push(["requests", adminService.getAllLearningRequests()])
-      if (hasAdminPermission(currentUser, "sessions.read")) tasks.push(["sessions", scheduleService.getAllSessions()])
-      if (hasAdminPermission(currentUser, "classes.read")) tasks.push(["classes", classService.getAllClasses()])
-      if (hasAdminPermission(currentUser, "bookings.read")) tasks.push(["bookings", bookingService.getAllBookings()])
-      if (hasAdminPermission(currentUser, "reviews.read")) tasks.push(["reviews", reviewService.getAllReviews()])
+      if (hasAdminPermission(currentUser, "tutors.read")) tasks.push(["pendingTutors", tutorService.getAllTutorsPage({ page: 1, pageSize: DASHBOARD_PREVIEW_SIZE, status: "pending" }).then((page) => page.items)])
+      if (hasAdminPermission(currentUser, "learning_requests.read")) tasks.push(["requests", learningRequestService.getAllRequestsPage({ page: 1, pageSize: DASHBOARD_PREVIEW_SIZE, status: "new" }).then((page) => page.items)])
+      if (hasAdminPermission(currentUser, "sessions.read")) tasks.push(["sessions", scheduleService.getAllSessionsPage({ page: 1, pageSize: DASHBOARD_PREVIEW_SIZE, status: "upcoming" }).then((page) => page.items)])
+      if (hasAdminPermission(currentUser, "classes.read")) tasks.push(["classes", classService.getAllClassesPage({ page: 1, pageSize: DASHBOARD_PREVIEW_SIZE, status: "active" }).then((page) => page.items)])
+      if (hasAdminPermission(currentUser, "bookings.read")) tasks.push(["bookings", bookingService.getAllBookingsPage({ page: 1, pageSize: DASHBOARD_PREVIEW_SIZE, status: "pending" }).then((page) => page.items)])
+      if (hasAdminPermission(currentUser, "reviews.read")) tasks.push(["reviews", reviewService.getAllReviewsPage({ page: 1, pageSize: DASHBOARD_PREVIEW_SIZE }).then((page) => page.items)])
       return settleDashboardTasks(tasks)
     },
     { revalidateOnFocus: false }
@@ -66,7 +68,7 @@ export function useAdminDashboard(actor?: User | null) {
 }
 
 export function useAdminStudents() {
-  const { data, error, isLoading, mutate } = useSWR("admin-students", () => adminService.getStudents(), {
+  const { data, error, isLoading, mutate } = useSWR("admin-students", () => adminService.getUsersPage({ role: "student", page: 1, pageSize: 50 }).then((page) => page.items), {
     revalidateOnFocus: false,
   })
 
@@ -74,7 +76,7 @@ export function useAdminStudents() {
 }
 
 export function usePendingTutors() {
-  const { data, error, isLoading, mutate } = useSWR("pending-tutors", () => adminService.getPendingTutors(), {
+  const { data, error, isLoading, mutate } = useSWR("pending-tutors", () => tutorService.getAllTutorsPage({ page: 1, pageSize: 50, status: "pending" }).then((page) => page.items), {
     revalidateOnFocus: false,
   })
 
@@ -96,12 +98,6 @@ export function useAdminOperations() {
         payoutQueue,
         tutorQuality,
         disputes,
-        tutors,
-        requests,
-        bookings,
-        sessions,
-        classes,
-        reviews,
       ] = await Promise.all([
         adminOperationService.overview().catch(() => ({})),
         adminOperationService.workItems().catch(() => []),
@@ -112,12 +108,6 @@ export function useAdminOperations() {
         adminOperationService.payoutQueue().catch(() => []),
         adminOperationService.tutorQuality().catch(() => []),
         adminOperationService.disputes().catch(() => []),
-        hasAdminPermission(user, "tutors.read") ? tutorService.getAllTutors().catch(() => []) : Promise.resolve([]),
-        hasAdminPermission(user, "learning_requests.read") ? learningRequestService.getAllRequests().catch(() => []) : Promise.resolve([]),
-        hasAdminPermission(user, "bookings.read") ? bookingService.getAllBookings().catch(() => []) : Promise.resolve([]),
-        hasAdminPermission(user, "sessions.read") ? scheduleService.getAllSessions().catch(() => []) : Promise.resolve([]),
-        hasAdminPermission(user, "classes.read") ? classService.getAllClasses().catch(() => []) : Promise.resolve([]),
-        hasAdminPermission(user, "reviews.read") ? reviewService.getAllReviews().catch(() => []) : Promise.resolve([]),
       ])
       return {
         overview,
@@ -129,12 +119,12 @@ export function useAdminOperations() {
         payoutQueue,
         tutorQuality,
         disputes,
-        tutors,
-        requests,
-        bookings,
-        sessions,
-        classes,
-        reviews,
+        tutors: [],
+        requests: [],
+        bookings: [],
+        sessions: [],
+        classes: [],
+        reviews: [],
       }
     },
     { revalidateOnFocus: false }

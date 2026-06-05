@@ -26,7 +26,11 @@ export default function AdminContactsPage() {
   const load = async (targetPage = page) => {
     setLoading(true)
     try {
-      const result = await contactService.getAllContactRequestsPage({ page: targetPage, pageSize: ADMIN_PAGE_SIZE })
+      const result = await contactService.getAllContactRequestsPage({
+        page: targetPage,
+        pageSize: ADMIN_PAGE_SIZE,
+        status: statusFilter === "all" ? undefined : statusFilter,
+      })
       setContacts(result.items)
       setPagination(result.pagination)
     } catch {
@@ -35,7 +39,7 @@ export default function AdminContactsPage() {
       setLoading(false)
     }
   }
-  useEffect(() => { load(page) }, [page])
+  useEffect(() => { load(page) }, [page, statusFilter])
   const update = async (id: string, status: ContactRequestStatus) => {
     const result = await contactService.updateStatus(id, status, user)
     if (result.success) { toast.success("Đã cập nhật liên hệ"); load(page) } else toast.error(result.error)
@@ -63,7 +67,7 @@ export default function AdminContactsPage() {
         <div className="text-sm text-muted-foreground">
           Luồng xử lý: Mới → Đã liên hệ → Đã xử lý. Bỏ qua dùng cho spam hoặc liên hệ không hợp lệ.
         </div>
-        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ContactRequestStatus | "all")}>
+        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value as ContactRequestStatus | "all"); setPage(1) }}>
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả trạng thái</SelectItem>

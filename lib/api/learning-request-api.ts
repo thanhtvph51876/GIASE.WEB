@@ -24,7 +24,16 @@ export const learningRequestApi = {
     return mapList(await apiRequest<LearningRequest[]>("/student/learning-requests/me"), mapLearningRequest)
   },
   async publicList() {
-    return mapList(await apiRequest<LearningRequest[]>("/public/learning-requests", { auth: false }), mapLearningRequest)
+    return (await this.publicListPage({ page: 1, pageSize: 100 })).items
+  },
+  publicListPage(params?: PageRequestParams) {
+    return apiPageRequest<LearningRequest>("/public/learning-requests", {
+      auth: false,
+      params: {
+        ...params,
+        q: params?.search,
+      },
+    }, mapLearningRequest)
   },
   async adminList(params?: PageRequestParams) {
     return (await this.adminListPage(params)).items

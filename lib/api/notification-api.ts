@@ -1,10 +1,13 @@
 import type { Notification } from "@/types"
 import { apiPageRequest, apiRequest, type PageRequestParams } from "./client"
-import { mapList, mapNotification } from "./mappers"
+import { mapNotification } from "./mappers"
 
 export const notificationApi = {
-  async list() {
-    return mapList(await apiRequest<Notification[]>("/notifications"), mapNotification)
+  async list(params?: PageRequestParams) {
+    return (await this.listPage(params)).items
+  },
+  listPage(params?: PageRequestParams) {
+    return apiPageRequest<Notification>("/notifications", { params }, mapNotification)
   },
   async adminList(params?: PageRequestParams) {
     return (await this.adminListPage(params)).items

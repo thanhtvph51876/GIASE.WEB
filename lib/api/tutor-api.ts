@@ -4,9 +4,14 @@ import { mapList, mapTutor, mapTutorDocument } from "./mappers"
 
 export const tutorApi = {
   async getTutors(filters?: TutorFilters, sortBy: TutorSortBy = "best_match") {
-    const data = await apiRequest<Tutor[]>("/tutors", {
+    return (await this.getTutorsPage(filters, sortBy, { page: 1, pageSize: 100 })).items
+  },
+  getTutorsPage(filters?: TutorFilters, sortBy: TutorSortBy = "best_match", params: PageRequestParams = {}) {
+    return apiPageRequest<Tutor>("/tutors", {
       auth: false,
       params: {
+        page: params.page || 1,
+        pageSize: params.pageSize || 24,
         q: filters?.keyword,
         subject: filters?.subject,
         gradeLevelId: filters?.grade,
@@ -18,10 +23,8 @@ export const tutorApi = {
         verified: filters?.verified,
         gender: filters?.gender,
         sort: sortBy,
-        pageSize: 100,
       },
-    })
-    return mapList(data, mapTutor)
+    }, mapTutor)
   },
   async getAllTutors(params?: PageRequestParams) {
     return (await this.getAllTutorsPage(params)).items

@@ -1,10 +1,11 @@
 "use client"
 
-import { FormEvent, type ReactNode, useState } from "react"
+import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { FileText, Loader2, ScrollText, ShieldCheck, Stamp, Upload } from "lucide-react"
+import { FileText, Loader2, Printer, ShieldCheck, Upload } from "lucide-react"
 import { TutorApprovalEligibilityPanel } from "@/components/admin/tutor-approval-eligibility"
+import { CommitmentDocument, type CommitmentData } from "@/components/verification/commitment-document"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,6 +20,28 @@ import { formatDate } from "@/lib/helpers"
 import { tutorService } from "@/lib/services"
 import { verificationService } from "@/lib/services/verification-service"
 import type { UserVerification, VerificationTerms, VerificationType } from "@/types"
+
+const fallbackTutorCommitmentItems = [
+  "Tôi cam kết thông tin cá nhân, giấy tờ định danh, bằng cấp, chứng chỉ và kinh nghiệm cung cấp trên nền tảng là đúng sự thật.",
+  "Tôi là chủ sở hữu hợp pháp của các giấy tờ đã tải lên và chịu trách nhiệm nếu có hành vi giả mạo hoặc sử dụng giấy tờ không hợp lệ.",
+  "Tôi cam kết bảo mật thông tin học viên, phụ huynh, lớp học, học phí, tài liệu học tập và dữ liệu vận hành của nền tảng.",
+  "Tôi chỉ sử dụng thông tin trong phạm vi công việc dạy học, tư vấn và chăm sóc lớp được nền tảng phân quyền.",
+  "Tôi đồng ý để nền tảng lưu version cam kết, hash nội dung, thời điểm ký, IP và thiết bị phục vụ kiểm duyệt, đối soát và xử lý tranh chấp.",
+]
+
+function todayInputValue() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+}
+
+function termsToCommitmentItems(terms?: VerificationTerms) {
+  const lines = terms?.content
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  return lines?.length ? lines : fallbackTutorCommitmentItems
+}
 
 export default function TutorVerificationPage() {
   const { user } = useAuthContext()
@@ -40,10 +63,76 @@ export default function TutorVerificationPage() {
   const [studentCode, setStudentCode] = useState("")
   const [fullNameInput, setFullNameInput] = useState(user?.fullName || "")
   const [signerName, setSignerName] = useState(user?.fullName || "")
+  const [signerEmail, setSignerEmail] = useState(user?.email || "")
+  const [signerPhone, setSignerPhone] = useState(user?.phone || "")
+  const [dateOfBirth, setDateOfBirth] = useState("")
+  const [identityNumber, setIdentityNumber] = useState("")
+  const [address, setAddress] = useState("")
+  const [city, setCity] = useState("Hà Nội")
+  const [signedDate, setSignedDate] = useState(todayInputValue)
   const [accepted, setAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const current = active || latest
+
+  useEffect(() => {
+    if (!user) return
+    setFullNameInput((value) => value || user.fullName)
+    setSignerName((value) => value || user.fullName)
+    setSignerEmail((value) => value || user.email)
+    setSignerPhone((value) => value || user.phone)
+  }, [user])
+
+  const commitmentData: CommitmentData = useMemo(() => ({
+    platformName: "GIA SƯ SƯ PHẠM",
+    slogan: "Kết nối tri thức - Đồng hành tương lai",
+    formCode: "Mẫu GST-01",
+    title: tutorTerms?.title?.toUpperCase() || "CAM KẾT TRÁCH NHIỆM GIA SƯ",
+    subtitle: "Áp dụng cho gia sư ký xác nhận trước khi hồ sơ được xét duyệt",
+    fullName: signerName || fullNameInput || current?.fullNameInput || user?.fullName || "",
+    dateOfBirth,
+    identityNumber,
+    phone: signerPhone || user?.phone || "",
+    email: signerEmail || current?.userEmail || user?.email || "",
+    address,
+    role: "Gia sư",
+    city,
+    signedDate,
+    platformRepresentative: "Gia Sư Sư Phạm",
+    evidence: [
+      { label: "Loại hồ sơ", value: current?.verificationType === "tutor_certificate" ? "Bằng cấp/chứng chỉ" : "Danh tính" },
+      { label: "Họ tên trên giấy tờ", value: fullNameInput || current?.fullNameInput },
+      { label: "Trường/đơn vị cấp", value: schoolName || current?.schoolName },
+      { label: "Mã SV/chứng chỉ", value: studentCode || current?.studentCode },
+      { label: "Mã hồ sơ", value: current?.id },
+    ],
+    items: termsToCommitmentItems(tutorTerms),
+    version: tutorTerms?.version,
+    effectiveDate: tutorTerms?.effectiveDate,
+    contentHash: tutorTerms?.contentHash,
+  }), [
+    address,
+    city,
+    current?.fullNameInput,
+    current?.id,
+    current?.schoolName,
+    current?.studentCode,
+    current?.userEmail,
+    current?.verificationType,
+    dateOfBirth,
+    fullNameInput,
+    identityNumber,
+    schoolName,
+    signedDate,
+    signerEmail,
+    signerName,
+    signerPhone,
+    studentCode,
+    tutorTerms,
+    user?.email,
+    user?.fullName,
+    user?.phone,
+  ])
 
   const onUpload = async (event: FormEvent) => {
     event.preventDefault()
@@ -68,7 +157,7 @@ export default function TutorVerificationPage() {
     setLoading(true)
     setError(null)
     try {
-      const verification = await signAndSubmit(current.id, signerName, user?.email)
+      const verification = await signAndSubmit(current.id, signerName, signerEmail || user?.email)
       setActive(verification)
       refreshEligibility()
     } catch (err) {
@@ -177,18 +266,44 @@ export default function TutorVerificationPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={onSign} className="space-y-5">
-              <ContractPreview terms={tutorTerms} loading={termsLoading} />
-              <Field label="Họ tên người cam kết"><Input value={signerName} onChange={(event) => setSignerName(event.target.value)} /></Field>
+              {termsLoading ? (
+                <div className="rounded-lg border bg-slate-50 p-6 text-sm text-muted-foreground">
+                  Đang tải nội dung thỏa thuận...
+                </div>
+              ) : !tutorTerms ? (
+                <Alert variant="destructive">
+                  <AlertTitle>Không tải được thỏa thuận</AlertTitle>
+                  <AlertDescription>Vui lòng tải lại trang trước khi ký xác thực.</AlertDescription>
+                </Alert>
+              ) : (
+                <CommitmentDocument data={commitmentData} />
+              )}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Họ tên người cam kết"><Input value={signerName} onChange={(event) => setSignerName(event.target.value)} /></Field>
+                <Field label="CCCD/CMND"><Input value={identityNumber} onChange={(event) => setIdentityNumber(event.target.value)} /></Field>
+                <Field label="Email người ký"><Input type="email" value={signerEmail} onChange={(event) => setSignerEmail(event.target.value)} /></Field>
+                <Field label="Số điện thoại"><Input value={signerPhone} onChange={(event) => setSignerPhone(event.target.value)} /></Field>
+                <Field label="Ngày sinh"><Input type="date" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} /></Field>
+                <Field label="Ngày ký"><Input type="date" value={signedDate} onChange={(event) => setSignedDate(event.target.value)} /></Field>
+                <Field label="Thành phố ký"><Input value={city} onChange={(event) => setCity(event.target.value)} /></Field>
+                <Field label="Địa chỉ liên hệ"><Input value={address} onChange={(event) => setAddress(event.target.value)} /></Field>
+              </div>
               <div className="flex items-start gap-2">
                 <Checkbox id="agreement" checked={accepted} onCheckedChange={(checked) => setAccepted(checked === true)} />
                 <Label htmlFor="agreement" className="leading-6">
                   Tôi xác nhận đã đọc, hiểu và đồng ý ký thỏa thuận điện tử này với nội dung, version và mã hash hiển thị bên trên.
                 </Label>
               </div>
-              <Button disabled={loading || termsLoading || !accepted || !signerName.trim()}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                Ký thỏa thuận và gửi xác thực
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button disabled={loading || termsLoading || !accepted || !signerName.trim()}>
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                  Ký thỏa thuận và gửi xác thực
+                </Button>
+                <Button type="button" variant="outline" onClick={() => window.print()}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  In / Xuất PDF
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -204,95 +319,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     <div className="space-y-2">
       <Label>{label}</Label>
       {children}
-    </div>
-  )
-}
-
-function ContractPreview({ terms, loading }: { terms?: VerificationTerms; loading: boolean }) {
-  if (loading) {
-    return (
-      <div className="rounded-lg border bg-slate-50 p-6 text-sm text-muted-foreground">
-        Đang tải nội dung thỏa thuận...
-      </div>
-    )
-  }
-
-  if (!terms) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Không tải được thỏa thuận</AlertTitle>
-        <AlertDescription>Vui lòng tải lại trang trước khi ký xác thực.</AlertDescription>
-      </Alert>
-    )
-  }
-
-  const blocks = terms.content.trim().split(/\n\s*\n/)
-
-  return (
-    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-      <div className="bg-slate-950 p-5 text-white">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-semibold text-amber-200">
-              <ScrollText className="h-4 w-4" />
-              Văn bản ký điện tử
-            </div>
-            <h2 className="text-xl font-bold leading-tight md:text-2xl">{terms.title}</h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-300">
-              Bản thỏa thuận này được lưu kèm version, hash nội dung, thời điểm ký, IP và thiết bị để phục vụ xác thực hồ sơ gia sư.
-            </p>
-          </div>
-          <div className="rounded-lg border border-white/15 bg-white/10 p-3 text-sm text-slate-100">
-            <p>Version: <span className="font-semibold">{terms.version}</span></p>
-            <p>Hiệu lực: <span className="font-semibold">{terms.effectiveDate}</span></p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-3 border-b bg-slate-50 p-4 md:grid-cols-2">
-        <ContractParty title="Bên A" body="Nền tảng Gia Sư Sư Phạm và đơn vị vận hành được ủy quyền." />
-        <ContractParty title="Bên B" body="Gia sư đăng ký tài khoản và gửi hồ sơ xác thực trên nền tảng." />
-      </div>
-
-      <div className="max-h-[560px] space-y-4 overflow-y-auto p-5">
-        {blocks.map((block) => {
-          const isArticle = block.startsWith("ĐIỀU ")
-          const [firstLine, ...rest] = block.split("\n")
-          return (
-            <section key={firstLine} className={isArticle ? "rounded-lg border bg-slate-50 p-4" : "rounded-lg bg-white text-sm leading-7 text-slate-700"}>
-              {isArticle ? (
-                <>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-950">{firstLine}</h3>
-                  <div className="mt-3 space-y-2 text-sm leading-7 text-slate-700">
-                    {rest.map((line) => <p key={line}>{line}</p>)}
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-2">
-                  {[firstLine, ...rest].map((line) => <p key={line}>{line}</p>)}
-                </div>
-              )}
-            </section>
-          )
-        })}
-      </div>
-
-      <div className="flex flex-col gap-3 border-t bg-slate-50 p-4 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-2">
-          <Stamp className="h-4 w-4 text-primary" />
-          <span>Mã hash nội dung: <span className="font-mono text-slate-700">{terms.contentHash.slice(0, 16)}...{terms.contentHash.slice(-12)}</span></span>
-        </div>
-        <span>Nội dung đầy đủ được lưu trên backend khi ký.</span>
-      </div>
-    </div>
-  )
-}
-
-function ContractParty({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-lg border bg-white p-3">
-      <p className="text-xs font-bold uppercase tracking-wide text-primary">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-slate-700">{body}</p>
     </div>
   )
 }
