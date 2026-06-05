@@ -207,7 +207,7 @@ function buildOnboardingItems(
   const checklist = eligibility?.checklist
   const profileComplete = Boolean(tutor?.fullName && tutor.bio && tutor.pricePerHour && tutor.teachingMethod)
   const hasSubjects = Boolean(tutor?.subjects?.length && tutor?.grades?.length)
-  const hasAreas = Boolean(tutor?.locations?.length && tutor?.teachingModes)
+  const hasAreas = Boolean(tutor?.teachingModes && (tutor.teachingModes === "online" || tutor?.locations?.length))
   const hasSlots = Boolean(tutor?.availableSlots?.length)
   const rejected = verification?.status === "rejected"
 
